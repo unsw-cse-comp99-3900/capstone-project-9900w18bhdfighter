@@ -1,6 +1,8 @@
 import { Button, Flex, Form, Input } from 'antd'
 import styled from 'styled-components'
 import { getThemeColor as c } from '../../../utils/styles'
+import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import { useNavigate } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
   background-color: ${() => c('basicBg')};
@@ -8,6 +10,8 @@ const Wrapper = styled(Flex)`
 `
 
 const Login = () => {
+  const { msg } = useGlobalComponentsContext()
+  const navigate = useNavigate()
   return (
     <Wrapper vertical justify="center" align="center">
       <Form labelCol={{ span: 24 }}>
@@ -18,7 +22,14 @@ const Login = () => {
           <Input.Password />
         </Form.Item>
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button type="primary" htmlType="submit">
+          <Button
+            type="primary"
+            htmlType="submit"
+            onClick={() => {
+              msg.success('Login Success')
+              navigate('/dashboard')
+            }}
+          >
             Login
           </Button>
         </Form.Item>

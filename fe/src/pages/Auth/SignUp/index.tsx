@@ -29,6 +29,8 @@ const SignUp = () => {
         <Form.Item label="Confirm password" name="confirmPassword">
           <Input.Password />
         </Form.Item>
+        {/* 下拉框 */}
+
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           <Button type="primary" htmlType="submit">
             Next

@@ -1,14 +1,14 @@
 import type { GlobalToken } from 'antd'
 
 import type { DefaultTheme } from 'styled-components'
-import { _themeColorKeys } from '../styles/GlobalThemeContext'
+import { ThemeColor } from '../context/GlobalThemeContext/themeConfig'
 
 // parse the theme token from styled-components
 const getThemeToken = <T extends keyof GlobalToken>(key: T, unit = '') => {
   return ({ theme }: { theme: GlobalToken }) => theme[key] + unit
 }
 // parse the theme color from styled-components
-const getThemeColor = (key: _themeColorKeys, degrees = 0) => {
+const getThemeColor = (key: keyof ThemeColor, degrees = 0) => {
   if (key === 'grayscalePalette') {
     return ({ theme }: { theme: DefaultTheme }) =>
       theme.themeColor[key][degrees]
