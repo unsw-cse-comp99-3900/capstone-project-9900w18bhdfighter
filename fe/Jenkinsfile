@@ -20,9 +20,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -f fe/Dockerfile"
+                        sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} fe"
                     } else {
-                        powershell "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ."
+                        powershell "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} fe"
                     }
                 }
             }
