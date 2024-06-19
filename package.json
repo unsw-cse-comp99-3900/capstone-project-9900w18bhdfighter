@@ -1,0 +1,23 @@
+{
+  "name": "capstone-project-9900w18bhdfighter",
+  "version": "1.0.0",
+  "description": "[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=15285014&assignment_repo_type=AssignmentRepo)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unsw-cse-comp99-3900-24t1/capstone-project-9900w18bhdfighter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/unsw-cse-comp99-3900-24t1/capstone-project-9900w18bhdfighter/issues"
+  },
+  "homepage": "https://github.com/unsw-cse-comp99-3900-24t1/capstone-project-9900w18bhdfighter#readme",
+  "devDependencies": {
+    "husky": "^8.0.0"
+  }
+}
