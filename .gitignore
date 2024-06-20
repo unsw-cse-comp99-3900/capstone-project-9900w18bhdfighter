@@ -1,7 +1,7 @@
 
 venv/
 env/
-myenv/
+be/myenv/
 
 
 __pycache__/
@@ -26,3 +26,5 @@ media/
 
 
 .DS_Store
+
+node_modules/
