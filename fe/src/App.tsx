@@ -1,11 +1,17 @@
 import { RouterProvider } from 'react-router-dom'
 import router from './router'
-import GlobalAntdThemeProvider from './styles/GlobalThemeContext'
+import GlobalAntdThemeProvider from './context/GlobalThemeContext'
+import GlobalComponentProvider from './context/GlobalComponentsContext'
+import AuthContextProvider from './context/AuthContext'
 
 const App = () => {
   return (
     <GlobalAntdThemeProvider>
-      <RouterProvider router={router}></RouterProvider>
+      <GlobalComponentProvider>
+        <AuthContextProvider>
+          <RouterProvider router={router}></RouterProvider>
+        </AuthContextProvider>
+      </GlobalComponentProvider>
     </GlobalAntdThemeProvider>
   )
 }
