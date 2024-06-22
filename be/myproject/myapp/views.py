@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import UserProfile
+from .models import User as UserProfile
 from .models import Project
 from .serializers import ProjectSerializer
 
@@ -69,8 +69,8 @@ def generate_auth_token(user):
 ############################################################################################
 #                                    Student Sign up                                       #
 ############################################################################################
-# def student_signup(request):
-
+def student_signup(request):
+    pass
 
 
 
