@@ -1,5 +1,12 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-cd fe
-npm run lint:fix
+# get the list of staged files
+STAGED_FILES=$(git diff --cached --name-only)
+
+# check if there are any files in the fe directory
+if echo "$STAGED_FILES" | grep -q "^fe/"; then
+    cd fe
+    npm run lint:fix
+
+fi

@@ -5,7 +5,7 @@ import LinkButton from '../../components/LinkButton'
 
 const Wrapper = styled(Flex)`
   height: 100vh;
-  background-color: ${c('grayscalePalette', 0)};
+  background-color: ${c('basicBg')};
   padding: ${t('paddingLG', 'px')};
 `
 const WelcomeContainer = styled(Flex)`
