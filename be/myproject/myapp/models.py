@@ -19,6 +19,7 @@ class User(models.Model):
     def __str__(self):
         return str(self.UserID)
 
+
 class Project(models.Model):
     ProjectID = models.AutoField(primary_key=True)
     ProjectName = models.CharField(max_length=255)

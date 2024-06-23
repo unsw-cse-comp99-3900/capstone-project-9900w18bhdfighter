@@ -16,6 +16,6 @@
 2. Created and activate a virtual environment in the be file(myenv)
 3. Install and set up Django project(myproject) (use pip3/python3 rather than pip)
 4. `cd` into the myproject folder
-5. run `python manage.py makemigrations` and `python manage.py migrate`
+5. run `python manage.py makemigrations myapp` and `python manage.py migrate`
    - this will create the database tables
 6. run `python manage.py runserver`
