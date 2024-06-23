@@ -69,21 +69,50 @@ def generate_auth_token(user):
 ############################################################################################
 #                                    Student Sign up                                       #
 ############################################################################################
+@csrf_exempt
 def student_signup(request):
-    pass
-
-
-
-
-
-
-
-
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            first_name = data.get('FirstName')
+            last_name = data.get('LastName')
+            email = data.get('EmailAddress')
+            password = data.get('Passwd')
+            username = email  # 使用电子邮件作为用户名
+            
+            if not first_name or not last_name or not email or not password:
+                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'}, status=400)
+            
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'Username already exists.'}, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'error': 'Email already exists.'}, status=400)
+            
+            user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name)
+            token = Token.objects.create(user=user)
+            
+            return JsonResponse({
+                'token': token.key,
+                'user': {
+                    'UserID': user.pk,
+                    'FirstName': user.first_name,
+                    'LastName': user.last_name,
+                    'EmailAddress': user.email,
+                    'Username': user.username
+                }
+            }, status=status.HTTP_201_CREATED)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
+    else:
+        return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)
 
 
 ############################################################################################
 #                                    Student Login                                         #
 ############################################################################################
+@csrf_exempt
 def student_login(request):
     if request.method == 'POST':
         try:
@@ -101,9 +130,10 @@ def student_login(request):
                 auth_token = generate_auth_token(user)
                 response_data = {
                     'user_profile': {
-                        'id': user_profile.id,
-                        'name': user_profile.name,
-                        'email': user_profile.user.email,
+                        'UserID': user_profile.id,
+                        'FirstName': user_profile.Firstname,
+                        'LastName' : user_profile.LastName,
+                        'EmailAddress': user_profile.user.email,
                     },
                     'auth_token': auth_token
                 }

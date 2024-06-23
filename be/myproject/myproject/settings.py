@@ -76,10 +76,15 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'capstone_project',  # 确保这个数据库名正确
+        'USER': 'root',         # 数据库用户名
+        'PASSWORD': 'zhs664100', # 数据库用户的密码
+        'HOST': 'localhost',      # 数据库主机
+        'PORT': '3306',           # MySQL 的默认端口
     }
 }
+
 
 
 # Password validation
