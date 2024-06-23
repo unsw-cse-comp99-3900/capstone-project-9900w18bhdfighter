@@ -4,7 +4,7 @@ import { getThemeColor as c } from '../../utils/styles'
 
 const Wrapper = styled(Flex)`
   height: 100vh;
-  background-color: ${c('grayscalePalette', 0)};
+  background-color: ${c('basicBg')};
 `
 const NotFoundPage = () => {
   return (

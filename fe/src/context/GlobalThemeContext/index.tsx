@@ -1,28 +1,20 @@
 import { ConfigProvider, theme as _theme } from 'antd'
-import { ReactNode, createContext, useContext, useState } from 'react'
+import { Dispatch, ReactNode, createContext, useContext, useState } from 'react'
 import { ThemeProvider } from 'styled-components'
-import { generateColorPalette } from '../../utils/styles'
+import { ThemeColor, themeColor as _themeColor } from './themeConfig'
 
 //https://ant.design/docs/spec/colors-cn
 type Props = {
   children: ReactNode
 }
 
-const _themeColor = {
-  // use for multi-purpose(borders, icons, text, backgrounds, etc.)
-  //step 36
-  grayscalePalette: generateColorPalette('#FFFFFF', '#404040', 36),
-  basicBg: '#FFFFFF',
-  highlight: '#FCDE12',
-  primary: '#000000',
-  font: '#000000',
+interface GlobalThemeContextType {
+  setThemeColor: Dispatch<ThemeColor>
 }
 
-console.log(_themeColor)
-
-export type _themeColorKeys = keyof typeof _themeColor
-export type ThemeColor = typeof _themeColor
-const GlobalThemeContext = createContext({})
+const GlobalThemeContext = createContext<GlobalThemeContextType>(
+  {} as GlobalThemeContextType
+)
 
 export const useGlobalTheme = () => useContext(GlobalThemeContext)
 const GlobalAntdThemeProvider = ({ children }: Props) => {
