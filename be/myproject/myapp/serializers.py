@@ -6,7 +6,7 @@ from .models import Project
 class StudentsignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['UserID', 'FirstName', 'LastName', 'EmailAddres', 'Passwd']
+        fields = ['FirstName', 'LastName', 'EmailAddres', 'Passwd']
 
 
 

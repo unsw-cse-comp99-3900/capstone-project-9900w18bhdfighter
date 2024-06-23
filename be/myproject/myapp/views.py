@@ -4,11 +4,15 @@ from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate 
 from django.views.decorators.csrf import csrf_exempt
+from .models import User
 import json
 
 from .models import User as UserProfile
 from .models import Project
 from .serializers import ProjectSerializer
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
+
 
 
 # from .utils import generate_auth_token 
@@ -18,52 +22,6 @@ def generate_auth_token(user):
     token, created = Token.objects.get_or_create(user=user)
     return token.key
 
-# def mock_authenticate(email, password):
-#     test_email = 'test@example.com'
-#     test_password = 'testpassword'
-    
-#     if email == test_email and password == test_password:
-
-#         return {
-#             'id': 1,
-#             'username': 'testuser',
-#             'email': test_email,
-#         }
-#     return None
-
-# @csrf_exempt
-# def student_login(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             email = data.get('email')
-#             password = data.get('password')
-#             print(f"email is {email}")
-#             print(f"password is {password}")
-#             if not email or not password:
-#                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
-            
-#             user = mock_authenticate(email, password)
-#             print(user)
-#             if user is not None:
-
-#                 auth_token = 'mocktoken12345'
-#                 response_data = {
-#                     'user_profile': {
-#                         'id': user['id'],
-#                         'name': user['username'],
-#                         'email': user['email'],
-#                     },
-#                     'auth_token': auth_token
-#                 }
-#                 return JsonResponse(response_data, status=200)
-#             else:
-#                 return JsonResponse({'error': 'Invalid email or password.'}, status=401)
-                    
-#         except json.JSONDecodeError:
-#             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
-#     else:
-#         return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)
 
 
 ############################################################################################
@@ -78,28 +36,31 @@ def student_signup(request):
             last_name = data.get('LastName')
             email = data.get('EmailAddress')
             password = data.get('Passwd')
-            username = email  # 使用电子邮件作为用户名
             
             if not first_name or not last_name or not email or not password:
                 return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'}, status=400)
             
-            if User.objects.filter(username=username).exists():
-                return JsonResponse({'error': 'Username already exists.'}, status=400)
-            
-            if User.objects.filter(email=email).exists():
+            if User.objects.filter(EmailAddress=email).exists():
                 return JsonResponse({'error': 'Email already exists.'}, status=400)
             
-            user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name)
-            token = Token.objects.create(user=user)
+            user = User.objects.create(
+                FirstName=first_name,
+                LastName=last_name,
+                EmailAddress=email,
+                Passwd=make_password(password),
+                UserRole=1,
+                UserInformation=''
+            )
+            # token = Token.objects.create(user=user)
+            token_key = generate_auth_token(user)
             
             return JsonResponse({
-                'token': token.key,
+                'token': token_key,
                 'user': {
                     'UserID': user.pk,
-                    'FirstName': user.first_name,
-                    'LastName': user.last_name,
-                    'EmailAddress': user.email,
-                    'Username': user.username
+                    'FirstName': user.FirstName,
+                    'LastName': user.LastName,
+                    'EmailAddress': user.EmailAddress,
                 }
             }, status=status.HTTP_201_CREATED)
         
@@ -118,32 +79,33 @@ def student_login(request):
         try:
             # User Authentication
             data = json.loads(request.body)
-            email = data.get('email')
-            password = data.get('password')
+            email = data.get('EmailAddress')
+            password = data.get('Passwd')
             if not email or not password:
                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
-            user = authenticate(request, username=email, password=password)
             
-            if user is not None:
-                # Assuming the UserProfile model has a foreign key relationship with the User model
-                user_profile = UserProfile.objects.get(user=user)
-                auth_token = generate_auth_token(user)
-                response_data = {
-                    'user_profile': {
-                        'UserID': user_profile.id,
-                        'FirstName': user_profile.Firstname,
-                        'LastName' : user_profile.LastName,
-                        'EmailAddress': user_profile.user.email,
-                    },
-                    'auth_token': auth_token
-                }
-                return JsonResponse(response_data, status=200)
-            else:
-                if not User.objects.filter(email=email).exists():
-                    return JsonResponse({'error': 'E-mail not found.'}, status=404)
+            try:
+                user = User.objects.get(EmailAddress=email)
+                print(user.Passwd)
+                if check_password(password, user.Passwd):
+                    auth_token = generate_auth_token(user)
+                    response_data = {
+                        'user_profile': {
+                            'UserID': user.pk,
+                            'FirstName': user.FirstName,
+                            'LastName' : user.LastName,
+                            'EmailAddress': user.EmailAddress,
+                        },
+                        'auth_token': auth_token
+                    }
+                    return JsonResponse(response_data, status=200)
                 else:
-                    return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=401)
-                    
+                    if not User.objects.filter(EmailAddress=email).exists():
+                        return JsonResponse({'error': 'E-mail not found.'}, status=404)
+                    else:
+                        return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=401)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Email not found.'}, status=404)        
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -202,3 +164,10 @@ def project_update(request, id):
     return JsonResponse(serializer.error, staus=400)
 
         
+# #test
+# def test_db_connection(request):
+#     try:
+#         user_count = User.objects.count()
+#         return JsonResponse({'status': 'success', 'user_count': user_count}, status=200)
+#     except Exception as e:
+#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

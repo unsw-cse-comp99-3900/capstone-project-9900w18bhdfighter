@@ -1,7 +1,8 @@
 # Create your models here.
 from django.db import models
-
-
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from rest_framework.authtoken.models import Token
 
 # Users 表
 class User(models.Model):
@@ -13,6 +14,7 @@ class User(models.Model):
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
     UserRole = models.IntegerField()
     UserInformation = models.CharField(max_length=255)
+ 
 
     def __str__(self):
         return str(self.UserID)
