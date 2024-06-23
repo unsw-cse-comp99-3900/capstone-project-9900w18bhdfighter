@@ -6,24 +6,51 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from .models import User
 import json
-
+import datetime
+from django.conf import settings
 from .models import User as UserProfile
 from .models import Project
 from .serializers import ProjectSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
-
+import jwt
 
 
 # from .utils import generate_auth_token 
 
 
-def generate_auth_token(user):
-    token, created = Token.objects.get_or_create(user=user)
-    return token.key
+# def generate_auth_token(user):
+#     token, created = Token.objects.get_or_create(user=user)
+#     return token.key
 
+# every time when a user requests with a token, we will decode the token to get the user information and check if the token is valid or not.
+def decode_jwt(token):
+    try:
+        # Decode the token
+        decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        return {'status': 'success', 'data': decoded}
+    except jwt.ExpiredSignatureError:
+        # Token has expired
+        return {'status': 'error', 'error_message': 'Token has expired.'}
+    except jwt.InvalidTokenError:
+        # Token is invalid
+        return {'status': 'error', 'error_message': 'Invalid token.'}
 
-
+# Usage example
+def some_view_function(request):
+    token = request.headers.get('Authorization').split()[1]  # Assuming token is sent as "Bearer <token>"
+    result = decode_jwt(token)
+    
+    if result['status'] == 'success':
+        # Perform actions based on the decoded data
+        user_data = result['data']
+        # Here you can access user_data and perform further actions or queries
+        return JsonResponse({'message': 'Authenticated successfully.', 'user': user_data}, status=200)
+    else:
+        # Handle error scenario
+        return JsonResponse({'error': result['error_message']}, status=401)
+    
+    
 ############################################################################################
 #                                    Student Sign up                                       #
 ############################################################################################
@@ -51,18 +78,25 @@ def student_signup(request):
                 UserRole=1,
                 UserInformation=''
             )
-            # token = Token.objects.create(user=user)
-            token_key = generate_auth_token(user)
+
+            token = jwt.encode({
+                'user_id': user.pk,
+                'role': user.UserRole,
+                'first_name': user.FirstName,
+                'last_name': user.LastName,
+                'email': user.EmailAddress,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
+            }, settings.SECRET_KEY, algorithm='HS256')
             
             return JsonResponse({
-                'token': token_key,
+                'token': token,
                 'user': {
                     'UserID': user.pk,
                     'FirstName': user.FirstName,
                     'LastName': user.LastName,
                     'EmailAddress': user.EmailAddress,
                 }
-            }, status=status.HTTP_201_CREATED)
+            }, status=201)
         
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
@@ -88,7 +122,15 @@ def student_login(request):
                 user = User.objects.get(EmailAddress=email)
                 print(user.Passwd)
                 if check_password(password, user.Passwd):
-                    auth_token = generate_auth_token(user)
+                    auth_token = jwt.encode({
+                        'user_id': user.pk,
+                        'role': user.UserRole,
+                        'first_name': user.FirstName,
+                        'last_name': user.LastName,
+                        'email': user.EmailAddress,
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
+                    }, settings.SECRET_KEY, algorithm='HS256')
+                    
                     response_data = {
                         'user_profile': {
                             'UserID': user.pk,
