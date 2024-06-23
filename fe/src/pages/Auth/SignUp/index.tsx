@@ -20,9 +20,6 @@ const SignUp = () => {
         <Form.Item label="E-mail address" name="email">
           <Input />
         </Form.Item>
-        <Form.Item label="Username" name="username">
-          <Input />
-        </Form.Item>
         <Form.Item label="Password" name="password">
           <Input.Password />
         </Form.Item>

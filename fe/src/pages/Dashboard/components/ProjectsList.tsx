@@ -14,7 +14,7 @@ const Wrapper = styled.div`
 `
 
 const Header = styled(Flex)`
-  padding: ${getThemeToken('paddingMD', 'px')};
+  padding: 0 ${getThemeToken('paddingMD', 'px')};
 
   height: 2rem;
 `

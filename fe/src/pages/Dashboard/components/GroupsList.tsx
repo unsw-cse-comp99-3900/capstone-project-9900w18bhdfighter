@@ -14,7 +14,7 @@ const Wrapper = styled.div`
   box-shadow: ${getThemeToken('boxShadow')};
 `
 const Header = styled(Flex)`
-  padding: ${getThemeToken('paddingMD', 'px')};
+  padding: 0 ${getThemeToken('paddingMD', 'px')};
   height: 2rem;
 `
 const ProjectsList = styled(List)`

@@ -29,8 +29,7 @@ const ProjectsListItem = ({ item }: Props) => {
         title={
           <Link to="https://ant.design">{(item as DataType).name?.last}</Link>
         }
-        description="Ant Design, a design
-     language for background applications, is refined by Ant UED Team"
+        description="Lorem ipsum dolor sit amet consectetur, adipisicing elit. "
       />
     </Skeleton>
   )
