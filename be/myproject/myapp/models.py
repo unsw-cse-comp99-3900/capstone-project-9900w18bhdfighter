@@ -2,8 +2,6 @@
 from django.db import models
 
 
-
-# Users 表
 class User(models.Model):
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
@@ -16,6 +14,7 @@ class User(models.Model):
 
     def __str__(self):
         return str(self.UserID)
+
 
 class Project(models.Model):
     ProjectID = models.AutoField(primary_key=True)
