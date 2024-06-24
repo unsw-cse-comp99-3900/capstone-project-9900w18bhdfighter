@@ -120,9 +120,9 @@ def student_login(request):
             
             try:
                 user = User.objects.get(EmailAddress=email)
-                print(user.Passwd)
+                #print(user.Passwd)
                 if check_password(password, user.Passwd):
-                    auth_token = jwt.encode({
+                    token = jwt.encode({
                         'user_id': user.pk,
                         'role': user.UserRole,
                         'first_name': user.FirstName,
@@ -138,7 +138,7 @@ def student_login(request):
                             'LastName' : user.LastName,
                             'EmailAddress': user.EmailAddress,
                         },
-                        'auth_token': auth_token
+                        'token': token
                     }
                     return JsonResponse(response_data, status=200)
                 else:
@@ -161,19 +161,21 @@ def student_login(request):
 def project_creation(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
-        #print(data)
+        print(data)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+        #print(result)
 
-    # User Authentication
-    auth_token = data.get('auth_token')
-    try:
-        token = Token.objects.get(key=auth_token)
-        user = token.user
-    except Token.DoesNotExist:
-        return JsonResponse({'error': 'Authentication failed'}, status=401)
-
+    if result['status'] == 'success':
+        user_data = result['data']
+        #print(f'user : {user_data}')
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
     serializer = ProjectSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(created_by=user)
+        serializer.save(CreatedBy=user)
         return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
     return JsonResponse(serializer.errors, status=400)
 
