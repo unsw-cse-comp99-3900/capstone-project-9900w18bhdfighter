@@ -6,5 +6,13 @@ interface UserInfo {
   email: string
   role: UserRole
 }
+interface UserDTO {
+  UserID: number
+  FirstName: string
+  LastName: string
+  EmailAddress: string
+  Passwd: string
+}
 
-export { UserInfo }
+type UserSignup = Omit<UserDTO, 'UserID'>
+export { UserInfo, UserDTO, UserSignup }
