@@ -161,14 +161,12 @@ def student_login(request):
 def project_creation(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
-        print(data)
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
-        #print(result)
 
     if result['status'] == 'success':
         user_data = result['data']
-        #print(f'user : {user_data}')
+
         try:
             user = User.objects.get(pk=user_data['user_id'])
         except User.DoesNotExist:
@@ -190,20 +188,21 @@ def project_update(request, id):
     except:
         return JsonResponse({'error': 'Project not found'}, status=404)
     
-    if request.method == 'Put':
+    if request.method == 'PUT':
         data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
 
-    # User Authentication
-    auth_token = data.get('auth_token')
-    try:
-        token = Token.objects.get(key=auth_token)
-        user = token.user
-    except Token.DoesNotExist:
-        return JsonResponse({'error': 'Authentication failed'}, status=401)
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except Token.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
             
-    serializer = ProjectSerializer(data=data)
-    if serializer.is_vaild():
-        serializer.save(created_by=user)
+    serializer = ProjectSerializer(project, data=data, partial=True)
+    if serializer.is_valid():
+        serializer.save(CreatedBy=user)
         return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
     return JsonResponse(serializer.error, staus=400)
 
