@@ -1,20 +1,36 @@
 import { Button, Flex, Form, Input } from 'antd'
+import type { FormProps } from 'antd'
 import styled from 'styled-components'
 import { getThemeColor as c } from '../../../utils/styles'
-import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import { useNavigate } from 'react-router-dom'
+import { useAuthContext } from '../../../context/AuthContext'
+import { UserLogin } from '../../../types/user'
 
 const Wrapper = styled(Flex)`
   background-color: ${() => c('basicBg')};
   height: 100vh;
 `
+type FieldType = {
+  email: string
+  password: string
+}
 
 const Login = () => {
-  const { msg } = useGlobalComponentsContext()
+  const { login } = useAuthContext()
   const navigate = useNavigate()
+  const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
+    console.log('Received values:', values)
+
+    const { email, password } = values
+    const userLoginDto: UserLogin = {
+      EmailAddress: email,
+      Passwd: password,
+    }
+    login(userLoginDto, navigate)
+  }
   return (
     <Wrapper vertical justify="center" align="center">
-      <Form labelCol={{ span: 24 }}>
+      <Form onFinish={onFinish} labelCol={{ span: 24 }}>
         <Form.Item label="E-mail" name="email">
           <Input />
         </Form.Item>
@@ -22,14 +38,7 @@ const Login = () => {
           <Input.Password />
         </Form.Item>
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button
-            type="primary"
-            htmlType="submit"
-            onClick={() => {
-              msg.success('Login Success')
-              navigate('/dashboard')
-            }}
-          >
+          <Button type="primary" htmlType="submit">
             Login
           </Button>
         </Form.Item>

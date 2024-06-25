@@ -40,6 +40,13 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
                 siderBg: _themeColor.basicBg,
                 footerBg: _themeColor.basicBg,
               },
+              Menu: {
+                itemSelectedColor: 'white',
+              },
+              Table: {
+                rowSelectedBg: _themeColor.grayscalePalette[20] as string,
+                rowSelectedHoverBg: _themeColor.grayscalePalette[20] as string,
+              },
             },
             token: {
               colorPrimary: _themeColor.primary,
