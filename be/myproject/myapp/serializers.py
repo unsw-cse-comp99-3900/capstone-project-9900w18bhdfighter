@@ -21,14 +21,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         UserID = self.context.get('UserID')
         if User.objects.exclude(UserID=UserID).filter(EmailAddress=data['EmailAddress']).exists():
-            raise serializers.ValidationError("邮箱已存在")
+            raise serializers.ValidationError("The email address is already in use by another user!")
         instance = User.objects.get(UserID=UserID)
         if data['Passwd'] != instance.Passwd:
             Passwd2 = data.get('Passwd2')
             if not Passwd2:
-                raise serializers.ValidationError("请输入确认密码")
+                raise serializers.ValidationError("Confirmation password has not been entered, please enter the confirmation password to continue!")
             if data['Passwd'] != data['Passwd2']:
-                raise serializers.ValidationError("密码不匹配")
+                raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
         return data
 
@@ -42,7 +42,7 @@ class UserUpdatePasswdSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data['Passwd'] != data['Passwd2']:
-            raise serializers.ValidationError("密码不匹配")
+            raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
         return data
 
@@ -63,9 +63,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if User.objects.filter(EmailAddress=data['EmailAddress']).exists():
-            raise serializers.ValidationError("邮箱已存在")
+            raise serializers.ValidationError("The email address is already in use by another user!")
         if data['Passwd'] != data['Passwd2']:
-            raise serializers.ValidationError("密码不匹配")
+            raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
         return data
 
