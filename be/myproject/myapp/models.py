@@ -2,6 +2,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class CoreModel(models.Model):
     update_datetime = models.DateTimeField(auto_now=True, null=True, blank=True)
     create_datetime = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -17,7 +18,8 @@ class User(CoreModel):
     EmailAddress = models.CharField(max_length=255, unique=True)
     Passwd = models.CharField(max_length=255)
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
-    UserRole = models.IntegerField()
+    UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
+                                   default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
 
     def __str__(self):

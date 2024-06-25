@@ -1,15 +1,16 @@
 from django.shortcuts import render, HttpResponse
-from rest_framework import viewsets
+from rest_framework import viewsets, status, mixins
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
+from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser
-from django.contrib.auth import authenticate 
+from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
 
 from .models import User
 from .models import Project
-from .serializers import ProjectSerializer, UserSerializer
+from .serializers import ProjectSerializer, RegisterSerializer, UserUpdatePasswdSerializer
 
 
 # from .utils import generate_auth_token 
@@ -19,10 +20,11 @@ def generate_auth_token(user):
     token, created = Token.objects.get_or_create(user=user)
     return token.key
 
+
 # def mock_authenticate(email, password):
 #     test_email = 'test@example.com'
 #     test_password = 'testpassword'
-    
+
 #     if email == test_email and password == test_password:
 
 #         return {
@@ -43,7 +45,7 @@ def generate_auth_token(user):
 #             print(f"password is {password}")
 #             if not email or not password:
 #                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
-            
+
 #             user = mock_authenticate(email, password)
 #             print(user)
 #             if user is not None:
@@ -60,7 +62,7 @@ def generate_auth_token(user):
 #                 return JsonResponse(response_data, status=200)
 #             else:
 #                 return JsonResponse({'error': 'Invalid email or password.'}, status=401)
-                    
+
 #         except json.JSONDecodeError:
 #             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
 #     else:
@@ -80,19 +82,21 @@ def student_signup(request):
             email = data.get('EmailAddress')
             password = data.get('Passwd')
             username = email  # 使用电子邮件作为用户名
-            
+
             if not first_name or not last_name or not email or not password:
-                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'}, status=400)
-            
+                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'},
+                                    status=400)
+
             if User.objects.filter(username=username).exists():
                 return JsonResponse({'error': 'Username already exists.'}, status=400)
-            
+
             if User.objects.filter(email=email).exists():
                 return JsonResponse({'error': 'Email already exists.'}, status=400)
-            
-            user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name, last_name=last_name)
+
+            user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name,
+                                            last_name=last_name)
             token = Token.objects.create(user=user)
-            
+
             return JsonResponse({
                 'token': token.key,
                 'user': {
@@ -103,7 +107,7 @@ def student_signup(request):
                     'Username': user.username
                 }
             }, status=status.HTTP_201_CREATED)
-        
+
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -113,6 +117,7 @@ def student_signup(request):
 ############################################################################################
 #                                    Student Login                                         #
 ############################################################################################
+
 @csrf_exempt
 def student_login(request):
     if request.method == 'POST':
@@ -124,7 +129,7 @@ def student_login(request):
             if not email or not password:
                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
             user = authenticate(request, username=email, password=password)
-            
+
             if user is not None:
                 # Assuming the User model has a foreign key relationship with the User model
                 user_profile = User.objects.get(user=user)
@@ -133,18 +138,18 @@ def student_login(request):
                     'user_profile': {
                         'UserID': user_profile.id,
                         'FirstName': user_profile.Firstname,
-                        'LastName' : user_profile.LastName,
+                        'LastName': user_profile.LastName,
                         'EmailAddress': user_profile.user.email,
                     },
                     'auth_token': auth_token
                 }
                 return JsonResponse(response_data, status=200)
             else:
-                if not User.objects.filter(email=email).exists():
+                if not User.objects.filter(EmailAddress=email).exists():
                     return JsonResponse({'error': 'E-mail not found.'}, status=404)
                 else:
                     return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=401)
-                    
+
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -158,7 +163,7 @@ def student_login(request):
 def project_creation(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
-        #print(data)
+        # print(data)
 
     # User Authentication
     auth_token = data.get('auth_token')
@@ -184,7 +189,7 @@ def project_update(request, id):
         project = Project.objects.get(pk=id)
     except:
         return JsonResponse({'error': 'Project not found'}, status=404)
-    
+
     if request.method == 'Put':
         data = JSONParser().parse(request)
 
@@ -195,18 +200,72 @@ def project_update(request, id):
         user = token.user
     except Token.DoesNotExist:
         return JsonResponse({'error': 'Authentication failed'}, status=401)
-            
+
     serializer = ProjectSerializer(data=data)
     if serializer.is_vaild():
         serializer.save(created_by=user)
         return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
     return JsonResponse(serializer.error, staus=400)
 
-        
 
-class UserViews(viewsets.ModelViewSet):
+def get_user_friendly_errors(serializer_errors):
+    errors = {}
+    for field, field_errors in serializer_errors.items():
+        if field != 'non_field_errors':
+            errors[field] = ' '.join(field_errors)
+        else:
+            errors['non_field_errors'] = ' '.join(field_errors)
+    return errors
+
+
+from rest_framework.viewsets import GenericViewSet
+from .serializers import UserUpdateSerializer
+
+from rest_framework.decorators import action
+
+
+class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = RegisterSerializer
+    lookup_field = "UserID"
+
+    def get_serializer_class(self):
+        dic = {
+            'create': RegisterSerializer,
+            'update': UserUpdateSerializer,
+            'update_passwd': UserUpdatePasswdSerializer
+        }
+        return dic.get(self.action, self.serializer_class)
 
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['put'], url_path='password', url_name='update-passwd')
+    def update_passwd(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        serializer = self.get_serializer(instance, data=request.data, context={'UserID': instance.UserID}, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)

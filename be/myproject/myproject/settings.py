@@ -32,7 +32,6 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-APPEND_SLASH=False
 
 # Application definition
 INSTALLED_APPS = [
@@ -59,7 +58,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'myproject.urls'
-
+APPEND_SLASH = False
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -92,11 +91,11 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT'),
     }
 }
+# AUTH_USER_MODEL = "myapp.User"
 
 print(DATABASES)
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
