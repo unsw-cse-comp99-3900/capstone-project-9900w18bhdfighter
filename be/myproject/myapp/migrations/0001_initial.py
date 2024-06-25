@@ -3,14 +3,16 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+    
 
+                        
 class Migration(migrations.Migration):
 
-    initial = True
 
-    dependencies = [
+
+    dependencies =[
     ]
-
+    
     operations = [
         migrations.CreateModel(
             name='Group',
@@ -87,4 +89,5 @@ class Migration(migrations.Migration):
                 ('UserID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.user')),
             ],
         ),
+     
     ]

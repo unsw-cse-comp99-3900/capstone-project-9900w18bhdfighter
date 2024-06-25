@@ -19,8 +19,6 @@ const Login = () => {
   const { login } = useAuthContext()
   const navigate = useNavigate()
   const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
-    console.log('Received values:', values)
-
     const { email, password } = values
     const userLoginDto: UserLogin = {
       EmailAddress: email,
