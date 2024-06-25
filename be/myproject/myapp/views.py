@@ -81,8 +81,7 @@ def student_signup(request):
                 LastName=last_name,
                 EmailAddress=email,
                 Passwd=make_password(password),
-                
-                
+                UserRole=1,
                 UserInformation=''
             )
 
