@@ -28,41 +28,52 @@ class Project(models.Model):
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
     def __str__(self):
         return str(self.ProjectID)
-        
+
+
 class UserPreferencesLink(models.Model):
     UserPreferencesLinkID = models.AutoField(primary_key=True)
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.UserPreferencesLinkID)
+
+
 class Group(models.Model):
     GroupID = models.AutoField(primary_key=True)
     GroupName = models.CharField(max_length=255)
     GroupDescription = models.TextField()
     CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.GroupID)
+
+
 class GroupPreferencesLink(models.Model):
     GroupPreferencesLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.GroupPreferencesLinkID)
+
 
 class GroupUsersLink(models.Model):
     GroupUsersLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.GroupUsersLinkID)
+
 
 class GroupProjectsLink(models.Model):
     GroupProjectsLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.GroupProjectsLinkID)
-    
 
 # # Student Sign up ?
 # class UserProfile(models.Model):

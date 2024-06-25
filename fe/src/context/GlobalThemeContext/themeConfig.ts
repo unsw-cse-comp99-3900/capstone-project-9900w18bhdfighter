@@ -8,14 +8,15 @@ interface ThemeColor {
   font: string
 }
 
+const palette = generateColorPalette('#FFFFFF', '#404040', 36)
 //current theme color
 const themeColor = {
   // use for multi-purpose(borders, icons, text, backgrounds, etc.)
   //step 36
-  grayscalePalette: generateColorPalette('#FFFFFF', '#404040', 36),
+  grayscalePalette: palette,
   basicBg: '#FFFFFF',
   highlight: '#FCDE12',
-  primary: '#000000',
+  primary: 'black',
   font: '#000000',
 }
 

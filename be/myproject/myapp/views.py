@@ -1,16 +1,22 @@
+from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
+from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import JSONParser
-from django.contrib.auth import authenticate 
+from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from .models import User
 import json
 import datetime
 from django.conf import settings
-from .models import User as UserProfile
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from .models import User as UserProfile, User, UserPreferencesLink
 from .models import Project
-from .serializers import ProjectSerializer
+from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -214,11 +220,67 @@ def project_update(request, id):
         return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
     return JsonResponse(serializer.error, staus=400)
 
-        
+
 # #test
 # def test_db_connection(request):
 #     try:
 #         user_count = User.objects.count()
 #         return JsonResponse({'status': 'success', 'user_count': user_count}, status=200)
 #     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    user = request.user
+    if request.method == 'GET':
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            if 'Passwd' in serializer.validated_data:
+                serializer.validated_data['Passwd'] = make_password(serializer.validated_data['Passwd'])
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def user_preferences(request):
+    user = request.user
+
+    if request.method == 'GET':
+        preferences = UserPreferencesLink.objects.filter(UserID=user)
+        serializer = UserPreferencesLinkSerializer(preferences, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        request.data['UserID'] = user.UserID
+        serializer = UserPreferencesLinkSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def user_preference_detail(request, pk):
+    user = request.user
+
+    try:
+        preference = UserPreferencesLink.objects.get(pk=pk, UserID=user)
+    except UserPreferencesLink.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = UserPreferencesLinkSerializer(preference, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        preference.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
