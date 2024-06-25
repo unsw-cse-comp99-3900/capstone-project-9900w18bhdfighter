@@ -81,7 +81,8 @@ def student_signup(request):
                 LastName=last_name,
                 EmailAddress=email,
                 Passwd=make_password(password),
-                UserRole=1,
+                
+                
                 UserInformation=''
             )
 
@@ -177,9 +178,17 @@ def project_creation(request):
             user = User.objects.get(pk=user_data['user_id'])
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
-    serializer = ProjectSerializer(data=data)
+        
+        if user_data['role'] == 2 and data['ProjectOwner'] == user_data['email']:
+                serializer = ProjectSerializer(data=data)
+        elif user_data['role'] in [3, 4, 5]:
+            serializer = ProjectSerializer(data=data)
+        else:
+            return JsonResponse({'error': 'Permission denied.'}, status=403)
+
     if serializer.is_valid():
         serializer.save(CreatedBy=user)
+        serializer.save(ProjectOwner=data['ProjectOwner'])
         return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
     return JsonResponse(serializer.errors, status=400)
 
