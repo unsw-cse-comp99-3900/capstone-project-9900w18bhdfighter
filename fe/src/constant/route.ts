@@ -6,6 +6,7 @@ const route = {
   PROFILE: '/profile',
   PROJECTS: '/projects',
   TEAMS: '/teams',
+  ADMIN: '/admin',
 }
 
 export default route

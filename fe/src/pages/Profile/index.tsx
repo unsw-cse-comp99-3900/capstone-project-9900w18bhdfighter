@@ -1,8 +1,10 @@
 import { Button, Flex, Form, Input, Space, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeColor, getThemeToken } from '../../utils/styles'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ModalProjectsList from './components/ModalProjectsList'
+import { useAuthContext } from '../../context/AuthContext'
+import { shortName } from '../../utils/parse'
 const Wrapper = styled(Flex)`
   height: 100%;
   display: flex;
@@ -38,6 +40,17 @@ const EditButton = styled(Button)``
 const Profile = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [noEdit, setNoEdit] = useState(true)
+  const { usrInfo } = useAuthContext()
+  const { lastName, email, firstName } = usrInfo || {}
+  const [form] = Form.useForm()
+  useEffect(() => {
+    form.setFieldsValue({
+      firstName,
+      lastName,
+      email,
+    })
+  })
+
   const showModal = () => {
     setIsModalOpen(true)
   }
@@ -74,10 +87,10 @@ const Profile = () => {
         <EditSaveButton />
       </Header>
 
-      <Avatar>Avatar</Avatar>
+      <Avatar>{shortName(firstName, lastName)}</Avatar>
 
       <InfoContainer>
-        <Form labelCol={{ span: 24 }} size="small">
+        <Form form={form} labelCol={{ span: 24 }} size="small">
           <Space>
             <Form.Item label="First name" name="firstName">
               <Input disabled={noEdit} />

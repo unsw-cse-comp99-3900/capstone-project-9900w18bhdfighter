@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { getThemeColor as c } from '../../../utils/styles'
 import { useAuthContext } from '../../../context/AuthContext'
 import { UserSignup } from '../../../types/user'
+import { useNavigate } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
   background-color: ${() => c('grayscalePalette', 2)};
@@ -19,6 +20,7 @@ type FieldType = {
 
 const SignUp = () => {
   const { signup } = useAuthContext()
+  const navigate = useNavigate()
   const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
     const { firstName, lastName, email, password } = values
     const userSignupDto: UserSignup = {
@@ -27,7 +29,7 @@ const SignUp = () => {
       EmailAddress: email,
       Passwd: password,
     }
-    signup(userSignupDto)
+    signup(userSignupDto, navigate)
   }
   return (
     <Wrapper vertical justify="center" align="center">
@@ -63,7 +65,18 @@ const SignUp = () => {
         <Form.Item
           label="Confirm password"
           name="confirmPassword"
-          rules={[{ required: true, message: 'Please confirm your password!' }]}
+          dependencies={['password']}
+          rules={[
+            { required: true, message: 'Please confirm your password!' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('password') === value) {
+                  return Promise.resolve()
+                }
+                return Promise.reject(new Error('The password does not match!'))
+              },
+            }),
+          ]}
         >
           <Input.Password />
         </Form.Item>

@@ -36,6 +36,12 @@ const SiderNav = () => {
             icon: <AiFillHome />,
             label: 'Teams',
           },
+
+          {
+            key: route.ADMIN,
+            icon: <AiFillHome />,
+            label: 'Management',
+          },
         ]}
       />
     </Sider>

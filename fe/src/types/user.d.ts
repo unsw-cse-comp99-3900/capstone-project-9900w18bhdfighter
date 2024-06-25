@@ -1,8 +1,9 @@
-type UserRole = 'ADMIN' | 'USER' | 'TUTOR' | 'STUDENT' | 'CORD'
+type UserRole = 1 | 2 | 3 | 4 | 5
 
 interface UserInfo {
   id: number
-  name: string
+  firstName: string
+  lastName: string
   email: string
   role: UserRole
 }
@@ -15,4 +16,5 @@ interface UserDTO {
 }
 
 type UserSignup = Omit<UserDTO, 'UserID'>
-export { UserInfo, UserDTO, UserSignup }
+type UserLogin = Pick<UserDTO, 'EmailAddress' | 'Passwd'>
+export { UserInfo, UserDTO, UserSignup, UserLogin, UserRole }

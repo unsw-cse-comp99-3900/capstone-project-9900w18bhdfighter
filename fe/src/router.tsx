@@ -11,12 +11,17 @@ import Profile from './pages/Profile'
 import route from './constant/route'
 import Projects from './pages/Projects'
 import Teams from './pages/Teams'
+import AdminManagement from './pages/AdminManagement'
 
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
   const { haveLoggedIn } = useAuthContext()
-  if (haveLoggedIn()) {
+  console.log(1123)
+
+  if (!haveLoggedIn()) {
+    console.log(123)
+
     msg.err('You have not logged in yet. Please login first.')
     return <Login />
   }
@@ -61,6 +66,10 @@ const routerConfig = [
       {
         element: <Teams />,
         path: route.TEAMS,
+      },
+      {
+        element: <AdminManagement />,
+        path: route.ADMIN,
       },
     ],
   },
