@@ -1,4 +1,5 @@
 from django.shortcuts import render, HttpResponse
+from rest_framework import viewsets
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
@@ -6,9 +7,9 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import User as UserProfile
+from .models import User
 from .models import Project
-from .serializers import ProjectSerializer
+from .serializers import ProjectSerializer, UserSerializer
 
 
 # from .utils import generate_auth_token 
@@ -125,8 +126,8 @@ def student_login(request):
             user = authenticate(request, username=email, password=password)
             
             if user is not None:
-                # Assuming the UserProfile model has a foreign key relationship with the User model
-                user_profile = UserProfile.objects.get(user=user)
+                # Assuming the User model has a foreign key relationship with the User model
+                user_profile = User.objects.get(user=user)
                 auth_token = generate_auth_token(user)
                 response_data = {
                     'user_profile': {
@@ -202,3 +203,10 @@ def project_update(request, id):
     return JsonResponse(serializer.error, staus=400)
 
         
+
+class UserViews(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)

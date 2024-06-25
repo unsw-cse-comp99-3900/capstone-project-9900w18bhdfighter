@@ -1,8 +1,11 @@
 from django.urls import path
 from . import views
+from rest_framework import routers
+user_url = routers.SimpleRouter()
+user_url.register(r'users', views.UserViews)
+
 
 urlpatterns = [
-    path("login", views.student_login, name="student_login"),
-    path("project_creation", views.project_creation, name="project_creation"),
-    path("student_signup", views.student_signup, name="student_signup")
 ]
+
+urlpatterns += user_url.urls
