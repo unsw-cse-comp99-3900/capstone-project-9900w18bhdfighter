@@ -2,10 +2,11 @@ import { Form, Input, Modal } from 'antd'
 import React from 'react'
 
 import styled from 'styled-components'
+import { ProjectCreate } from '../../../types/proj'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
-  handleOk: () => void
+  handleOk: (_projectCreateDto: ProjectCreate) => void
   handleCancel: () => void
 }
 
@@ -14,11 +15,18 @@ const _Modal = styled(Modal)`
 `
 
 const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
+  const [form] = Form.useForm()
   return (
     <_Modal
       title="New Project"
       open={isModalOpen}
-      onOk={handleOk}
+      onOk={() =>
+        handleOk({
+          ProjectName: form.getFieldValue('projectName'),
+          ProjectDescription: form.getFieldValue('description'),
+          ProjectOwner: form.getFieldValue('email'),
+        })
+      }
       onCancel={handleCancel}
       styles={{
         body: {
@@ -31,6 +39,7 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
     >
       <Form
         layout="vertical"
+        form={form}
         style={{
           width: '100%',
         }}
