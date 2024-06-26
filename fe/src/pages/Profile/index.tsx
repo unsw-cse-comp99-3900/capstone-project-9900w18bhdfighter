@@ -51,10 +51,6 @@ const Profile = () => {
     })
   })
 
-  const showModal = () => {
-    setIsModalOpen(true)
-  }
-
   const handleOk = () => {
     setIsModalOpen(false)
   }
@@ -105,8 +101,6 @@ const Profile = () => {
           <Form.Item label="E-mail address" name="email">
             <Input disabled={noEdit} />
           </Form.Item>
-
-          <Button onClick={showModal}>Manage My Preferences</Button>
         </Form>
       </InfoContainer>
     </Wrapper>
