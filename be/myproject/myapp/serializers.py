@@ -21,6 +21,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {'Passwd': {'write_only': True}}
 
+    def validate(self, attrs):
+        if self.instance and (attrs.get('UserID') or attrs.get('UserRole')):
+            raise serializers.ValidationError("Cannot update UserID or UserRole.")
+        return super().validate(attrs)
+
 
 class UserPreferencesLinkSerializer(serializers.ModelSerializer):
     class Meta:

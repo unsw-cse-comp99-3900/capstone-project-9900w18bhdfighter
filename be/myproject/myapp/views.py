@@ -218,9 +218,14 @@ def user_profile(request):
     if request.method == 'GET':
         serializer = UserSerializer(user)
         return Response(serializer.data)
-
     elif request.method == 'PUT':
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        data = request.data.copy()
+
+        # Remove UserID and UserRole if they are in the request data
+        data.pop('UserID', None)
+        data.pop('UserRole', None)
+
+        serializer = UserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             if 'Passwd' in serializer.validated_data:
                 serializer.validated_data['Passwd'] = make_password(serializer.validated_data['Passwd'])
@@ -233,38 +238,33 @@ def user_profile(request):
 @permission_classes([IsAuthenticated])
 def user_preferences(request):
     user = request.user
-
     if request.method == 'GET':
         preferences = UserPreferencesLink.objects.filter(UserID=user)
         serializer = UserPreferencesLinkSerializer(preferences, many=True)
         return Response(serializer.data)
-
     elif request.method == 'POST':
         request.data['UserID'] = user.UserID
         serializer = UserPreferencesLinkSerializer(data=request.data)
         if serializer.is_valid():
+            if UserPreferencesLink.objects.filter(UserID=user,
+                                                  ProjectID=serializer.validated_data['ProjectID']).exists():
+                return Response({'error': 'Preference already exists for this project.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            elif not Project.objects.filter(pk=serializer.validated_data['ProjectID']).exists():
+
+                return Response({'error': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT', 'DELETE'])
+@api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def user_preference_detail(request, pk):
     user = request.user
-
     try:
         preference = UserPreferencesLink.objects.get(pk=pk, UserID=user)
-    except UserPreferencesLink.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PUT':
-        serializer = UserPreferencesLinkSerializer(preference, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
         preference.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    except UserPreferencesLink.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
