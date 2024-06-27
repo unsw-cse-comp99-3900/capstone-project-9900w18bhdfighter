@@ -24,7 +24,7 @@ class Project(models.Model):
     ProjectID = models.AutoField(primary_key=True)
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
-    ProjectOwner = models.ForeignKey(User, related_name='owned_projects', on_delete=models.CASCADE)
+    ProjectOwner = models.CharField(max_length=255)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
     def __str__(self):
         return str(self.ProjectID)
