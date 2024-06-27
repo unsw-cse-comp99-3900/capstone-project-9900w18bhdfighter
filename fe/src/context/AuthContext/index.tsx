@@ -54,7 +54,6 @@ const AuthContextProvider = ({ children }: Props) => {
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
       setUserInfo(_usrInfo)
       msg.success('Login success')
-      console.log('login')
       navigate(route.DASHBOARD)
     } catch (err) {
       console.log(err)
@@ -66,7 +65,7 @@ const AuthContextProvider = ({ children }: Props) => {
           msg.err(data.error)
         }
       } else {
-        throw err
+        msg.err('Something went wrong')
       }
     }
   }

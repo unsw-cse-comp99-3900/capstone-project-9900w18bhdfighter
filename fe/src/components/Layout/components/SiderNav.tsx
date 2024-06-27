@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { AiFillHome } from 'react-icons/ai'
 import { useLocation, useNavigate } from 'react-router-dom'
 import route from '../../../constant/route'
+import styled from 'styled-components'
+import { getThemeToken } from '../../../utils/styles'
+
+const _Sider = styled(Sider)`
+  padding-top: ${getThemeToken('paddingMD', 'px')};
+`
 
 const SiderNav = () => {
   const location = useLocation()
@@ -13,7 +19,7 @@ const SiderNav = () => {
     setSelectedKey(location.pathname)
   }, [location.pathname])
   return (
-    <Sider>
+    <_Sider style={{}} collapsible defaultCollapsed>
       <Menu
         defaultSelectedKeys={[route.DASHBOARD]}
         selectedKeys={[selectedKey]}
@@ -44,7 +50,7 @@ const SiderNav = () => {
           },
         ]}
       />
-    </Sider>
+    </_Sider>
   )
 }
 

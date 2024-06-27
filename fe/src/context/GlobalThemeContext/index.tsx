@@ -39,18 +39,22 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
                 headerBg: _themeColor.basicBg,
                 siderBg: _themeColor.basicBg,
                 footerBg: _themeColor.basicBg,
+
+                headerHeight: 64,
               },
               Menu: {
-                itemSelectedColor: 'white',
+                itemSelectedColor: _themeColor.grayscalePalette[0] as string,
               },
               Table: {
                 rowSelectedBg: _themeColor.grayscalePalette[20] as string,
                 rowSelectedHoverBg: _themeColor.grayscalePalette[20] as string,
               },
+              Button: {
+                colorPrimaryHover: _themeColor.grayscalePalette[35] as string,
+              },
             },
             token: {
               colorPrimary: _themeColor.primary,
-
               borderRadius: 0,
             },
           }}

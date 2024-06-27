@@ -3,16 +3,13 @@ import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { useState } from 'react'
 import NewProjectModal from './components/NewProjectModal'
-import api from '../../api/config'
-import { isAxiosError } from 'axios'
-import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
 import { ProjectCreate } from '../../types/proj'
+import { useProjectContext } from '../../context/ProjectContext'
 
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
   flex-direction: column;
-
   padding: ${getThemeToken('paddingLG', 'px')};
 `
 const Header = styled(Flex)`
@@ -22,26 +19,10 @@ const Header = styled(Flex)`
 
 const Projects = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { msg } = useGlobalComponentsContext()
+  const { createProject } = useProjectContext()
 
   const handleOk = async (projectCreateDto: ProjectCreate) => {
-    const { ProjectName, ProjectDescription, ProjectOwner } = projectCreateDto
-    try {
-      const res = await api.post('project_creation/', {
-        ProjectName,
-        ProjectDescription,
-        ProjectOwner,
-      })
-      msg.success('Project created successfully!')
-      console.log(res.data)
-    } catch (err) {
-      if (isAxiosError(err)) {
-        msg.err(err.response?.data.error)
-      } else {
-        msg.err('Something went wrong')
-      }
-    }
-
+    createProject(projectCreateDto)
     setIsModalOpen(false)
   }
 

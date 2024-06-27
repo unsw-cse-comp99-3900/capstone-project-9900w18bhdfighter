@@ -28,15 +28,15 @@ const Login = () => {
   }
   return (
     <Wrapper vertical justify="center" align="center">
-      <Form onFinish={onFinish} labelCol={{ span: 24 }}>
+      <Form layout="vertical" onFinish={onFinish} style={{ width: '300px' }}>
         <Form.Item label="E-mail" name="email">
           <Input />
         </Form.Item>
         <Form.Item label="Password" name="password">
           <Input.Password />
         </Form.Item>
-        <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button type="primary" htmlType="submit">
+        <Form.Item>
+          <Button block type="primary" htmlType="submit">
             Login
           </Button>
         </Form.Item>

@@ -4,7 +4,7 @@ import type { InputRef, TableColumnsType, TableColumnType } from 'antd'
 import { Button, Flex, Input, Space, Table } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
-import { getThemeToken } from '../../utils/styles'
+
 import { role, roleNames, roleNamesEnum } from '../../constant/role'
 import { nanoid } from 'nanoid'
 
@@ -31,11 +31,11 @@ const data: DataType[] = new Array(100).fill(0).map((_, i) => ({
 
 const Wrapper = styled(Flex)`
   box-sizing: border-box;
-  padding: ${getThemeToken('paddingLG', 'px')};
-  box-shadow: ${getThemeToken('boxShadow')};
+  padding: 20px;
+  width: 100%;
   height: 100%;
 `
-const AdminManrolement: React.FC = () => {
+const AdminManagement = () => {
   const searchInput = useRef<InputRef>(null)
 
   const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
@@ -175,6 +175,7 @@ const AdminManrolement: React.FC = () => {
           width: '100%',
           height: '100%',
         }}
+        scroll={{ y: '70vh' }}
         columns={columns}
         dataSource={data}
       />
@@ -182,4 +183,4 @@ const AdminManrolement: React.FC = () => {
   )
 }
 
-export default AdminManrolement
+export default AdminManagement
