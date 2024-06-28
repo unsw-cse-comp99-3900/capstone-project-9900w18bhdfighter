@@ -10,6 +10,7 @@ const Wrapper = styled(Flex)`
   background-color: ${() => c('grayscalePalette', 2)};
   height: 100vh;
 `
+
 type FieldType = {
   firstName: string
   lastName: string
@@ -33,8 +34,12 @@ const SignUp = () => {
   }
   return (
     <Wrapper vertical justify="center" align="center">
-      <Form onFinish={onFinish} labelCol={{ span: 24 }} size="small">
+      <Form layout="vertical" onFinish={onFinish} style={{ width: '400px' }}>
         <Form.Item
+          style={{
+            display: 'inline-block',
+            width: 'calc(50% - 8px)',
+          }}
           label="First name"
           name="firstName"
           rules={[{ required: true, message: 'Please input your first name!' }]}
@@ -42,12 +47,18 @@ const SignUp = () => {
           <Input />
         </Form.Item>
         <Form.Item
+          style={{
+            display: 'inline-block',
+            width: 'calc(50% - 8px)',
+            marginLeft: '16px',
+          }}
           label="Last name"
           name="lastName"
-          rules={[{ required: true, message: 'Please input your first name!' }]}
+          rules={[{ required: true, message: 'Please input your last name!' }]}
         >
           <Input />
         </Form.Item>
+
         <Form.Item
           label="E-mail address"
           name="email"
@@ -80,8 +91,8 @@ const SignUp = () => {
         >
           <Input.Password />
         </Form.Item>
-        <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button type="primary" htmlType="submit">
+        <Form.Item wrapperCol={{ span: 24 }}>
+          <Button block type="primary" htmlType="submit">
             Confirm
           </Button>
         </Form.Item>
