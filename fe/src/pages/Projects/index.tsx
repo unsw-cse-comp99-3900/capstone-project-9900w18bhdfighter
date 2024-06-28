@@ -4,7 +4,9 @@ import { getThemeToken } from '../../utils/styles'
 import { useState } from 'react'
 import NewProjectModal from './components/NewProjectModal'
 import { ProjectCreate } from '../../types/proj'
-import { useProjectContext } from '../../context/ProjectContext'
+import ProjectContextProvider, {
+  useProjectContext,
+} from '../../context/ProjectContext'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -17,7 +19,7 @@ const Header = styled(Flex)`
   align-items: center;
 `
 
-const Projects = () => {
+const _Projects = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { createProject } = useProjectContext()
 
@@ -47,4 +49,9 @@ const Projects = () => {
   )
 }
 
+const Projects = () => (
+  <ProjectContextProvider>
+    <_Projects />
+  </ProjectContextProvider>
+)
 export default Projects

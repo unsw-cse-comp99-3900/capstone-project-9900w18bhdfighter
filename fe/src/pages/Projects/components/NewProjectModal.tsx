@@ -22,7 +22,6 @@ for (let i = 10; i < 36; i++) {
 }
 const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   const [form] = Form.useForm()
-
   const handleChange = (value: string[]) => {
     console.log(`selected ${value}`)
   }
