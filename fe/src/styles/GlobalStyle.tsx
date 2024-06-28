@@ -10,7 +10,7 @@ export default createGlobalStyle`
   body,
   #root,
   .App {
-    height: 100%; 
+    height: 100vh; 
   }
  
   ol,

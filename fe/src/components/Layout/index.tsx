@@ -10,7 +10,9 @@ const Wrapper = styled(_Layout)`
 `
 const Main = styled(_Layout)``
 
-const _Content = styled(Content)``
+const _Content = styled(Content)`
+  height: 100%;
+`
 const Layout = () => {
   return (
     <Wrapper>

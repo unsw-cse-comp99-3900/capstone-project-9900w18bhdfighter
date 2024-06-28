@@ -1,4 +1,5 @@
 import { ConfigProvider, theme as _theme } from 'antd'
+import type { ThemeConfig } from 'antd'
 import { Dispatch, ReactNode, createContext, useContext, useState } from 'react'
 import { ThemeProvider } from 'styled-components'
 import { ThemeColor, themeColor as _themeColor } from './themeConfig'
@@ -19,6 +20,37 @@ const GlobalThemeContext = createContext<GlobalThemeContextType>(
 export const useGlobalTheme = () => useContext(GlobalThemeContext)
 const GlobalAntdThemeProvider = ({ children }: Props) => {
   const { token } = _theme.useToken()
+  const [themeState] = useState<ThemeConfig>({
+    components: {
+      Typography: {
+        titleMarginBottom: 0,
+        fontWeightStrong: 700,
+      },
+      Layout: {
+        headerBg: _themeColor.basicBg,
+        siderBg: _themeColor.basicBg,
+        footerBg: _themeColor.basicBg,
+        triggerBg: _themeColor.highlight,
+        triggerColor: _themeColor.primary,
+        triggerHeight: 48,
+        headerHeight: 64,
+      },
+      Menu: {
+        itemSelectedColor: _themeColor.grayscalePalette[0] as string,
+      },
+      Table: {
+        rowSelectedBg: _themeColor.grayscalePalette[20] as string,
+        rowSelectedHoverBg: _themeColor.grayscalePalette[20] as string,
+      },
+      Button: {
+        colorPrimaryHover: _themeColor.grayscalePalette[35] as string,
+      },
+    },
+    token: {
+      colorPrimary: _themeColor.primary,
+      borderRadius: 0,
+    },
+  })
   const [themeColor, setThemeColor] = useState<ThemeColor>(_themeColor)
 
   const ctx = {
@@ -26,39 +58,13 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
   }
   return (
     <GlobalThemeContext.Provider value={ctx}>
-      <ThemeProvider theme={{ ...token, themeColor: themeColor }}>
+      <ThemeProvider
+        theme={{ ...token, ...themeState, themeColor: themeColor }}
+      >
         <ConfigProvider
           theme={{
             ..._theme,
-            components: {
-              Typography: {
-                titleMarginBottom: 0,
-                fontWeightStrong: 700,
-              },
-              Layout: {
-                headerBg: _themeColor.basicBg,
-                siderBg: _themeColor.basicBg,
-                footerBg: _themeColor.basicBg,
-                triggerBg: _themeColor.highlight,
-                triggerColor: _themeColor.primary,
-                triggerHeight: 48,
-                headerHeight: 64,
-              },
-              Menu: {
-                itemSelectedColor: _themeColor.grayscalePalette[0] as string,
-              },
-              Table: {
-                rowSelectedBg: _themeColor.grayscalePalette[20] as string,
-                rowSelectedHoverBg: _themeColor.grayscalePalette[20] as string,
-              },
-              Button: {
-                colorPrimaryHover: _themeColor.grayscalePalette[35] as string,
-              },
-            },
-            token: {
-              colorPrimary: _themeColor.primary,
-              borderRadius: 0,
-            },
+            ...themeState,
           }}
         >
           {children}

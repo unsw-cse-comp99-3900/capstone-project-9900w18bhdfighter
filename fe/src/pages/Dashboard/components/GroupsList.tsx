@@ -13,15 +13,10 @@ type Props = {
 const Wrapper = styled.div`
   box-shadow: ${getThemeToken('boxShadow')};
 `
-const Header = styled(Flex)`
-  padding: 0 ${getThemeToken('paddingMD', 'px')};
-  height: 2rem;
-`
+
 const ProjectsList = styled(List)`
-  padding: 0;
-  margin: 0;
-  overflow: auto;
-  height: calc(100% - 2rem);
+  height: 75vh;
+  overflow-y: auto;
 `
 const count = 30
 const fakeDataUrl = `https://randomuser.me/api/?results=${count}&inc=name,gender,email,nat,picture&noinfo`
@@ -38,11 +33,13 @@ const GroupsList = ({ className = '' }: Props) => {
   }, [])
   return (
     <Wrapper className={className}>
-      <Header justify="space-between" align="center">
-        Groups List
-        <Filter />
-      </Header>
       <ProjectsList
+        header={
+          <Flex justify="space-between" align="center">
+            Groups List
+            <Filter />
+          </Flex>
+        }
         bordered
         dataSource={list}
         renderItem={(item) => (

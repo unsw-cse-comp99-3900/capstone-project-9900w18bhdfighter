@@ -1,9 +1,10 @@
 import { Flex, List } from 'antd'
 import styled from 'styled-components'
-import { getThemeToken } from '../../../utils/styles'
+
 import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
 import ProjectsListItem, { DataType } from './ProjectsListItem'
+import { getThemeToken } from '../../../utils/styles'
 import Filter from './Filter'
 
 type Props = {
@@ -13,18 +14,12 @@ const Wrapper = styled.div`
   box-shadow: ${getThemeToken('boxShadow')};
 `
 
-const Header = styled(Flex)`
-  padding: 0 ${getThemeToken('paddingMD', 'px')};
-
-  height: 2rem;
-`
 const _ProjectsList = styled(List)`
-  padding: 0;
-  margin: 0;
-  overflow: auto;
-  height: calc(100% - 2rem);
+  height: 75vh;
+
+  overflow-y: auto;
 `
-const count = 30
+const count = 15
 const fakeDataUrl = `https://randomuser.me/api/?results=${count}&inc=name,gender,email,nat,picture&noinfo`
 const ProjectsList = ({ className = '' }: Props) => {
   const [list, setList] = useState<DataType[]>([])
@@ -37,12 +32,14 @@ const ProjectsList = ({ className = '' }: Props) => {
   }, [])
   return (
     <Wrapper className={className}>
-      <Header justify="space-between" align="center">
-        Projects List
-        <Filter />
-      </Header>
       <_ProjectsList
         bordered
+        header={
+          <Flex justify="space-between" align="center">
+            Projects List
+            <Filter />
+          </Flex>
+        }
         dataSource={list}
         renderItem={(item) => (
           <List.Item
