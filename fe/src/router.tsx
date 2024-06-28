@@ -17,11 +17,8 @@ import AdminManagement from './pages/AdminManagement'
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
   const { haveLoggedIn } = useAuthContext()
-  console.log(1123)
 
   if (!haveLoggedIn()) {
-    console.log(123)
-
     msg.err('You have not logged in yet. Please login first.')
     return <Login />
   }

@@ -10,6 +10,7 @@ const Wrapper = styled(_Layout)`
 `
 const Main = styled(_Layout)``
 
+const _Content = styled(Content)``
 const Layout = () => {
   return (
     <Wrapper>
@@ -17,9 +18,9 @@ const Layout = () => {
       <Main>
         <SiderNav />
         <_Layout>
-          <Content>
+          <_Content>
             <Outlet />
-          </Content>
+          </_Content>
         </_Layout>
       </Main>
     </Wrapper>
