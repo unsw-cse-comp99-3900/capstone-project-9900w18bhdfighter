@@ -61,7 +61,7 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
         <Form.Item label="Description" name="description">
           <Input.TextArea />
         </Form.Item>
-        <Form.Item label="Interested Areas " name="interested">
+        <Form.Item label="Required Skill" name="skill">
           <Select
             mode="multiple"
             allowClear

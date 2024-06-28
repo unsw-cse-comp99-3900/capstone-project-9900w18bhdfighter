@@ -39,7 +39,9 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
                 headerBg: _themeColor.basicBg,
                 siderBg: _themeColor.basicBg,
                 footerBg: _themeColor.basicBg,
-
+                triggerBg: _themeColor.highlight,
+                triggerColor: _themeColor.primary,
+                triggerHeight: 48,
                 headerHeight: 64,
               },
               Menu: {

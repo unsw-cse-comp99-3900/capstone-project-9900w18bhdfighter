@@ -1,10 +1,12 @@
-import { Button, Flex, Form, Input, Space, Typography } from 'antd'
+import { Button, Flex, Form, Input, Select, Space, Typography } from 'antd'
+import type { SelectProps } from 'antd'
 import styled from 'styled-components'
 import { getThemeColor, getThemeToken } from '../../utils/styles'
 import { useEffect, useState } from 'react'
 import ModalProjectsList from './components/ModalProjectsList'
 import { useAuthContext } from '../../context/AuthContext'
 import { shortName } from '../../utils/parse'
+
 const Wrapper = styled(Flex)`
   height: 100%;
   display: flex;
@@ -35,8 +37,20 @@ const Header = styled(Flex)`
   align-items: center;
   width: 80%;
 `
+const options: SelectProps['options'] = []
+for (let i = 10; i < 36; i++) {
+  options.push({
+    label: i.toString(36) + i,
+    value: i.toString(36) + i,
+  })
+}
 const Title = styled(Typography.Title)``
 const EditButton = styled(Button)``
+
+const handleChange = (value: string[]) => {
+  console.log(`selected ${value}`)
+}
+
 const Profile = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [noEdit, setNoEdit] = useState(true)
@@ -100,6 +114,17 @@ const Profile = () => {
           </Form.Item>
           <Form.Item label="E-mail address" name="email">
             <Input disabled={noEdit} />
+          </Form.Item>
+          <Form.Item label="Interested Areas " name="interested">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Please select"
+              defaultValue={['a10', 'c12']}
+              onChange={handleChange}
+              options={options}
+              disabled={noEdit}
+            />
           </Form.Item>
         </Form>
       </InfoContainer>

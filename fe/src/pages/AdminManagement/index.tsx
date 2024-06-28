@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { SearchOutlined } from '@ant-design/icons'
 import type { InputRef, TableColumnsType, TableColumnType } from 'antd'
-import { Button, Flex, Input, Space, Table } from 'antd'
+import { Button, Divider, Flex, Input, Space, Table } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
 
@@ -129,14 +129,14 @@ const AdminManagement = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      width: '30%',
+
       ...getColumnSearchProps('name'),
     },
     {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
-      width: '20%',
+
       filters: [
         { text: roleNames[role.ADMIN], value: roleNames[role.ADMIN] },
         { text: roleNames[role.TUTOR], value: roleNames[role.TUTOR] },
@@ -150,20 +150,30 @@ const AdminManagement = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+
       ...getColumnSearchProps('email'),
     },
     {
-      title: 'Action',
+      title: '',
       key: 'action',
+
       render: () => (
-        <Space size="middle" align="center">
-          <Button size="small" type="primary">
+        <Flex
+          align="center"
+          style={{
+            display: 'flex',
+
+            alignItems: 'center',
+          }}
+        >
+          <Button size="small" type="link">
             Manage
           </Button>
-          <Button size="small" danger type="primary">
+          <Divider type="vertical" />
+          <Button size="small" danger type="link">
             Delete
           </Button>
-        </Space>
+        </Flex>
       ),
     },
   ]
