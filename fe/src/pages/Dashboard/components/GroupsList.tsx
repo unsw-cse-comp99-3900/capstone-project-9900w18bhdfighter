@@ -15,7 +15,7 @@ const Wrapper = styled.div`
 `
 
 const ProjectsList = styled(List)`
-  height: 75vh;
+  height: calc(100vh - 10rem);
   overflow-y: auto;
 `
 const count = 30

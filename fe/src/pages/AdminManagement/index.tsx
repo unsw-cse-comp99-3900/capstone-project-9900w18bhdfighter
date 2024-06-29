@@ -185,7 +185,7 @@ const AdminManagement = () => {
           width: '100%',
           height: '100%',
         }}
-        scroll={{ y: '70vh' }}
+        scroll={{ y: 'calc(100vh - 13rem)' }}
         columns={columns}
         dataSource={data}
       />
