@@ -1,40 +1,29 @@
-import { Button, Dropdown, Flex, Typography } from 'antd'
-import type { MenuProps } from 'antd'
+import { Badge, Button, Dropdown, Flex, Popover, Tabs } from 'antd'
+import type { MenuProps, TabsProps } from 'antd'
 import { Header } from 'antd/es/layout/layout'
 import styled from 'styled-components'
 import { getThemeColor } from '../../../utils/styles'
 import route from '../../../constant/route'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../../context/AuthContext'
-import { shortName } from '../../../utils/parse'
+import { IoIosNotifications } from 'react-icons/io'
+import Avatar from '../../Avatar'
+import LinkButton from '../../LinkButton'
+
 const Wrapper = styled(Header)`
   display: flex;
   justify-content: space-between;
   align-items: center;
 `
 
-const Logo = styled(Link)`
+const Logo = styled(LinkButton)`
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100px;
-  height: 50px;
-  background-color: ${getThemeColor('highlight')};
   border: none;
   font-weight: bold;
-  margin: 0 1rem;
   color: ${getThemeColor('primary')};
-`
-
-const Avatar = styled(Button)`
-  justify-content: center;
-  align-items: center;
-  width: 50px;
-  height: 50px;
-  font-weight: bold;
-  margin: 0 1rem;
-  border-radius: 100%;
-  border: 1px solid ${getThemeColor('grayscalePalette', 35)};
 `
 
 const OperationsGroup = styled(Flex)`
@@ -43,9 +32,16 @@ const OperationsGroup = styled(Flex)`
 
 const HeaderNav = () => {
   const { usrInfo } = useAuthContext()
-  const { firstName, lastName } = usrInfo || {}
+
+  const { firstName, lastName, email } = usrInfo || {
+    firstName: '',
+    lastName: '',
+    email: '',
+  }
+
   const { logout } = useAuthContext()
   const navigate = useNavigate()
+
   const items: MenuProps['items'] = [
     {
       key: 'profile',
@@ -68,13 +64,50 @@ const HeaderNav = () => {
       danger: true,
     },
   ]
+  const tabItems: TabsProps['items'] = [
+    {
+      key: '1',
+      label: 'Tab 1',
+      children: 'Content of Tab Pane 1',
+    },
+    {
+      key: '2',
+      label: 'Tab 2',
+      children: 'Content of Tab Pane 2',
+    },
+    {
+      key: '3',
+      label: 'Tab 3',
+      children: 'Content of Tab Pane 3',
+    },
+  ]
   return (
     <Wrapper>
       <Logo to={route.DASHBOARD}>LOGO</Logo>
       <OperationsGroup>
-        <Typography.Text>Notifications</Typography.Text>
+        <Popover
+          content={<Tabs defaultActiveKey="1" items={tabItems} />}
+          title="Notification"
+          trigger="click"
+        >
+          <Button
+            style={{
+              marginRight: '1rem',
+            }}
+            shape="circle"
+            type="text"
+          >
+            <Badge size="small" dot={true}>
+              <IoIosNotifications size={'1.5rem'} />
+            </Badge>
+          </Button>
+        </Popover>
         <Dropdown placement="topLeft" menu={{ items }} trigger={['hover']}>
-          <Avatar>{shortName(firstName, lastName)}</Avatar>
+          <Avatar
+            firstName={firstName}
+            lastName={lastName}
+            emailForHashToColor={email}
+          />
         </Dropdown>
       </OperationsGroup>
     </Wrapper>

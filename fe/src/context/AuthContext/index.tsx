@@ -48,7 +48,7 @@ const AuthContextProvider = ({ children }: Props) => {
         firstName: res.data.user_profile.FirstName,
         lastName: res.data.user_profile.LastName,
         email: res.data.user_profile.EmailAddress,
-        role: role.STUDENT,
+        role: res.data.user_profile.role,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))

@@ -44,7 +44,7 @@ const ProjectsList = ({ className = '' }: Props) => {
         renderItem={(item) => (
           <List.Item
             actions={[
-              <LinkButton to="" key="list-loadmore-more">
+              <LinkButton to="/projects/1" key="list-loadmore-more">
                 More
               </LinkButton>,
             ]}

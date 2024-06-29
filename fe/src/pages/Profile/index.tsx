@@ -1,11 +1,11 @@
 import { Button, Flex, Form, Input, Select, Space, Typography } from 'antd'
 import type { SelectProps } from 'antd'
 import styled from 'styled-components'
-import { getThemeColor, getThemeToken } from '../../utils/styles'
+import { getThemeToken } from '../../utils/styles'
 import { useEffect, useState } from 'react'
 import ModalProjectsList from './components/ModalProjectsList'
 import { useAuthContext } from '../../context/AuthContext'
-import { shortName } from '../../utils/parse'
+import Avatar from '../../components/Avatar'
 
 const Wrapper = styled(Flex)`
   height: 100%;
@@ -15,15 +15,9 @@ const Wrapper = styled(Flex)`
   align-items: center;
   flex-direction: column;
 `
-const Avatar = styled(Button)`
-  justify-content: center;
-  align-items: center;
-  width: 100px;
-  height: 100px;
-  font-weight: bold;
-  margin: 0 1rem;
-  border-radius: 100%;
-  border: 1px solid ${getThemeColor('grayscalePalette', 35)};
+const _Avatar = styled(Avatar)`
+  width: 6rem;
+  height: 6rem;
 `
 const InfoContainer = styled(Flex)`
   padding: ${getThemeToken('paddingMD', 'px')};
@@ -55,7 +49,11 @@ const Profile = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [noEdit, setNoEdit] = useState(true)
   const { usrInfo } = useAuthContext()
-  const { lastName, email, firstName } = usrInfo || {}
+  const { lastName, email, firstName } = usrInfo || {
+    firstName: '',
+    lastName: '',
+    email: '',
+  }
   const [form] = Form.useForm()
   useEffect(() => {
     form.setFieldsValue({
@@ -97,7 +95,11 @@ const Profile = () => {
         <EditSaveButton />
       </Header>
 
-      <Avatar>{shortName(firstName, lastName)}</Avatar>
+      <_Avatar
+        firstName={firstName}
+        lastName={lastName}
+        emailForHashToColor={email}
+      />
 
       <InfoContainer>
         <Form form={form} labelCol={{ span: 24 }} size="small">

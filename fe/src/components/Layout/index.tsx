@@ -8,10 +8,12 @@ const { Content } = _Layout
 const Wrapper = styled(_Layout)`
   height: 100vh;
 `
-const Main = styled(_Layout)``
+const Main = styled(_Layout)`
+  height: 100%;
+`
 
 const _Content = styled(Content)`
-  height: 100%;
+  overflow: auto;
 `
 const Layout = () => {
   return (
