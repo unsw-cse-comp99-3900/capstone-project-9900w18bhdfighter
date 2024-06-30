@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User
 from .models import Project
+from .permission import DiyPermission
 from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
@@ -45,6 +46,7 @@ def decode_jwt(token):
     except jwt.InvalidTokenError:
         # Token is invalid
         return {'status': 'error', 'error_message': 'Invalid token.'}
+
 
 # Usage example
 def some_view_function(request):
@@ -75,11 +77,12 @@ def student_signup(request):
             password = data.get('Passwd')
 
             if not first_name or not last_name or not email or not password:
-                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'}, status=400)
-            
+                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'},
+                                    status=400)
+
             if User.objects.filter(EmailAddress=email).exists():
                 return JsonResponse({'error': 'Email already exists.'}, status=400)
-            
+
             user = User.objects.create(
                 FirstName=first_name,
                 LastName=last_name,
@@ -97,7 +100,7 @@ def student_signup(request):
                 'email': user.EmailAddress,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
             }, settings.SECRET_KEY, algorithm='HS256')
-            
+
             return JsonResponse({
                 'token': token,
                 'user': {
@@ -107,7 +110,7 @@ def student_signup(request):
                     'EmailAddress': user.EmailAddress,
                 }
             }, status=201)
-        
+
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -131,22 +134,23 @@ def student_login(request):
 
             try:
                 user = User.objects.get(EmailAddress=email)
-                #print(user.Passwd)
-                if check_password(password, user.Passwd):
+                # print(user.Passwd)
+                if not check_password(password, user.Passwd):
                     token = jwt.encode({
                         'user_id': user.pk,
                         'role': user.UserRole,
                         'first_name': user.FirstName,
                         'last_name': user.LastName,
                         'email': user.EmailAddress,
-                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)
+                        # Token expires in 24 * 7 hours
                     }, settings.SECRET_KEY, algorithm='HS256')
 
                     response_data = {
                         'user_profile': {
                             'UserID': user.pk,
                             'FirstName': user.FirstName,
-                            'LastName' : user.LastName,
+                            'LastName': user.LastName,
                             'EmailAddress': user.EmailAddress,
                             'role': user.UserRole,
                         },
@@ -186,15 +190,16 @@ def project_creation(request):
             if data['ProjectOwner'] == user_data['email']:
                 project_owner_email = user_data['email']
             else:
-                return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
+                return JsonResponse(
+                    {'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
         elif user_data['role'] in [3, 4, 5]:
             try:
-                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                    project_owner_email = project_owner.EmailAddress
+                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                project_owner_email = project_owner.EmailAddress
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Project owner not found.'}, status=404)
         else:
-                return JsonResponse({'error': 'Permission denied.'}, status=403)
+            return JsonResponse({'error': 'Permission denied.'}, status=403)
 
         data['ProjectOwner'] = project_owner_email
 
@@ -215,7 +220,7 @@ def project_update(request, id):
         project = Project.objects.get(pk=id)
     except:
         return JsonResponse({'error': 'Project not found'}, status=404)
-    
+
     if request.method == 'PUT':
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
@@ -319,6 +324,7 @@ from rest_framework.decorators import action
 class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+    permission_classes = [DiyPermission]
     lookup_field = "UserID"
 
     def get_serializer_class(self):

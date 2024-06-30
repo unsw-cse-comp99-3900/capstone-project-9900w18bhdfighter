@@ -1,8 +1,9 @@
 from . import views
 from rest_framework.routers import SimpleRouter
+from django.urls import path, include
 
 user_url = SimpleRouter(trailing_slash=False)
-user_url.register(r'users', views.UserAPIView)
+user_url.register(r'api/users', views.UserAPIView)
 
 urlpatterns = [
     path("login/", views.student_login, name="student_login"),
