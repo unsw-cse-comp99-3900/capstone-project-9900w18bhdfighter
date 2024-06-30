@@ -100,41 +100,32 @@ class GroupProjectsLink(models.Model):
 #     def __str__(self):
 #         return self.title
 # 兴趣领域表
-class Interest(models.Model):
-    InterestID = models.AutoField(primary_key=True)
-    InterestName = models.CharField(max_length=255)
+class Area(models.Model):
+    AreaID = models.AutoField(primary_key=True)
+    AreaName = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.InterestName
+        return self.AreaName
 
 
 # 学生兴趣配对表
-class StudentInterest(models.Model):
-    StudentInterestID = models.AutoField(primary_key=True)
-    Interest = models.ForeignKey(Interest, on_delete=models.CASCADE)
+class StudentArea(models.Model):
+    StudentAreaID = models.AutoField(primary_key=True)
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE)
     User = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.User} - {self.Interest}'
+        return f'{self.User} - {self.Area}'
 
 
 # 技能表
 class Skill(models.Model):
     SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE, default=1)  # 设置默认值
 
     def __str__(self):
         return self.SkillName
-
-
-# 技能与组关联表
-class SkillGroup(models.Model):
-    SkillGroupID = models.AutoField(primary_key=True)
-    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
-    Group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return str(self.SkillGroupID)
 
 
 # 技能与项目关联表
