@@ -101,6 +101,9 @@ def student_signup(request):
                     'FirstName': user.FirstName,
                     'LastName': user.LastName,
                     'EmailAddress': user.EmailAddress,
+                    'role': user.UserRole,
+                    'description': user.UserInformation,
+                    'interestAreas': []
                 }
             }, status=201)
         
@@ -144,6 +147,9 @@ def student_login(request):
                             'LastName' : user.LastName,
                             'EmailAddress': user.EmailAddress,
                             'role': user.UserRole,
+                            'description': user.UserInformation,
+                            'interestAreas': []
+                            
                         },
                         'token': token
                     }
