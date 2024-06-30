@@ -1,4 +1,4 @@
-import { Form, Input, Modal, Select } from 'antd'
+import { Form, Input, InputNumber, Modal, Select } from 'antd'
 import React from 'react'
 import type { SelectProps } from 'antd/es/select'
 import styled from 'styled-components'
@@ -22,9 +22,6 @@ for (let i = 10; i < 36; i++) {
 }
 const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   const [form] = Form.useForm()
-  const handleChange = (value: string[]) => {
-    console.log(`selected ${value}`)
-  }
 
   return (
     <_Modal
@@ -49,10 +46,15 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
     >
       <Form
         layout="vertical"
-        form={form}
-        style={{
-          width: '100%',
+        initialValues={{
+          projectName: '',
+          description: '',
+          skill: [],
+          email: '',
+          maxGroupNumber: 1,
         }}
+        form={form}
+        style={{ width: '100%' }}
       >
         <Form.Item label="Project Name" name="projectName">
           <Input />
@@ -61,18 +63,13 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
           <Input.TextArea />
         </Form.Item>
         <Form.Item label="Required Skill" name="skill">
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Please select"
-            defaultValue={['a10', 'c12']}
-            onChange={handleChange}
-            options={options}
-          />
+          <Select mode="multiple" allowClear options={options} />
         </Form.Item>
-
         <Form.Item label="Project Owner's Email" name="email">
           <Input />
+        </Form.Item>
+        <Form.Item label="Max Group Number" name="maxGroupNumber">
+          <InputNumber style={{ width: '100%' }} min={1} />
         </Form.Item>
       </Form>
     </_Modal>

@@ -38,7 +38,7 @@ const SignUp = () => {
         <Form.Item
           style={{
             display: 'inline-block',
-            width: 'calc(50% - 8px)',
+            width: 'calc(50% - 0.5rem)',
           }}
           label="First name"
           name="firstName"
@@ -49,8 +49,8 @@ const SignUp = () => {
         <Form.Item
           style={{
             display: 'inline-block',
-            width: 'calc(50% - 8px)',
-            marginLeft: '16px',
+            width: 'calc(50% - 0.5rem)',
+            marginLeft: '1rem',
           }}
           label="Last name"
           name="lastName"

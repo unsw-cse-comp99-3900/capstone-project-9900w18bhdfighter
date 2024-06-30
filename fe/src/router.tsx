@@ -63,7 +63,7 @@ const routerConfig = [
       },
       {
         element: <ProjectDetail />,
-        path: route.PROJECT_DETAIL,
+        path: `${route.PROJECTS}/:id`,
       },
       {
         element: <Teams />,
