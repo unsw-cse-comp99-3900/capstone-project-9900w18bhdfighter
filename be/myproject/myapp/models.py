@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
 
+
 # Users 表
 class User(models.Model):
     UserID = models.AutoField(primary_key=True)
@@ -14,7 +15,6 @@ class User(models.Model):
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
     UserRole = models.IntegerField()
     UserInformation = models.CharField(max_length=255)
- 
 
     def __str__(self):
         return str(self.UserID)
@@ -25,7 +25,9 @@ class Project(models.Model):
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
-    CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
+    CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
+    MaxNumOfGroup = models.IntegerField(default=0)  # 添加新字段 并且 设置默认值
+
     def __str__(self):
         return str(self.ProjectID)
 
@@ -75,6 +77,7 @@ class GroupProjectsLink(models.Model):
     def __str__(self):
         return str(self.GroupProjectsLinkID)
 
+
 # # Student Sign up ?
 # class UserProfile(models.Model):
 #     username = models.CharField(max_length=255)
@@ -96,3 +99,49 @@ class GroupProjectsLink(models.Model):
 
 #     def __str__(self):
 #         return self.title
+# 兴趣领域表
+class Interest(models.Model):
+    InterestID = models.AutoField(primary_key=True)
+    InterestName = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.InterestName
+
+
+# 学生兴趣配对表
+class StudentInterest(models.Model):
+    StudentInterestID = models.AutoField(primary_key=True)
+    Interest = models.ForeignKey(Interest, on_delete=models.CASCADE)
+    User = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.User} - {self.Interest}'
+
+
+# 技能表
+class Skill(models.Model):
+    SkillID = models.AutoField(primary_key=True)
+    SkillName = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.SkillName
+
+
+# 技能与组关联表
+class SkillGroup(models.Model):
+    SkillGroupID = models.AutoField(primary_key=True)
+    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    Group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.SkillGroupID)
+
+
+# 技能与项目关联表
+class SkillProject(models.Model):
+    SkillProjectID = models.AutoField(primary_key=True)
+    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.SkillProjectID)
