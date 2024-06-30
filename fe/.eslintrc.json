@@ -36,7 +36,7 @@
       ],
       "no-useless-return": "error",
       "import/no-named-as-default": "off",
-      "no-unused-vars": "error",
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
       "react/react-in-jsx-scope": "off",
       "@typescript-eslint/no-use-before-define": "error" ,
       "react/jsx-filename-extension": [ "error", { "extensions": [ ".tsx" ] } ],

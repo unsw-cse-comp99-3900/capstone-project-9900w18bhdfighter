@@ -1,36 +1,30 @@
-import { Menu, Layout as _Layout } from 'antd'
+import { Layout as _Layout } from 'antd'
 import styled from 'styled-components'
-import type { MenuProps } from 'antd'
 import { Outlet } from 'react-router-dom'
+import SiderNav from './components/SiderNav'
+import HeaderNav from './components/HedaerNav'
 
-const { Header, Footer, Sider, Content } = _Layout
+const { Content } = _Layout
 const Wrapper = styled(_Layout)`
   height: 100vh;
 `
-const Main = styled(_Layout)``
-const items1: MenuProps['items'] = ['1', '2', '3'].map((key) => ({
-  key,
-  label: `nav ${key}`,
-}))
+const Main = styled(_Layout)`
+  height: 100%;
+`
+
+const _Content = styled(Content)`
+  overflow: auto;
+`
 const Layout = () => {
   return (
     <Wrapper>
-      <Header>
-        <Menu
-          theme="light"
-          mode="horizontal"
-          defaultSelectedKeys={['2']}
-          items={items1}
-          style={{ flex: 1, minWidth: 0 }}
-        ></Menu>
-      </Header>
+      <HeaderNav />
       <Main>
-        <Sider>Sider</Sider>
+        <SiderNav />
         <_Layout>
-          <Content>
+          <_Content>
             <Outlet />
-          </Content>
-          <Footer>Footer</Footer>
+          </_Content>
         </_Layout>
       </Main>
     </Wrapper>

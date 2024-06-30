@@ -1,0 +1,79 @@
+import { Form, Input, InputNumber, Modal, Select } from 'antd'
+import React from 'react'
+import type { SelectProps } from 'antd/es/select'
+import styled from 'styled-components'
+import { ProjectCreate } from '../../../types/proj'
+
+interface Props extends React.ComponentProps<typeof Modal> {
+  isModalOpen: boolean
+  handleOk: (_projectCreateDto: ProjectCreate) => void
+  handleCancel: () => void
+}
+
+const _Modal = styled(Modal)`
+  width: 1000px;
+`
+const options: SelectProps['options'] = []
+for (let i = 10; i < 36; i++) {
+  options.push({
+    label: i.toString(36) + i,
+    value: i.toString(36) + i,
+  })
+}
+const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
+  const [form] = Form.useForm()
+
+  return (
+    <_Modal
+      title="New Project"
+      open={isModalOpen}
+      onOk={() =>
+        handleOk({
+          ProjectName: form.getFieldValue('projectName'),
+          ProjectDescription: form.getFieldValue('description'),
+          ProjectOwner: form.getFieldValue('email'),
+        })
+      }
+      onCancel={handleCancel}
+      styles={{
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      }}
+    >
+      <Form
+        layout="vertical"
+        initialValues={{
+          projectName: '',
+          description: '',
+          skill: [],
+          email: '',
+          maxGroupNumber: 1,
+        }}
+        form={form}
+        style={{ width: '100%' }}
+      >
+        <Form.Item label="Project Name" name="projectName">
+          <Input />
+        </Form.Item>
+        <Form.Item label="Description" name="description">
+          <Input.TextArea />
+        </Form.Item>
+        <Form.Item label="Required Skill" name="skill">
+          <Select mode="multiple" allowClear options={options} />
+        </Form.Item>
+        <Form.Item label="Project Owner's Email" name="email">
+          <Input />
+        </Form.Item>
+        <Form.Item label="Max Group Number" name="maxGroupNumber">
+          <InputNumber style={{ width: '100%' }} min={1} />
+        </Form.Item>
+      </Form>
+    </_Modal>
+  )
+}
+
+export default NewProjectModal

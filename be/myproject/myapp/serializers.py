@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Project, User, UserPreferencesLink
 from .models import Project, User
 
 
@@ -6,13 +7,25 @@ from .models import Project, User
 class StudentsignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['UserID', 'FirstName', 'LastName', 'EmailAddres', 'Passwd']
-
+        fields = ['FirstName', 'LastName', 'EmailAddres', 'Passwd']
 
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+        extra_kwargs = {'Passwd': {'write_only': True}}
+
+
+class UserPreferencesLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreferencesLink
+        fields = '__all_'
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

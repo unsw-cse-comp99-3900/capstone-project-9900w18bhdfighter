@@ -6,11 +6,19 @@ import NotFoundPage from './pages/NotFoundPage'
 import LandingPage from './pages/LandingPage'
 import { useGlobalComponentsContext } from './context/GlobalComponentsContext'
 import { useAuthContext } from './context/AuthContext'
+import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
+import route from './constant/route'
+import Projects from './pages/Projects'
+import Teams from './pages/Teams'
+import AdminManagement from './pages/AdminManagement'
+import ProjectDetail from './pages/ProjectDetail'
 
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
   const { haveLoggedIn } = useAuthContext()
+
   if (!haveLoggedIn()) {
     msg.err('You have not logged in yet. Please login first.')
     return <Login />
@@ -20,16 +28,16 @@ const RouterGuard = ({ children }: { children: JSX.Element }) => {
 
 const routerConfig = [
   {
-    path: '/login',
+    path: route.LOGIN,
     element: <Login />,
   },
   {
-    path: '/sign-up',
+    path: route.SIGNUP,
     element: <SignUp />,
   },
 
   {
-    path: '/',
+    path: route.ROOT,
     element: <LandingPage />,
     children: [],
   },
@@ -42,8 +50,28 @@ const routerConfig = [
 
     children: [
       {
-        element: 'Dashboard',
-        path: '/dashboard',
+        element: <Dashboard />,
+        path: route.DASHBOARD,
+      },
+      {
+        element: <Profile />,
+        path: route.PROFILE,
+      },
+      {
+        element: <Projects />,
+        path: route.PROJECTS,
+      },
+      {
+        element: <ProjectDetail />,
+        path: `${route.PROJECTS}/:id`,
+      },
+      {
+        element: <Teams />,
+        path: route.TEAMS,
+      },
+      {
+        element: <AdminManagement />,
+        path: route.ADMIN,
       },
     ],
   },

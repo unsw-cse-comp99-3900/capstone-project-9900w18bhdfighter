@@ -1,17 +1,11 @@
 # Create your models here.
-from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from rest_framework.authtoken.models import Token
 
-
-class CoreModel(models.Model):
-    update_datetime = models.DateTimeField(auto_now=True, null=True, blank=True)
-    create_datetime = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-
-    class Meta:
-        abstract = True
-
-
-class User(CoreModel):
+# Users 表
+class User(models.Model):
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
     LastName = models.CharField(max_length=50)
@@ -22,6 +16,7 @@ class User(CoreModel):
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
 
+
     def __str__(self):
         return str(self.UserID)
 
@@ -31,8 +26,7 @@ class Project(models.Model):
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
-    CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
-
+    CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     def __str__(self):
         return str(self.ProjectID)
 
