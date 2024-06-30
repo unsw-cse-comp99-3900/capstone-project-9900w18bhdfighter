@@ -1,7 +1,6 @@
 import { Button, Descriptions, Flex, List, Tag } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
-
 import Link from 'antd/es/typography/Link'
 
 const Wrapper = styled(Flex)`

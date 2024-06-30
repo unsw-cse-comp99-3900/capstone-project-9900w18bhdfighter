@@ -12,7 +12,6 @@ import { AxiosError, isAxiosError } from 'axios'
 
 import route from '../../constant/route'
 import type { NavigateFunction } from 'react-router-dom'
-import { role } from '../../constant/role'
 
 interface AuthContextType {
   usrInfo: UserInfo | null
@@ -49,6 +48,8 @@ const AuthContextProvider = ({ children }: Props) => {
         lastName: res.data.user_profile.LastName,
         email: res.data.user_profile.EmailAddress,
         role: res.data.user_profile.role,
+        description: res.data.user_profile.description,
+        interestAreas: res.data.user_profile.interestAreas,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
@@ -85,7 +86,9 @@ const AuthContextProvider = ({ children }: Props) => {
         firstName: res.data.user.FirstName,
         lastName: res.data.user.LastName,
         email: res.data.user.EmailAddress,
-        role: role.STUDENT,
+        role: res.data.user_profile.role,
+        description: res.data.user_profile.description,
+        interestAreas: res.data.user_profile.interestAreas,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
