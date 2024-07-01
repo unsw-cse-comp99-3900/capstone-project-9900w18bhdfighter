@@ -25,6 +25,7 @@ class Project(models.Model):
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
+    ProjectGroupNumber = models.IntegerField()
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
     def __str__(self):
         return str(self.ProjectID)
@@ -77,11 +78,14 @@ class GroupProjectsLink(models.Model):
 
 
 class Skill(models.Model):
-    SkillId = models.AutoField(primary_key=True)
+    SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
-
+    def __str__(self):
+        return str(self.SkillID)
 
 class Skill_Project(models.Model):
-    SKillProjectId = models.AutoField(primary_key=True)
+    SkillProjectID = models.AutoField(primary_key=True)
     SkillId = models.ForeignKey(Skill, on_delete=models.CASCADE)
     ProjectId = models.ForeignKey(Project, on_delete=models.CASCADE)
+    def __str__(self):
+        return str(self.SkillProjectID)
