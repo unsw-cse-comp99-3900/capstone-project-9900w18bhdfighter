@@ -12,6 +12,7 @@ import route from './constant/route'
 import Projects from './pages/Projects'
 import Teams from './pages/Teams'
 import AdminManagement from './pages/AdminManagement'
+import ProjectDetail from './pages/ProjectDetail'
 
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
@@ -59,6 +60,10 @@ const routerConfig = [
       {
         element: <Projects />,
         path: route.PROJECTS,
+      },
+      {
+        element: <ProjectDetail />,
+        path: `${route.PROJECTS}/:id`,
       },
       {
         element: <Teams />,

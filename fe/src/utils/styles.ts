@@ -16,6 +16,10 @@ const getThemeColor = (key: keyof ThemeColor, degrees = 0) => {
     return ({ theme }: { theme: DefaultTheme }) => theme.themeColor[key]
   }
 }
+
+const getHeaderHeight = ({ theme }: { theme: DefaultTheme }) =>
+  theme.components?.Layout?.headerHeight + 'px'
+
 const generateColorPalette = (
   startColor: string,
   endColor: string,
@@ -46,4 +50,4 @@ const generateColorPalette = (
   return palette
 }
 
-export { getThemeToken, getThemeColor, generateColorPalette }
+export { getThemeToken, getThemeColor, generateColorPalette, getHeaderHeight }

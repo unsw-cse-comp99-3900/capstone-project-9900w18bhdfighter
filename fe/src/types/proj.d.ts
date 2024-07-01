@@ -3,6 +3,8 @@ interface Project {
   name: string
   description: string
   owner: string
+  maxNumOfGroup: number
+  requiredSkills: string[]
 }
 
 type ProjectCreate = {

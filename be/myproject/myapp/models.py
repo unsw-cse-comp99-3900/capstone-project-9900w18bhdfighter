@@ -76,3 +76,12 @@ class GroupProjectsLink(models.Model):
         return str(self.GroupProjectsLinkID)
 
 
+class Skill(models.Model):
+    SkillId = models.AutoField(primary_key=True)
+    SkillName = models.CharField(max_length=255)
+
+
+class Skill_Project(models.Model):
+    SKillProjectId = models.AutoField(primary_key=True)
+    SkillId = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    ProjectId = models.ForeignKey(Project, on_delete=models.CASCADE)
