@@ -6,7 +6,7 @@ from django.conf import settings
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import User as UserProfile, User, UserPreferencesLink
+from .models import Skill, User as UserProfile, User, UserPreferencesLink
 from .models import Project
 from .models import User
 from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
@@ -165,14 +165,15 @@ def project_creation(request):
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
+
     if result['status'] == 'success':
         user_data = result['data']
-        print("User_data", user_data)
         try:
             user = User.objects.get(pk=user_data['user_id'])
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
         
+
         if user_data['role'] == 2:
             if data['ProjectOwner'] == user_data['email']:
                 project_owner_email = user_data['email']
@@ -191,7 +192,17 @@ def project_creation(request):
 
         serializer = ProjectSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(CreatedBy=user)
+            project = serializer.save(CreatedBy=user)
+            interest_areas = data.get('interestAreas',[])
+
+            for interest_area, skill in interest_areas:
+                try:
+                    area = Area.objects.get(pk=interest_area)
+                except Area.DoesNoExist:
+                     return JsonResponse({'error': 'Area not found.'}, status=404)
+                skill_object = Skill.objects.get_or_create(SkillName=skill)
+                InterestArea.ojects.create(Area=area, Skill=skill_object, Project=project)
+
             return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
