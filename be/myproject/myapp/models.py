@@ -25,7 +25,7 @@ class Project(models.Model):
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
-    MaxNumOfGroup = models.IntegerField(default=1)  # 添加新字段 并且 设置默认值
+    MaxNumOfGroup = models.IntegerField(default=1)
 
     def __str__(self):
         return str(self.ProjectID)
@@ -99,7 +99,7 @@ class StudentArea(models.Model):
 class Skill(models.Model):
     SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
-    Area = models.ForeignKey(Area, on_delete=models.CASCADE)  # 设置默认值
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE) 
 
     def __str__(self):
         return self.SkillName
