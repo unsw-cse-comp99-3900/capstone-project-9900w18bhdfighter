@@ -14,6 +14,8 @@ def add_roles(apps, schema_editor):
     admin.save()
     tut=User.objects.create(FirstName='tut', LastName='tut',EmailAddress="tut@tut.com",Passwd=make_password("tut"),UserRole=3,UserInformation="")
     tut.save()
+    
+    
     print("=====================================")
     print("admin created")
     print("tut created")
@@ -22,7 +24,26 @@ def add_roles(apps, schema_editor):
     print("cli created")
     
 
-                        
+def add_areas(apps, schema_editor):
+    areas = [
+    "Programming Languages",
+    "Machine Learning & AI",
+    "Web Development",
+    "Frameworks & Libraries",
+    "Database Management",
+    "Mobile App Development",
+    "Data Processing & Visualization",
+    "Security & Privacy",
+    "DevOps & CI/CD",
+    "UI/UX Design",
+    "Cloud Platforms",
+    "Miscellaneous"
+]
+    Area = apps.get_model('myapp', 'Area')
+    for area in areas:
+        Area.objects.create(AreaName=area)
+    print("=====================================")
+    print("Areas created")
 class Migration(migrations.Migration):
 
     dependencies =[( 'myapp', '0001_initial')
@@ -30,4 +51,5 @@ class Migration(migrations.Migration):
     
     operations = [
         migrations.RunPython(add_roles),
+        migrations.RunPython(add_areas),
     ]
