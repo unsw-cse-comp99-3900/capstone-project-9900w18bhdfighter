@@ -14,8 +14,6 @@ class User(models.Model):
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
     UserRole = models.IntegerField()
     UserInformation = models.CharField(max_length=255)
- 
-
     def __str__(self):
         return str(self.UserID)
 
@@ -42,7 +40,7 @@ class UserPreferencesLink(models.Model):
 
 class Group(models.Model):
     GroupID = models.AutoField(primary_key=True)
-    GroupName = models.CharField(max_length=255)
+    GroupName = models.CharField(max_length=255, unique=True)
     GroupDescription = models.TextField()
     CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
 
