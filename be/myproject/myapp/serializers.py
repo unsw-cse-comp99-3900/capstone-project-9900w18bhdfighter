@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, User, UserPreferencesLink
+from .models import Group, Project, User, UserPreferencesLink
 
 
 class StudentsignupSerializer(serializers.ModelSerializer):
@@ -25,3 +25,8 @@ class UserPreferencesLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPreferencesLink
         fields = '__all_'
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Group
+        fields = ['GroupName', 'GroupDescription']

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
 
-# Users 表
+
 class User(models.Model):
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
@@ -23,8 +23,9 @@ class Project(models.Model):
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
-    ProjectGroupNumber = models.IntegerField(default=0)
-    CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
+    CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
+    MaxNumOfGroup = models.IntegerField(default=1)
+
     def __str__(self):
         return str(self.ProjectID)
 
@@ -75,15 +76,39 @@ class GroupProjectsLink(models.Model):
         return str(self.GroupProjectsLinkID)
 
 
+class Area(models.Model):
+    AreaID = models.AutoField(primary_key=True)
+    AreaName = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.AreaName
+
+
+
+class StudentArea(models.Model):
+    StudentAreaID = models.AutoField(primary_key=True)
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE)
+    User = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.User} - {self.Area}'
+
+
+
 class Skill(models.Model):
     SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
-    def __str__(self):
-        return str(self.SkillID)
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE) 
 
-class Skill_Project(models.Model):
+    def __str__(self):
+        return self.SkillName
+
+
+
+class SkillProject(models.Model):
     SkillProjectID = models.AutoField(primary_key=True)
-    SkillId = models.ForeignKey(Skill, on_delete=models.CASCADE)
-    ProjectId = models.ForeignKey(Project, on_delete=models.CASCADE)
+    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
     def __str__(self):
         return str(self.SkillProjectID)

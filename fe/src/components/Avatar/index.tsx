@@ -34,6 +34,10 @@ const Avatar = ({
         verticalAlign: 'middle',
         backgroundColor: bgColor,
         color: color,
+<<<<<<< HEAD
+=======
+        ...props.style,
+>>>>>>> 611021aaf88104bacc9b8f80151c444a7c13fb19
       }}
     >
       {shortName(firstName, lastName)}

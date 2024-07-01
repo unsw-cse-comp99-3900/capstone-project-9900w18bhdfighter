@@ -6,10 +6,10 @@ from django.conf import settings
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Skill, User as UserProfile, User, UserPreferencesLink
+from .models import Area, Group, GroupUsersLink, Skill, SkillProject, User as UserProfile, User, UserPreferencesLink
 from .models import Project
 from .models import User
-from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
+from .serializers import GroupSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
@@ -201,7 +201,7 @@ def project_creation(request):
                 except Area.DoesNoExist:
                      return JsonResponse({'error': 'Area not found.'}, status=404)
                 skill_object = Skill.objects.get_or_create(SkillName=skill)
-                InterestArea.ojects.create(Area=area, Skill=skill_object, Project=project)
+                SkillProject.ojects.create(Area=area, Skill=skill_object, Project=project)
 
             return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
         return JsonResponse(serializer.errors, status=400)
@@ -258,6 +258,49 @@ def project_update(request, id):
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
             return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+############################################################################################
+#                                     Group Creation                                       #
+############################################################################################
+@csrf_exempt
+def group_creation(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        if Group.objects.filter(GroupName=data['GroupName']).exists():
+            return JsonResponse({'error': 'Group name already exists'}, status=400)
+
+        if GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'You are already in a group'}, status=400)
+
+        serializer = GroupSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                group = serializer.save(CreatedBy=user)
+                
+                if user_data['role'] in [1]:
+                    GroupUsersLink.objects.create(GroupID=group,UserID=user)
+                    return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
+                else:
+                    return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
+            except:
+                return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
+        return JsonResponse(serializer.errors, status=400)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
 
 
 
