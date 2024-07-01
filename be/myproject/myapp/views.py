@@ -22,7 +22,6 @@ import datetime
 
 
 def decode_jwt(token):
-    print("token in decode", token)
     try:
         # Decode the token
         decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -168,7 +167,7 @@ def project_creation(request):
         result = decode_jwt(token)
     if result['status'] == 'success':
         user_data = result['data']
-
+        print("User_data", user_data)
         try:
             user = User.objects.get(pk=user_data['user_id'])
         except User.DoesNotExist:

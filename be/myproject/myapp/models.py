@@ -25,7 +25,7 @@ class Project(models.Model):
     ProjectName = models.CharField(max_length=255)
     ProjectDescription = models.TextField()
     ProjectOwner = models.CharField(max_length=255)
-    ProjectGroupNumber = models.IntegerField()
+    ProjectGroupNumber = models.IntegerField(default=0)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE) 
     def __str__(self):
         return str(self.ProjectID)

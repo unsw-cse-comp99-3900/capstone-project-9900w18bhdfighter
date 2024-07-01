@@ -11,7 +11,7 @@ class StudentsignupSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner']
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','ProjectGroupNumber']
 
 
 class UserSerializer(serializers.ModelSerializer):
