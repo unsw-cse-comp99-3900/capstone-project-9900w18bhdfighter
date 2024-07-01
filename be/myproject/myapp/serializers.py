@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import Project, User, UserPreferencesLink
 
 
-# ?
 class StudentsignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project

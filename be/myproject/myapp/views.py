@@ -1,36 +1,28 @@
 from django.contrib.auth.hashers import make_password
-from django.shortcuts import render, HttpResponse
-from rest_framework import status
-from rest_framework.authtoken.models import Token
-from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate
-from django.views.decorators.csrf import csrf_exempt
-from .models import User
-import json
-import datetime
-from django.conf import settings
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
-from .models import User as UserProfile, User, UserPreferencesLink
-from .models import Project
-from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
+from django.conf import settings
+from django.shortcuts import render, HttpResponse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import User as UserProfile, User, UserPreferencesLink
+from .models import Project
+from .models import User
+from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import JSONParser
 import jwt
+import json
+import datetime
 
 
-# from .utils import generate_auth_token 
-
-
-# def generate_auth_token(user):
-#     token, created = Token.objects.get_or_create(user=user)
-#     return token.key
-
-# every time when a user requests with a token, we will decode the token to get the user information and check if the token is valid or not.
 def decode_jwt(token):
+    print("token in decode", token)
     try:
         # Decode the token
         decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -117,7 +109,6 @@ def student_signup(request):
 def student_login(request):
     if request.method == 'POST':
         try:
-            # User Authentication
             data = json.loads(request.body)
             email = data.get('EmailAddress')
             password = data.get('Passwd')
@@ -126,7 +117,6 @@ def student_login(request):
             
             try:
                 user = User.objects.get(EmailAddress=email)
-                #print(user.Passwd)
                 if check_password(password, user.Passwd):
                     token = jwt.encode({
                         'user_id': user.pk,
@@ -172,6 +162,7 @@ def project_creation(request):
         result = decode_jwt(token)
     if result['status'] == 'success':
         user_data = result['data']
+
         try:
             user = User.objects.get(pk=user_data['user_id'])
         except User.DoesNotExist:
@@ -182,14 +173,14 @@ def project_creation(request):
                 project_owner_email = user_data['email']
             else:
                 return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
-        elif user_data['role'] in [3, 4, 5]:
+        elif user_data['role'] in [4, 5]:
             try:
                     project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
                     project_owner_email = project_owner.EmailAddress
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Project owner not found.'}, status=404)
         else:
-                return JsonResponse({'error': 'Permission denied.'}, status=403)
+                return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
             
         data['ProjectOwner'] = project_owner_email  
 
@@ -214,9 +205,8 @@ def project_update(request, id):
     if request.method == 'PUT':
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
-        print(token)
         result = decode_jwt(token)
-        print(result)
+
         if result['status'] == 'success':
             user_data = result['data']
             try:
@@ -224,17 +214,17 @@ def project_update(request, id):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Authentication failed'}, status=401)
             
-            if user_data['role'] == 1:
-                return JsonResponse({'error': 'Permission denied. Students cannot update projects.'}, status=403)
-            elif user_data['role'] in [2, 3, 4]:
+            if user_data['role'] in [1, 3]:
+                return JsonResponse({'error': 'Permission denied. Cannot update projects.'}, status=403)
+            elif user_data['role'] in [2]:
                 if project.CreatedBy.pk != user.pk:
-                    return JsonResponse({'error': 'Permission denied. Tutors, Clients and Cordinator can only update projects they created.'}, status=403)
-            elif user_data['role'] == 5:
+                    return JsonResponse({'error': 'Permission denied. Clients can only update projects they created.'}, status=403)
+            elif user_data['role'] in [5, 4]:
                 pass 
             else:
                 return JsonResponse({'error': 'Permission denied.'}, status=403)
 
-            if user_data['role'] in [3, 4, 5]:
+            if user_data['role'] in [4, 5]:
                 try:
                     project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
                     project_owner_email = project_owner.EmailAddress
@@ -256,13 +246,14 @@ def project_update(request, id):
 
 
 
-# #test
-# def test_db_connection(request):
-#     try:
-#         user_count = User.objects.count()
-#         return JsonResponse({'status': 'success', 'user_count': user_count}, status=200)
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)@api_view(['GET', 'PUT'])
+
+
+
+
+
+
+
+
 @permission_classes([IsAuthenticated])
 def user_profile(request):
     user = request.user
