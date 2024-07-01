@@ -16,8 +16,10 @@ type FieldType = {
 }
 
 const Login = () => {
-  const { login } = useAuthContext()
   const navigate = useNavigate()
+
+  const { login } = useAuthContext()
+
   const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
     const { email, password } = values
     const userLoginDto: UserLogin = {

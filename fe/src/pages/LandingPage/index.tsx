@@ -2,6 +2,9 @@ import { Flex, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeColor as c, getThemeToken as t } from '../../utils/styles'
 import LinkButton from '../../components/LinkButton'
+import { useNavigate } from 'react-router-dom'
+import route from '../../constant/route'
+import { useAuthContext } from '../../context/AuthContext'
 
 const Wrapper = styled(Flex)`
   height: 100vh;
@@ -35,6 +38,8 @@ const Banner = styled(Flex)`
 `
 
 const LandingPage = () => {
+  const navigate = useNavigate()
+  const { haveLoggedIn } = useAuthContext()
   return (
     <Wrapper gap={'large'} justify="center" align="center">
       <WelcomeContainer justify="center">
@@ -43,7 +48,13 @@ const LandingPage = () => {
         </Banner>
       </WelcomeContainer>
       <AuthArea justify="center" align="center">
-        <LoginButton type="primary" to={'/login'}>
+        <LoginButton
+          type="primary"
+          to={'/login'}
+          onClick={() => {
+            haveLoggedIn() ? navigate(route.DASHBOARD) : navigate(route.LOGIN)
+          }}
+        >
           LogIn
         </LoginButton>
         <SignUpButton type="primary" to={'/sign-up'}>

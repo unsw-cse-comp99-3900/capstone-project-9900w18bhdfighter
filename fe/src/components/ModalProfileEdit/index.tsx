@@ -1,14 +1,15 @@
 import { Button, Form, Input, Modal, Select } from 'antd'
+import type { ModalProps } from 'antd'
 import { useState } from 'react'
 import styled from 'styled-components'
-import { UserInfo } from '../../../types/user'
+import { UserInfo } from '../../types/user'
 
 type Props = {
   isModalOpen: boolean
   handleOk: () => void
   handleCancel: () => void
   userInfo: UserInfo | null
-}
+} & ModalProps
 
 const Wrapper = styled(Modal)``
 
@@ -17,6 +18,7 @@ const ModalProfileEdit = ({
   handleOk,
   handleCancel,
   userInfo,
+  ...props
 }: Props) => {
   const [visible, setVisible] = useState(false)
   const { firstName, lastName, description, interestAreas } = userInfo || {
@@ -27,7 +29,7 @@ const ModalProfileEdit = ({
   }
   return (
     <Wrapper
-      title="Edit Profile"
+      {...props}
       open={isModalOpen}
       onOk={handleOk}
       onCancel={handleCancel}

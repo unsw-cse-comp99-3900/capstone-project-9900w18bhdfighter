@@ -1,14 +1,14 @@
-import { Badge, Button, Dropdown, Flex, Popover, Tabs } from 'antd'
-import type { MenuProps, TabsProps } from 'antd'
+import { Badge, Button, Flex, Popover, Tabs } from 'antd'
+import type { TabsProps } from 'antd'
 import { Header } from 'antd/es/layout/layout'
 import styled from 'styled-components'
 import { getThemeColor } from '../../../utils/styles'
 import route from '../../../constant/route'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuthContext } from '../../../context/AuthContext'
+
 import { IoIosNotifications } from 'react-icons/io'
-import Avatar from '../../Avatar'
+
 import LinkButton from '../../LinkButton'
+import AvatarDropdown from './AvatarDropdown'
 
 const Wrapper = styled(Header)`
   display: flex;
@@ -31,39 +31,6 @@ const OperationsGroup = styled(Flex)`
 `
 
 const HeaderNav = () => {
-  const { usrInfo } = useAuthContext()
-
-  const { firstName, lastName, email } = usrInfo || {
-    firstName: '',
-    lastName: '',
-    email: '',
-  }
-
-  const { logout } = useAuthContext()
-  const navigate = useNavigate()
-
-  const items: MenuProps['items'] = [
-    {
-      key: 'profile',
-      label: <Link to={route.PROFILE}>My Profile</Link>,
-    },
-    {
-      key: 'logout',
-      label: (
-        <Link
-          to=""
-          onClick={(e) => {
-            e.preventDefault()
-            logout(navigate)
-          }}
-          type="text"
-        >
-          Logout
-        </Link>
-      ),
-      danger: true,
-    },
-  ]
   const tabItems: TabsProps['items'] = [
     {
       key: '1',
@@ -102,13 +69,7 @@ const HeaderNav = () => {
             </Badge>
           </Button>
         </Popover>
-        <Dropdown placement="topLeft" menu={{ items }} trigger={['hover']}>
-          <Avatar
-            firstName={firstName}
-            lastName={lastName}
-            emailForHashToColor={email}
-          />
-        </Dropdown>
+        <AvatarDropdown />
       </OperationsGroup>
     </Wrapper>
   )
