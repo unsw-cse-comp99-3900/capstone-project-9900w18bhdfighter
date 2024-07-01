@@ -6,6 +6,8 @@ interface UserInfo {
   lastName: string
   email: string
   role: UserRole
+  description: string
+  interestAreas: string[]
 }
 interface UserDTO {
   UserID: number
