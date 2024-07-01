@@ -5,7 +5,7 @@ import { getThemeToken } from '../../utils/styles'
 import { useAuthContext } from '../../context/AuthContext'
 import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
-import ModalProfileEdit from './components/ModalProfileEdit'
+import ModalProfileEdit from '../../components/ModalProfileEdit'
 import { useState } from 'react'
 
 const Wrapper = styled(Flex)`
@@ -56,6 +56,7 @@ const Profile = () => {
   return (
     <Wrapper>
       <ModalProfileEdit
+        title="Edit Profile"
         userInfo={usrInfo}
         isModalOpen={isModalOpen}
         handleOk={handleOk}

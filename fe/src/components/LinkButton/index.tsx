@@ -12,10 +12,21 @@ type Props = {
 /**
   Just an extension of the AntD Button, which adds the ability to navigate to a different page when clicked.
  */
-const LinkButton = ({ to, options = undefined, ...props }: Props) => {
+const LinkButton = ({ to, options = undefined, onClick, ...props }: Props) => {
   const navigate = useNavigate()
 
-  return <Button {...props} onClick={() => navigate(to, options)} />
+  return (
+    <Button
+      {...props}
+      onClick={(e) => {
+        if (onClick) {
+          onClick(e)
+          return
+        }
+        navigate(to, options)
+      }}
+    />
+  )
 }
 
 export default LinkButton

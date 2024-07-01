@@ -1,12 +1,13 @@
-import React, { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { SearchOutlined } from '@ant-design/icons'
 import type { InputRef, TableColumnsType, TableColumnType } from 'antd'
 import { Button, Divider, Flex, Input, Space, Table } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
-
 import { role, roleNames, roleNamesEnum } from '../../constant/role'
 import { nanoid } from 'nanoid'
+import { useAuthContext } from '../../context/AuthContext'
+import ModalProfileEdit from '../../components/ModalProfileEdit'
 
 interface DataType {
   key: string
@@ -37,7 +38,14 @@ const Wrapper = styled(Flex)`
 `
 const AdminManagement = () => {
   const searchInput = useRef<InputRef>(null)
-
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const { usrInfo } = useAuthContext()
+  const handleOk = () => {
+    setIsModalOpen(false)
+  }
+  const handleCancel = () => {
+    setIsModalOpen(false)
+  }
   const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
     confirm()
   }
@@ -156,17 +164,22 @@ const AdminManagement = () => {
     {
       title: '',
       key: 'action',
-
       render: () => (
         <Flex
           align="center"
           style={{
             display: 'flex',
-
+            justifyContent: 'center',
             alignItems: 'center',
           }}
         >
-          <Button size="small" type="link">
+          <Button
+            onClick={() => {
+              setIsModalOpen(true)
+            }}
+            size="small"
+            type="link"
+          >
             Manage
           </Button>
           <Divider type="vertical" />
@@ -180,6 +193,13 @@ const AdminManagement = () => {
 
   return (
     <Wrapper>
+      <ModalProfileEdit
+        title="Manage User"
+        userInfo={usrInfo}
+        isModalOpen={isModalOpen}
+        handleOk={handleOk}
+        handleCancel={handleCancel}
+      ></ModalProfileEdit>
       <Table
         style={{
           width: '100%',
