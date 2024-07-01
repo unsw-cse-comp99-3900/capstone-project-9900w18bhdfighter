@@ -206,8 +206,9 @@ def project_creation(request):
                     area = Area.objects.get(pk=interest_area)
                 except Area.DoesNotExist:
                      return JsonResponse({'error': 'Area not found.'}, status=404)
-                skill_object = Skill.objects.get_or_create(SkillName=skill)
-                SkillProject.ojects.create(Area=area, Skill=skill_object, Project=project)
+                skill_object, _ = Skill.objects.get_or_create(SkillName=skill, defaults={'Area': area})
+
+                SkillProject.objects.create(Skill=skill_object, Project=project)
 
             return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
         return JsonResponse(serializer.errors, status=400)
