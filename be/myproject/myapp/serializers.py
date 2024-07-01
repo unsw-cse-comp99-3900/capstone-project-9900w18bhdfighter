@@ -30,19 +30,23 @@ class UserPreferencesLinkSerializer(serializers.ModelSerializer):
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd2 = serializers.CharField(write_only=True, required=False, default="")
+    Passwd = serializers.CharField(write_only=True, required=False, default="")
 
     def validate(self, data):
         UserID = self.context.get('UserID')
         if User.objects.exclude(UserID=UserID).filter(EmailAddress=data['EmailAddress']).exists():
             raise serializers.ValidationError("The email address is already in use by another user!")
         instance = User.objects.get(UserID=UserID)
-        if data['Passwd'] != instance.Passwd:
-            Passwd2 = data.get('Passwd2')
-            if not Passwd2:
-                raise serializers.ValidationError("Confirmation password has not been entered, please enter the confirmation password to continue!")
-            if data['Passwd'] != data['Passwd2']:
-                raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
-        data.pop('Passwd2')
+        if data['Passwd']:
+            if data['Passwd'] != instance.Passwd:
+                Passwd2 = data.get('Passwd2')
+                if not Passwd2:
+                    raise serializers.ValidationError("Confirmation password has not been entered, please enter the confirmation password to continue!")
+                if data['Passwd'] != data['Passwd2']:
+                    raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
+            data["Passwd"] = make_password(data["Passwd"])
+        if "Passwd2" in data.keys():
+            data.pop('Passwd2')
         return data
 
     class Meta:
