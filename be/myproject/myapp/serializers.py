@@ -37,7 +37,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if User.objects.exclude(UserID=UserID).filter(EmailAddress=data['EmailAddress']).exists():
             raise serializers.ValidationError("The email address is already in use by another user!")
         instance = User.objects.get(UserID=UserID)
-        if data['Passwd']:
+        if data.get('Passwd'):
             if data['Passwd'] != instance.Passwd:
                 Passwd2 = data.get('Passwd2')
                 if not Passwd2:
