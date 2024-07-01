@@ -79,7 +79,7 @@ class GroupProjectsLink(models.Model):
 
 class Area(models.Model):
     AreaID = models.AutoField(primary_key=True)
-    AreaName = models.CharField(max_length=255)
+    AreaName = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.AreaName
