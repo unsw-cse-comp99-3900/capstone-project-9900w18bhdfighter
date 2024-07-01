@@ -193,12 +193,18 @@ def project_creation(request):
         serializer = ProjectSerializer(data=data)
         if serializer.is_valid():
             project = serializer.save(CreatedBy=user)
-            interest_areas = data.get('interestAreas',[])
+            required_skills = data.get('requiredSkills',[])
 
-            for interest_area, skill in interest_areas:
+            for skill_data in required_skills:
+                interest_area = skill_data.get('area_id')
+                skill = skill_data.get('skill')
+
+                if not interest_area or not skill:
+                    return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
+                
                 try:
                     area = Area.objects.get(pk=interest_area)
-                except Area.DoesNoExist:
+                except Area.DoesNotExist:
                      return JsonResponse({'error': 'Area not found.'}, status=404)
                 skill_object = Skill.objects.get_or_create(SkillName=skill)
                 SkillProject.ojects.create(Area=area, Skill=skill_object, Project=project)
@@ -300,6 +306,16 @@ def group_creation(request):
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+############################################################################################
+#                                     Get project list                                     #
+############################################################################################
+@csrf_exempt
+def get_projects_list(request):
+    if request.method == 'GET':
+        projects = Project.objects.all()
+        serializer = ProjectSerializer(projects, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
 
 
 
@@ -313,6 +329,17 @@ def group_creation(request):
 
 
 
+
+
+
+
+
+
+
+
+############################################################################################
+#                                     User profile                                         #
+############################################################################################
 @permission_classes([IsAuthenticated])
 def user_profile(request):
     user = request.user
