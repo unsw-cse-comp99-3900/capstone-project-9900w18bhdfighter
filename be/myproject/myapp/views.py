@@ -346,7 +346,7 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     @action(detail=True, methods=['put'], url_path='password', url_name='update-passwd')
     def update_passwd(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer = self.get_serializer(instance, data=request.data, partial=True, context={'UserID': instance.UserID})
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_200_OK)

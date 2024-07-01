@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Project, User, UserPreferencesLink
-from .models import Project, User
+from django.contrib.auth.hashers import make_password
 
 
 # ?
@@ -57,6 +57,11 @@ class UserUpdatePasswdSerializer(serializers.ModelSerializer):
         if data['Passwd'] != data['Passwd2']:
             raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
+
+        user = User.objects.filter(UserID=self.context.get('UserID')).first()
+        new_pwd = data['Passwd']
+        if user.Passwd != new_pwd:
+            data["Passwd"] = make_password(new_pwd)
         return data
 
     class Meta:
@@ -80,6 +85,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         if data['Passwd'] != data['Passwd2']:
             raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
+        data["Passwd"] = make_password(data["Passwd"])
         return data
 
     def create(self, validated_data):
