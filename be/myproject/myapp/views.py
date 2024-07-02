@@ -184,35 +184,34 @@ def project_creation(request):
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
-    if result['status'] == 'success':
-        user_data = result['data']
-        try:
-            user = User.objects.get(pk=user_data['user_id'])
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found.'}, status=404)
-
-        if user_data['role'] == 2:
-            if data['ProjectOwner'] == user_data['email']:
-                project_owner_email = user_data['email']
-            else:
-                return JsonResponse(
-                    {'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
-        elif user_data['role'] in [3, 4, 5]:
+        if result['status'] == 'success':
+            user_data = result['data']
             try:
-                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                project_owner_email = project_owner.EmailAddress
+                user = User.objects.get(pk=user_data['user_id'])
             except User.DoesNotExist:
-                return JsonResponse({'error': 'Project owner not found.'}, status=404)
-        else:
-            return JsonResponse({'error': 'Permission denied.'}, status=403)
+                return JsonResponse({'error': 'User not found.'}, status=404)
+            
+            if user_data['role'] == 2:
+                if data['ProjectOwner'] == user_data['email']:
+                    project_owner_email = user_data['email']
+                else:
+                    return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
+            elif user_data['role'] in [3, 4, 5]:
+                try:
+                        project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                        project_owner_email = project_owner.EmailAddress
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
+            else:
+                    return JsonResponse({'error': 'Permission denied.'}, status=403)
+                
+            data['ProjectOwner'] = project_owner_email  
 
-        data['ProjectOwner'] = project_owner_email
-
-        serializer = ProjectSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(CreatedBy=user)
-            return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
-        return JsonResponse(serializer.errors, status=400)
+            serializer = ProjectSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save(CreatedBy=user)
+                return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
+            return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
