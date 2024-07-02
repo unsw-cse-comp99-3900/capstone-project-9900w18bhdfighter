@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
+from django.utils import timezone
 
 
 
@@ -98,7 +99,6 @@ class StudentArea(models.Model):
         return f'{self.User} - {self.Area}'
 
 
-
 class Skill(models.Model):
     SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
@@ -108,7 +108,6 @@ class Skill(models.Model):
         return self.SkillName
 
 
-
 class SkillProject(models.Model):
     SkillProjectID = models.AutoField(primary_key=True)
     Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
@@ -116,3 +115,32 @@ class SkillProject(models.Model):
 
     def __str__(self):
         return str(self.SkillProjectID)
+
+
+class GroupAssignProject(models.Model):
+    GroupID = models.AutoField(primary_key=True)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    Allocated = models.ForeignKey(User, on_delete=models.CASCADE)
+    AllocatedAt = models.DateTimeField(default=timezone.now)
+    ProgressStatus = models.CharField(
+        max_length=20,
+        choices=[('To Do', 'To Do'), ('In Progress', 'In Progress'), ('Done', 'Done')],
+        default='To Do'
+    )
+
+    def __str__(self):
+        return f'{self.Project} - {self.Allocated}'
+
+
+class Notification(models.Model):
+    NotificationID = models.AutoField(primary_key=True)
+    SenderUser = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
+    Type = models.CharField(max_length=255)
+    Message = models.TextField()
+    AdditionalData = models.JSONField(null=True, blank=True)
+    IsRead = models.BooleanField(default=False)
+    CreatedAt = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f'{self.SenderUser} - {self.ReceiverUser}'
