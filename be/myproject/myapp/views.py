@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User
 from .models import Project
-from .permission import DiyPermission
+from .permission import OnlyForAdmin
 from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
@@ -50,6 +50,7 @@ def decode_jwt(token):
 
 # Usage example
 def some_view_function(request):
+
     token = request.headers.get('Authorization').split()[1]  # Assuming token is sent as "Bearer <token>"
     result = decode_jwt(token)
 
@@ -330,7 +331,7 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [DiyPermission]
+    permission_classes = [OnlyForAdmin]
     lookup_field = "UserID"
 
     def get_serializer_class(self):
@@ -372,3 +373,52 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         instance = self.get_object()
         instance.delete()
         return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Area CRUD
+
+from .models import Area
+from .serializers import AreaSerializer
+
+class AreaAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = Area.objects.all()
+    serializer_class = AreaSerializer
+    permission_classes = [OnlyForAdmin]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy']:
+            return [OnlyForAdmin()]
+        else:
+            return []
+    
+    def create(self, request, *args, **kwargs):
+        serializer = AreaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = AreaSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return JsonResponse({'message': 'Area deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = AreaSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+    
+    

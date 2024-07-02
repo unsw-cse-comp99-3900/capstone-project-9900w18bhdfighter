@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, User, UserPreferencesLink
+from .models import Project, User, UserPreferencesLink, Area
 from django.contrib.auth.hashers import make_password
 
 
@@ -95,3 +95,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create(**validated_data)
         return user
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = '__all__'
+    
