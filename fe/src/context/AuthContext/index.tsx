@@ -12,6 +12,7 @@ import { AxiosError, isAxiosError } from 'axios'
 
 import route from '../../constant/route'
 import type { NavigateFunction } from 'react-router-dom'
+import { errHandler } from '../../utils/parse'
 
 interface AuthContextType {
   usrInfo: UserInfo | null
@@ -57,17 +58,11 @@ const AuthContextProvider = ({ children }: Props) => {
       msg.success('Login success')
       navigate(route.DASHBOARD)
     } catch (err) {
-      console.log(err)
-
-      if (isAxiosError(err)) {
-        const error = err as AxiosError<{ error: string }>
-        const data = error.response?.data
-        if (data) {
-          msg.err(data.error)
-        }
-      } else {
-        msg.err('Something went wrong')
-      }
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
   const logout = (navigate: NavigateFunction) => {

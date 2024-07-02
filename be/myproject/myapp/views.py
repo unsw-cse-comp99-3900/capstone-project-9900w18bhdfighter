@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User
 from .models import Project
-from .permission import OnlyForAdmin
+from .permission import OnlyForAdmin,ForValidToken
 from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
@@ -331,9 +331,15 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [OnlyForAdmin]
     lookup_field = "UserID"
 
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy']:
+            return [OnlyForAdmin(), ForValidToken()]
+        elif self.action in ['list', 'retrieve']:
+            return [ForValidToken()]
+        else:
+            return []
     def get_serializer_class(self):
         dic = {
             'create': RegisterSerializer,
@@ -376,6 +382,23 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         instance = self.get_object()
         instance.delete()
         return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = UserSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+        
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = UserSerializer(instance)
+        area_serializer = AreaSerializer(instance.Areas, many=True)
+        return  JsonResponse({
+            'data': serializer.data,
+            'areas': area_serializer.data
+        }, status=status.HTTP_200_OK)
+        
 
 
 # Area CRUD
@@ -386,7 +409,6 @@ from .serializers import AreaSerializer
 class AreaAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = Area.objects.all()
     serializer_class = AreaSerializer
-    permission_classes = [OnlyForAdmin]
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'destroy']:

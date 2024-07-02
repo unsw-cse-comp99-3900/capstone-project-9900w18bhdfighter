@@ -1,35 +1,32 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SearchOutlined } from '@ant-design/icons'
-import type { InputRef, TableColumnsType, TableColumnType } from 'antd'
-import { Button, Divider, Flex, Modal, Table } from 'antd'
+import type {
+  FormInstance,
+  InputRef,
+  TableColumnsType,
+  TableColumnType,
+} from 'antd'
+import { Flex, Modal, Table } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
-import { role, roleNames, roleNamesEnum } from '../../constant/role'
-import { nanoid } from 'nanoid'
-import { useAuthContext } from '../../context/AuthContext'
+import { role, roleNames } from '../../constant/role'
+
 import ModalProfileEdit from '../../components/ModalProfileEdit'
 import TextFilter from './components/TextFilter'
+import ActionGroup from './components/ActionGroup'
+import AccountManagementContextProvider, {
+  useAccountManagementContext,
+} from '../../context/AccountManagementContext'
+import { UserUpdate } from '../../types/user'
 
 interface DataType {
-  key: string
+  key: number
   name: string
   role: string
   email: string
 }
 
 type DataIndex = keyof DataType
-const data: DataType[] = new Array(100).fill(0).map((_, i) => ({
-  key: nanoid() as string,
-  name: `Mock Name ${i}`,
-  role: [
-    roleNamesEnum.ADMIN,
-    roleNamesEnum.TUTOR,
-    roleNamesEnum.CORD,
-    roleNamesEnum.CLIENT,
-    roleNamesEnum.STUDENT,
-  ][i % 5] as string,
-  email: `Mock${i}@gmail.com`,
-}))
 
 const Wrapper = styled(Flex)`
   box-sizing: border-box;
@@ -37,13 +34,62 @@ const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
 `
-const AdminManagement = () => {
+
+const _AdminManagement = () => {
   const searchInput = useRef<InputRef>(null)
+  const currUsrIdOnRowRef = useRef<number | null>(null)
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const { usrInfo } = useAuthContext()
-  const handleOk = () => {
-    setIsModalOpen(false)
+
+  const {
+    accountList,
+    getAccountList,
+    getAnUserProfile,
+    currProfileViewing,
+    deleteAccount,
+    updateAccount,
+  } = useAccountManagementContext()
+
+  const data = useMemo(
+    () =>
+      accountList.map((account) => ({
+        key: account.id,
+        name: account.firstName + ' ' + account.lastName,
+        role: roleNames[account.role],
+        email: account.email,
+      })),
+    [accountList]
+  )
+  useEffect(() => {
+    getAccountList()
+  }, [])
+
+  const handleOk = async (form: FormInstance) => {
+    //validate
+    try {
+      const values = await form.validateFields()
+      const usrInfo: UserUpdate = {
+        FirstName: values.firstName,
+        LastName: values.lastName,
+        EmailAddress: values.email,
+        UserRole: values.role,
+        UserInformation: values.description,
+        Areas: values.interestAreas,
+        Passwd: values.password,
+      }
+      Object.keys(usrInfo).forEach(
+        (key) =>
+          usrInfo[key as keyof UserUpdate] === undefined &&
+          delete usrInfo[key as keyof UserUpdate]
+      )
+      currProfileViewing &&
+        (await updateAccount(currProfileViewing.id, usrInfo))
+      await getAccountList()
+      setIsModalOpen(false)
+    } catch (err) {
+      console.log(err)
+    }
   }
   const handleCancel = () => {
     setIsModalOpen(false)
@@ -115,37 +161,18 @@ const AdminManagement = () => {
     {
       title: '',
       key: 'action',
-      render: () => (
-        <Flex
-          align="center"
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
+      render: (_, record) => (
+        <ActionGroup
+          handleDelete={() => {
+            currUsrIdOnRowRef.current = record.key
+            setIsDeleteModalOpen(true)
           }}
-        >
-          <Button
-            onClick={() => {
-              setIsModalOpen(true)
-            }}
-            size="small"
-            type="link"
-          >
-            Manage
-          </Button>
-          <Divider type="vertical" />
-
-          <Button
-            onClick={() => {
-              setIsDeleteModalOpen(true)
-            }}
-            size="small"
-            danger
-            type="link"
-          >
-            Delete
-          </Button>
-        </Flex>
+          handleManage={async () => {
+            currUsrIdOnRowRef.current = record.key
+            await getAnUserProfile(currUsrIdOnRowRef.current)
+            setIsModalOpen(true)
+          }}
+        />
       ),
     },
   ]
@@ -154,7 +181,7 @@ const AdminManagement = () => {
     <Wrapper>
       <ModalProfileEdit
         title="Manage User"
-        userInfo={usrInfo}
+        userInfo={currProfileViewing}
         isModalOpen={isModalOpen}
         handleOk={handleOk}
         handleCancel={handleCancel}
@@ -163,7 +190,12 @@ const AdminManagement = () => {
         title="You are about to delete a user. Are you sure?"
         open={isDeleteModalOpen}
         okButtonProps={{ danger: true }}
-        onOk={() => setIsDeleteModalOpen(false)}
+        onOk={async () => {
+          currUsrIdOnRowRef.current &&
+            (await deleteAccount(currUsrIdOnRowRef.current))
+          await getAccountList()
+          setIsDeleteModalOpen(false)
+        }}
         onCancel={() => setIsDeleteModalOpen(false)}
       ></Modal>
       <Table
@@ -176,6 +208,14 @@ const AdminManagement = () => {
         dataSource={data}
       />
     </Wrapper>
+  )
+}
+
+const AdminManagement = () => {
+  return (
+    <AccountManagementContextProvider>
+      <_AdminManagement />
+    </AccountManagementContextProvider>
   )
 }
 

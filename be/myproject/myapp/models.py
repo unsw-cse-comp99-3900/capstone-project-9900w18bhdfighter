@@ -5,6 +5,14 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
 
 
+
+class Area(models.Model):
+    AreaID = models.AutoField(primary_key=True)
+    AreaName = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.AreaName
+    
 class User(models.Model):
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
@@ -15,7 +23,7 @@ class User(models.Model):
     UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
-
+    Areas = models.ManyToManyField(Area, through='StudentArea')
 
     def __str__(self):
         return str(self.UserID)
@@ -78,13 +86,6 @@ class GroupProjectsLink(models.Model):
     def __str__(self):
         return str(self.GroupProjectsLinkID)
 
-
-class Area(models.Model):
-    AreaID = models.AutoField(primary_key=True)
-    AreaName = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.AreaName
 
 
 

@@ -1,3 +1,5 @@
+import { AxiosError, isAxiosError } from 'axios'
+
 const shortName = (firstName = '', lastName = '') => {
   console.log('firstName:', firstName)
 
@@ -44,6 +46,20 @@ const stringToColorPair = (input = '') => {
   return [color1, color2]
 }
 
-// 使用示例
+const errHandler = (
+  err: unknown,
+  axiosErrDo: (_errStr: string) => void,
+  otherErrDo: (_errStr: string) => void
+) => {
+  if (isAxiosError(err)) {
+    const error = err as AxiosError<{ error: string; errors: string }>
+    const data = error.response?.data
+    if (data) {
+      axiosErrDo(data.error || data.errors)
+    }
+  } else {
+    otherErrDo('Something went wrong')
+  }
+}
 
-export { shortName, isDarkColor, stringToColorPair }
+export { shortName, isDarkColor, stringToColorPair, errHandler }
