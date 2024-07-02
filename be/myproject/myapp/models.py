@@ -127,3 +127,17 @@ class GroupAssignProject(models.Model):
 
     def __str__(self):
         return f'{self.Project} - {self.Allocated}'
+
+
+class Notification(models.Model):
+    NotificationID = models.AutoField(primary_key=True)
+    SenderUser = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
+    Type = models.CharField(max_length=255)
+    Message = models.TextField()
+    AdditionalData = models.JSONField(null=True, blank=True)
+    IsRead = models.BooleanField(default=False)
+    CreatedAt = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f'{self.SenderUser} - {self.ReceiverUser}'
