@@ -137,8 +137,7 @@ def student_login(request):
 
             try:
                 user = User.objects.get(EmailAddress=email)
-                # print(user.Passwd)
-                if not check_password(password, user.Passwd):
+                if check_password(password, user.Passwd):
                     token = jwt.encode({
                         'user_id': user.pk,
                         'role': user.UserRole,
