@@ -312,12 +312,12 @@ def user_preference_detail(request, pk):
 
 
 def get_user_friendly_errors(serializer_errors):
-    errors = {}
-    for field, field_errors in serializer_errors.items():
-        if field != 'non_field_errors':
-            errors[field] = ' '.join(field_errors)
-        else:
-            errors['non_field_errors'] = ' '.join(field_errors)
+    errors = {
+        'errors':''
+    }
+    for _, value in serializer_errors.items():
+        errors['errors'] += f'{value[0]}\n'
+    
     return errors
 
 
@@ -328,6 +328,7 @@ from rest_framework.decorators import action
 
 
 class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [DiyPermission]
@@ -361,7 +362,6 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-
         serializer = self.get_serializer(instance, data=request.data, context={'UserID': instance.UserID}, partial=True)
         if serializer.is_valid():
             serializer.save()
