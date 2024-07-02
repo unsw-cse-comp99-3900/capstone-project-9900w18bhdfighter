@@ -343,11 +343,14 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         return dic.get(self.action, self.serializer_class)
 
     def create(self, request, *args, **kwargs):
+        print(request.data)
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         errors = get_user_friendly_errors(serializer.errors)
+        
+        
         return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['put'], url_path='password', url_name='update-passwd')
