@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { SearchOutlined } from '@ant-design/icons'
 import type { InputRef, TableColumnsType, TableColumnType } from 'antd'
-import { Button, Divider, Flex, Input, Space, Table } from 'antd'
+import { Button, Divider, Flex, Input, Modal, Space, Table } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
 import { role, roleNames, roleNamesEnum } from '../../constant/role'
@@ -39,6 +39,7 @@ const Wrapper = styled(Flex)`
 const AdminManagement = () => {
   const searchInput = useRef<InputRef>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const { usrInfo } = useAuthContext()
   const handleOk = () => {
     setIsModalOpen(false)
@@ -183,7 +184,15 @@ const AdminManagement = () => {
             Manage
           </Button>
           <Divider type="vertical" />
-          <Button size="small" danger type="link">
+
+          <Button
+            onClick={() => {
+              setIsDeleteModalOpen(true)
+            }}
+            size="small"
+            danger
+            type="link"
+          >
             Delete
           </Button>
         </Flex>
@@ -200,12 +209,19 @@ const AdminManagement = () => {
         handleOk={handleOk}
         handleCancel={handleCancel}
       ></ModalProfileEdit>
+      <Modal
+        title="You are about to delete a user. Are you sure?"
+        open={isDeleteModalOpen}
+        okButtonProps={{ danger: true }}
+        onOk={() => setIsDeleteModalOpen(false)}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      ></Modal>
       <Table
         style={{
           width: '100%',
           height: '100%',
         }}
-        scroll={{ y: 'calc(100vh - 13rem)' }}
+        scroll={{ y: '65vh' }}
         columns={columns}
         dataSource={data}
       />

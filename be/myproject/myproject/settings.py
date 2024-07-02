@@ -35,7 +35,6 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -59,6 +58,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'myproject.exceptions.custom_exception_handler',
+}
 
 ROOT_URLCONF = 'myproject.urls'
 
@@ -94,6 +97,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT'),
     }
 }
+# AUTH_USER_MODEL = "myapp.User"
 
 print(DATABASES)
 # Password validation
