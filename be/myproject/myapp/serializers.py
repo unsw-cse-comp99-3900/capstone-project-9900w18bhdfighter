@@ -29,4 +29,4 @@ class UserPreferencesLinkSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model=Group
-        fields = ['GroupName', 'GroupDescription']
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber']
