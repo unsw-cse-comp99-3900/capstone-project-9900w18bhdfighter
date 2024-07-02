@@ -2,11 +2,13 @@ from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
 
 
-class DiyPermission(BasePermission):
+class OnlyForAdmin(BasePermission):
     def has_permission(self, request, view):
         from myapp.views import decode_jwt
         from myapp.models import User
-
+        token=request.headers.get('Authorization')
+        if not token:
+            return False
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
 

@@ -6,21 +6,25 @@ from django.conf import settings
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from rest_framework import viewsets, status, mixins
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Area, Group, GroupUsersLink, Skill, SkillProject, User as UserProfile, User, UserPreferencesLink, Project
 from .serializers import GroupSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, RegisterSerializer, UserUpdatePasswdSerializer, UserUpdateSerializer
-from .permission import DiyPermission
+from .permission import OnlyForAdmin
 from rest_framework.viewsets import GenericViewSet
-from .serializers import UserUpdateSerializer
-from rest_framework.decorators import action
+
+# from .utils import generate_auth_token 
+
+
+# def generate_auth_token(user):
+#     token, created = Token.objects.get_or_create(user=user)
+#     return token.key
 
 def decode_jwt(token):
     try:
@@ -37,6 +41,7 @@ def decode_jwt(token):
 
 # Usage example
 def some_view_function(request):
+
     token = request.headers.get('Authorization').split()[1]  # Assuming token is sent as "Bearer <token>"
     result = decode_jwt(token)
 
@@ -164,6 +169,7 @@ def student_login(request):
 ############################################################################################
 #                                    Project Creation                                      #
 ############################################################################################
+
 @csrf_exempt
 def project_creation(request):
     if request.method == 'POST':
@@ -223,6 +229,7 @@ def project_creation(request):
 ############################################################################################
 #                                    Project Updating                                      #
 ############################################################################################
+
 @csrf_exempt
 def project_update(request, id):
     try:
@@ -275,6 +282,7 @@ def project_update(request, id):
 ############################################################################################
 #                                     Group Creation                                       #
 ############################################################################################
+
 @csrf_exempt
 def group_creation(request):
     if request.method == 'POST':
@@ -316,6 +324,7 @@ def group_creation(request):
 ############################################################################################
 #                                     Group Operation                                      #
 ############################################################################################
+
 @csrf_exempt
 def group_join(request):
     if request.method == 'POST':
@@ -350,7 +359,7 @@ def group_join(request):
         if current_group_number >= group.MaxMemberNumber:
             if user.UserRole in [3, 4, 5]:
                 GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-                return JsonResponse({'message': 'Added user to full group successfully!'}, status=201)
+                return JsonResponse({'message': 'Added students to full group successfully!'}, status=201)
             return JsonResponse({'error': 'Group is full'}, status=400)
         else:
             if user_data['role'] == 1:
@@ -358,7 +367,7 @@ def group_join(request):
                     GroupUsersLink.objects.create(GroupID=group, UserID=user)
                     return JsonResponse({'message': 'Joined group successfully!'}, status=201)
                 else:
-                    return JsonResponse({'error': 'You cannot add other student into a group'}, status=403)
+                    return JsonResponse({'error': 'You cannot add other studens into a group'}, status=403)
             return JsonResponse({'error': 'You cannot join a group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
@@ -412,10 +421,10 @@ def group_leave(request):
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
-
 ############################################################################################
 #                                     Get project list                                     #
 ############################################################################################
+
 @csrf_exempt
 def get_projects_list(request):
     if request.method == 'GET':
@@ -436,7 +445,6 @@ def get_project_list_creator(request, email):
             return JsonResponse({'error': 'User not found.'}, status=404)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
     
-
 @csrf_exempt
 def get_project_list_owner(request, email):
     if request.method == 'GET':
@@ -553,7 +561,7 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [DiyPermission]
+    permission_classes = [OnlyForAdmin]
     lookup_field = "UserID"
 
     def get_serializer_class(self):
@@ -565,11 +573,14 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         return dic.get(self.action, self.serializer_class)
 
     def create(self, request, *args, **kwargs):
+        print(request.data)
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         errors = get_user_friendly_errors(serializer.errors)
+        
+        
         return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['put'], url_path='password', url_name='update-passwd')
@@ -595,3 +606,52 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         instance = self.get_object()
         instance.delete()
         return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Area CRUD
+
+from .models import Area
+from .serializers import AreaSerializer
+
+class AreaAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = Area.objects.all()
+    serializer_class = AreaSerializer
+    permission_classes = [OnlyForAdmin]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy']:
+            return [OnlyForAdmin()]
+        else:
+            return []
+    
+    def create(self, request, *args, **kwargs):
+        serializer = AreaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = AreaSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return JsonResponse({'message': 'Area deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = AreaSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+    
+    
