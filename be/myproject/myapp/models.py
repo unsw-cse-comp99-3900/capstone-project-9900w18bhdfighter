@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
+from django.utils import timezone
 
 
 class User(models.Model):
@@ -15,7 +16,6 @@ class User(models.Model):
     UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
-
 
     def __str__(self):
         return str(self.UserID)
@@ -87,7 +87,6 @@ class Area(models.Model):
         return self.AreaName
 
 
-
 class StudentArea(models.Model):
     StudentAreaID = models.AutoField(primary_key=True)
     Area = models.ForeignKey(Area, on_delete=models.CASCADE)
@@ -95,7 +94,6 @@ class StudentArea(models.Model):
 
     def __str__(self):
         return f'{self.User} - {self.Area}'
-
 
 
 class Skill(models.Model):
@@ -107,7 +105,6 @@ class Skill(models.Model):
         return self.SkillName
 
 
-
 class SkillProject(models.Model):
     SkillProjectID = models.AutoField(primary_key=True)
     Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
@@ -115,3 +112,18 @@ class SkillProject(models.Model):
 
     def __str__(self):
         return str(self.SkillProjectID)
+
+
+class GroupAssignProject(models.Model):
+    GroupID = models.AutoField(primary_key=True)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    Allocated = models.ForeignKey(User, on_delete=models.CASCADE)
+    AllocatedAt = models.DateTimeField(default=timezone.now)
+    ProgressStatus = models.CharField(
+        max_length=20,
+        choices=[('To Do', 'To Do'), ('In Progress', 'In Progress'), ('Done', 'Done')],
+        default='To Do'
+    )
+
+    def __str__(self):
+        return f'{self.Project} - {self.Allocated}'
