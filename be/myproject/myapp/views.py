@@ -348,7 +348,7 @@ def group_join(request):
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
         if current_group_number >= group.MaxMemberNumber:
-            if user.UserRole in [3, 4]:
+            if user.UserRole in [3, 4, 5]:
                 GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
                 return JsonResponse({'message': 'Added user to full group successfully!'}, status=201)
             return JsonResponse({'error': 'Group is full'}, status=400)
@@ -363,6 +363,53 @@ def group_join(request):
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
+@csrf_exempt
+def group_leave(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        try:
+            leave_user = User.objects.get(UserID=data['student_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User do not exists'}, status=404)
+            
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        try:
+            group = Group.objects.get(GroupID=data['group_id'])
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group do not exists'}, status=404)
+
+        if not GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'Student is not in this group'}, status=400)
+
+        current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+
+       
+        if user.UserRole in [3, 4, 5]:
+            if current_group_number > 0:
+                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                return JsonResponse({'message': 'delete user to from the group successfully!'}, status=201)
+            return JsonResponse({'error': 'Group is empty'}, status=400)
+    
+        if user_data['role'] == 1:
+            if current_group_number > 1:
+                if user == leave_user:
+                    GroupUsersLink.objects.filter(GroupID=group, UserID=user).delete()
+                    return JsonResponse({'message': 'Leave group successfully!'}, status=201)
+                else:
+                    return JsonResponse({'error': 'You cannot remove other student from the group'}, status=403)
+            return JsonResponse({'error': 'You are the last student in the group'}, status=403)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 
