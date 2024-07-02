@@ -1,25 +1,26 @@
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.hashers import make_password
+import json
+import datetime
+import jwt
+from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
+from rest_framework import viewsets, status, mixins
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import GenericAPIView
+from rest_framework.parsers import JSONParser
 from django.views.decorators.csrf import csrf_exempt
-from .models import Area, Group, GroupUsersLink, Skill, SkillProject, User as UserProfile, User, UserPreferencesLink
-from .models import Project
-from .models import User
-from .serializers import GroupSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
-from rest_framework import status
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import JSONParser
-import jwt
-import json
-import datetime
-
+from .models import Area, Group, GroupUsersLink, Skill, SkillProject, User as UserProfile, User, UserPreferencesLink, Project
+from .serializers import GroupSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, RegisterSerializer, UserUpdatePasswdSerializer, UserUpdateSerializer
+from .permission import DiyPermission
+from rest_framework.viewsets import GenericViewSet
+from .serializers import UserUpdateSerializer
+from rest_framework.decorators import action
 
 def decode_jwt(token):
     try:
@@ -33,11 +34,12 @@ def decode_jwt(token):
         # Token is invalid
         return {'status': 'error', 'error_message': 'Invalid token.'}
 
+
 # Usage example
 def some_view_function(request):
     token = request.headers.get('Authorization').split()[1]  # Assuming token is sent as "Bearer <token>"
     result = decode_jwt(token)
-    
+
     if result['status'] == 'success':
         # Perform actions based on the decoded data
         user_data = result['data']
@@ -46,8 +48,8 @@ def some_view_function(request):
     else:
         # Handle error scenario
         return JsonResponse({'error': result['error_message']}, status=401)
-    
-    
+
+
 ############################################################################################
 #                                    Student Sign up                                       #
 ############################################################################################
@@ -60,19 +62,20 @@ def student_signup(request):
             last_name = data.get('LastName')
             email = data.get('EmailAddress')
             password = data.get('Passwd')
-            
+
             if not first_name or not last_name or not email or not password:
-                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'}, status=400)
-            
+                return JsonResponse({'error': 'FirstName, LastName, EmailAddress, and Passwd are required.'},
+                                    status=400)
+
             if User.objects.filter(EmailAddress=email).exists():
                 return JsonResponse({'error': 'Email already exists.'}, status=400)
-            
+
             user = User.objects.create(
                 FirstName=first_name,
                 LastName=last_name,
                 EmailAddress=email,
                 Passwd=make_password(password),
-                UserRole=1,              
+                UserRole=1,
                 UserInformation=''
             )
 
@@ -84,7 +87,7 @@ def student_signup(request):
                 'email': user.EmailAddress,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
             }, settings.SECRET_KEY, algorithm='HS256')
-            
+
             return JsonResponse({
                 'token': token,
                 'user': {
@@ -97,7 +100,7 @@ def student_signup(request):
                     'interestAreas': []
                 }
             }, status=201)
-        
+
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -107,6 +110,7 @@ def student_signup(request):
 ############################################################################################
 #                                    Student Login                                         #
 ############################################################################################
+
 @csrf_exempt
 def student_login(request):
     if request.method == 'POST':
@@ -116,7 +120,7 @@ def student_login(request):
             password = data.get('Passwd')
             if not email or not password:
                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
-            
+
             try:
                 user = User.objects.get(EmailAddress=email)
                 if check_password(password, user.Passwd):
@@ -126,14 +130,15 @@ def student_login(request):
                         'first_name': user.FirstName,
                         'last_name': user.LastName,
                         'email': user.EmailAddress,
-                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)
+                        # Token expires in 24 * 7 hours
                     }, settings.SECRET_KEY, algorithm='HS256')
-                    
+
                     response_data = {
                         'user_profile': {
                             'UserID': user.pk,
                             'FirstName': user.FirstName,
-                            'LastName' : user.LastName,
+                            'LastName': user.LastName,
                             'EmailAddress': user.EmailAddress,
                             'role': user.UserRole,
                             'description': user.UserInformation,
@@ -149,7 +154,7 @@ def student_login(request):
                     else:
                         return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=401)
             except User.DoesNotExist:
-                return JsonResponse({'error': 'Email not found.'}, status=404)        
+                return JsonResponse({'error': 'Email not found.'}, status=404)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
     else:
@@ -181,8 +186,8 @@ def project_creation(request):
                 return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
         elif user_data['role'] in [4, 5]:
             try:
-                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                    project_owner_email = project_owner.EmailAddress
+                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                project_owner_email = project_owner.EmailAddress
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Project owner not found.'}, status=404)
         else:
@@ -224,7 +229,7 @@ def project_update(request, id):
         project = Project.objects.get(pk=id)
     except Project.DoesNotExist:
         return JsonResponse({'error': 'Project not found'}, status=404)
-    
+
     if request.method == 'PUT':
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
@@ -316,11 +321,44 @@ def get_projects_list(request):
         projects = Project.objects.all()
         serializer = ProjectSerializer(projects, many=True)
         return JsonResponse(serializer.data, safe=False)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    
+@csrf_exempt
+def get_project_list_creator(request, email):
+    if request.method == 'GET':
+        try:
+            user = User.objects.get(EmailAddress=email)
+            projects = Project.objects.filter(CreatedBy=user)
+            serializer = ProjectSerializer(projects, many=True)
+            return JsonResponse(serializer.data, safe=False)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
     
 
+@csrf_exempt
+def get_project_list_owner(request, email):
+    if request.method == 'GET':
+        try:
+            projects = Project.objects.filter(ProjectOwner=email)
+            serializer = ProjectSerializer(projects, many=True)
+            return JsonResponse(serializer.data, safe=False)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+@csrf_exempt
+def get_project_list_owner_creator(request, creator, owner):
+    if request.method == 'GET':
+        try:
+            user = User.objects.get(EmailAddress=creator)
+            projects = Project.objects.filter(ProjectOwner=owner, CreatedBy=user)
 
-
+            serializer = ProjectSerializer(projects, many=True)
+            return JsonResponse(serializer.data, safe=False)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 
@@ -397,3 +435,63 @@ def user_preference_detail(request, pk):
     elif request.method == 'DELETE':
         preference.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def get_user_friendly_errors(serializer_errors):
+    errors = {
+        'errors':''
+    }
+    for _, value in serializer_errors.items():
+        errors['errors'] += f'{value[0]}\n'
+    
+    return errors
+
+
+
+
+class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+    permission_classes = [DiyPermission]
+    lookup_field = "UserID"
+
+    def get_serializer_class(self):
+        dic = {
+            'create': RegisterSerializer,
+            'update': UserUpdateSerializer,
+            'update_passwd': UserUpdatePasswdSerializer
+        }
+        return dic.get(self.action, self.serializer_class)
+
+    def create(self, request, *args, **kwargs):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['put'], url_path='password', url_name='update-passwd')
+    def update_passwd(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True, context={'UserID': instance.UserID})
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, context={'UserID': instance.UserID}, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        errors = get_user_friendly_errors(serializer.errors)
+        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)

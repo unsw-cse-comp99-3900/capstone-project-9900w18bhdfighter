@@ -12,7 +12,8 @@ class User(models.Model):
     EmailAddress = models.CharField(max_length=255, unique=True)
     Passwd = models.CharField(max_length=255)
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
-    UserRole = models.IntegerField()
+    UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
+                                   default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
     def __str__(self):
         return str(self.UserID)
@@ -98,7 +99,7 @@ class StudentArea(models.Model):
 class Skill(models.Model):
     SkillID = models.AutoField(primary_key=True)
     SkillName = models.CharField(max_length=255)
-    Area = models.ForeignKey(Area, on_delete=models.CASCADE) 
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.SkillName
