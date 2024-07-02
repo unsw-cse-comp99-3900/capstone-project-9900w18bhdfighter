@@ -312,6 +312,60 @@ def group_creation(request):
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+
+############################################################################################
+#                                     Group Operation                                      #
+############################################################################################
+@csrf_exempt
+def group_join(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        try:
+            add_user = User.objects.get(UserID=data['student_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User do not exists'}, status=404)
+            
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        try:
+            group = Group.objects.get(GroupID=data['group_id'])
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group do not exists'}, status=404)
+
+        if GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'Student is already in a group'}, status=400)
+
+        current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+
+        if current_group_number >= group.MaxMemberNumber:
+            if user.UserRole in [3, 4]:
+                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
+                return JsonResponse({'message': 'Added user to full group successfully!'}, status=201)
+            return JsonResponse({'error': 'Group is full'}, status=400)
+        else:
+            if user_data['role'] == 1:
+                if user == add_user:
+                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                    return JsonResponse({'message': 'Joined group successfully!'}, status=201)
+                else:
+                    return JsonResponse({'error': 'You cannot add other student into a group'}, status=403)
+            return JsonResponse({'error': 'You cannot join a group'}, status=403)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+
+
+
 ############################################################################################
 #                                     Get project list                                     #
 ############################################################################################
@@ -359,7 +413,6 @@ def get_project_list_owner_creator(request, creator, owner):
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 
 

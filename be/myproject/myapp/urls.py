@@ -15,6 +15,7 @@ urlpatterns = [
     path("projects/createdBy/<str:email>/", views.get_project_list_creator, name="get_project_list_creator"),
     path("projects/ownBy/<str:email>/", views.get_project_list_owner, name="get_project_list_owner"),
     path("projects/own_and_create/<str:creator>/<str:owner>/", views.get_project_list_owner_creator, name="get_project_list_owner"),
+    path("group_join/", views.group_join, name="group_join"),
     # path('test_db_connection/', views.test_db_connection, name='test_db_connection'),
 ]
 urlpatterns += user_url.urls

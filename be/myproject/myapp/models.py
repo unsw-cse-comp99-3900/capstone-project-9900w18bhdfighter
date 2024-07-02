@@ -45,7 +45,7 @@ class Group(models.Model):
     GroupName = models.CharField(max_length=255, unique=True)
     GroupDescription = models.TextField()
     CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
-    MaxMemberNumber = models.IntegerField(default=1)
+    MaxMemberNumber = models.IntegerField(default=5)
     def __str__(self):
         return str(self.GroupID)
 
