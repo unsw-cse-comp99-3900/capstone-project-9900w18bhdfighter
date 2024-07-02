@@ -20,7 +20,7 @@ from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer
+from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserWithAreaSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -332,9 +332,9 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     lookup_field = "UserID"
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'destroy']:
-            return [OnlyForAdmin(), ForValidToken()]
-        elif self.action in ['list', 'retrieve']:
+        if self.action in ['create', 'destroy','update_passwd']:
+            return [ForValidToken(),OnlyForAdmin()]
+        elif self.action in ['list', 'retrieve','update']:
             return [ForValidToken()]
         else:
             return []
@@ -345,7 +345,17 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
             'update_passwd': UserUpdatePasswdSerializer
         }
         return dic.get(self.action, self.serializer_class)
-
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        try:
+            token = self.request.headers.get('Authorization').split()[1]
+            result = decode_jwt(token)
+            if result['status'] == 'success':
+                context['RequesterID'] = result['data']['user_id']
+        except Exception as e:
+            raise JsonResponse({'error': 'Invalid token.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return context
     def create(self, request, *args, **kwargs):
         print(request.data)
         serializer = RegisterSerializer(data=request.data)
@@ -368,7 +378,9 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, context={'UserID': instance.UserID}, partial=True)
+        context = self.get_serializer_context()
+        context['UserID'] = instance.UserID
+        serializer = self.get_serializer(instance, data=request.data, context=context, partial=True)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_200_OK)
@@ -382,18 +394,17 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = UserSerializer(queryset, many=True)
+        serializer = UserWithAreaSerializer(queryset, many=True)
+        
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
         
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = UserSerializer(instance)
-        area_serializer = AreaSerializer(instance.Areas, many=True)
+        serializer = UserWithAreaSerializer(instance)
         return  JsonResponse({
             'data': serializer.data,
-            'areas': area_serializer.data
         }, status=status.HTTP_200_OK)
         
 
@@ -443,103 +454,3 @@ class AreaAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
 
-
-############################################################################################
-#                                   获取或更新用户个人资料                                     #
-############################################################################################
-
-@api_view(['GET', 'PUT'])
-def user_profile(request):
-    if request.method == 'GET':
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
-        if result['status'] == 'error':
-            return JsonResponse({'error': 'Invalid token'}, status=401)
-
-        email = result['data']['email']
-        try:
-            user = User.objects.get(EmailAddress=email)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
-
-        interest_areas = StudentArea.objects.filter(User=user)
-        interest_areas_data = [
-            {
-                'AreaID': area.Area.AreaID,
-                'AreaName': area.Area.AreaName
-            } for area in interest_areas
-        ]
-
-        response_data = {
-            'user_profile': {
-                'UserID': user.pk,
-                'FirstName': user.FirstName,
-                'LastName': user.LastName,
-                'EmailAddress': user.EmailAddress,
-                'role': user.UserRole,
-                'description': user.UserInformation,
-                'interestAreas': interest_areas_data
-            }
-        }
-        return JsonResponse(response_data, status=200)
-
-    elif request.method == 'PUT':
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
-        if result['status'] == 'error':
-            return JsonResponse({'error': 'Invalid token'}, status=401)
-
-        user_id = result['data']['user_id']
-        role = result['data']['role']
-
-        data = request.data
-
-        try:
-            user_to_update = User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
-
-        if role != 5 and user_to_update.pk != user_id:
-            return JsonResponse({'error': 'Forbidden: You can only update your own profile'}, status=403)
-
-        if 'FirstName' in data:
-            user_to_update.FirstName = data['FirstName']
-        if 'LastName' in data:
-            user_to_update.LastName = data['LastName']
-        if 'Description' in data:
-            user_to_update.UserInformation = data['Description']
-        if 'InterestAreas' in data:
-            # 清除现有的兴趣领域
-            StudentArea.objects.filter(User=user_to_update).delete()
-            # 添加新的兴趣领域
-            for area_id in data['InterestAreas']:
-                area = Area.objects.get(pk=area_id)
-                StudentArea.objects.create(User=user_to_update, Area=area)
-        if 'Passwd' in data:
-            new_password = data['Passwd']
-            if len(new_password) < 6:
-                return JsonResponse({'error': 'Password must be at least 6 characters long'}, status=400)
-            user_to_update.Passwd = make_password(new_password)
-
-        user_to_update.save()
-
-        interest_areas = StudentArea.objects.filter(User=user_to_update)
-        interest_areas_data = [
-            {
-                'AreaID': area.Area.AreaID,
-                'AreaName': area.Area.AreaName
-            } for area in interest_areas
-        ]
-
-        response_data = {
-            'user_profile': {
-                'UserID': user_to_update.pk,
-                'FirstName': user_to_update.FirstName,
-                'LastName': user_to_update.LastName,
-                'EmailAddress': user_to_update.EmailAddress,
-                'role': user_to_update.UserRole,
-                'description': user_to_update.UserInformation,
-                'interestAreas': interest_areas_data
-            }
-        }
-        return JsonResponse(response_data, status=200)

@@ -25,8 +25,8 @@ const _ModalProfileEdit = ({
 }: Props) => {
   const [visible, setVisible] = useState(false)
   const [form] = Form.useForm()
-
   const { getAreaList, areaList } = useAreaContext()
+
   useEffect(() => {
     const { firstName, lastName, description, interestAreas, role } =
       userInfo || {
@@ -43,6 +43,7 @@ const _ModalProfileEdit = ({
       interestAreas: interestAreas.map((area) => area.id),
       role: role,
     })
+    console.log(interestAreas)
   }, [userInfo, form])
 
   useEffect(() => {

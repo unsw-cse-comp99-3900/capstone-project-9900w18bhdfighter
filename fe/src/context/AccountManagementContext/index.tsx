@@ -1,13 +1,7 @@
 import { ReactNode, createContext, useContext, useState } from 'react'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import {
-  AreaDTO,
-  UserInfo,
-  UserInfoSlim,
-  UserInfoSlimDTO,
-  UserUpdate,
-} from '../../types/user'
+import { AreaDTO, UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
 import { errHandler } from '../../utils/parse'
 
 interface AccountManagementContextType {
@@ -17,7 +11,7 @@ interface AccountManagementContextType {
   getAccountList: () => Promise<void>
   getAnUserProfile: (_usrId: number) => Promise<void>
   currProfileViewing: UserInfo | null
-  accountList: UserInfoSlim[]
+  accountList: UserInfo[]
 }
 const AccountManagementContext = createContext<AccountManagementContextType>(
   {} as AccountManagementContextType
@@ -31,7 +25,7 @@ const AccountManagementContextProvider = ({
   children: ReactNode
 }) => {
   const { msg } = useGlobalComponentsContext()
-  const [accountList, setAccountList] = useState<UserInfoSlim[]>([])
+  const [accountList, setAccountList] = useState<UserInfo[]>([])
   const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
     null
   )
@@ -66,14 +60,20 @@ const AccountManagementContextProvider = ({
     try {
       const res = await api.get('api/users')
 
-      const _accountList = res.data.data.map((account: UserInfoSlimDTO) => ({
-        id: account.UserID,
-        firstName: account.FirstName,
-        lastName: account.LastName,
-        email: account.EmailAddress,
-        role: account.UserRole,
-      }))
-      setAccountList([])
+      const _accountList: UserInfo[] = res.data.data.map(
+        (account: UserProfileDTO) => ({
+          id: account.UserID,
+          firstName: account.FirstName,
+          lastName: account.LastName,
+          email: account.EmailAddress,
+          role: account.UserRole,
+          description: account.UserInformation,
+          interestAreas: account.Areas.map((area) => ({
+            id: area.AreaID,
+            name: area.AreaName,
+          })),
+        })
+      )
       setAccountList(_accountList)
     } catch (err) {
       console.log(err)

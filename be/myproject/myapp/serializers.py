@@ -15,12 +15,25 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner']
 
 
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['AreaID', 'AreaName']
+    
+
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = '__all__'
         extra_kwargs = {'Passwd': {'write_only': True}}
 
+class UserWithAreaSerializer(serializers.ModelSerializer):
+    Areas = AreaSerializer(many=True, read_only=True)
+    class Meta:
+        model = User
+        fields = '__all__'
+        extra_kwargs = {'Passwd': {'write_only': True}}
 
 class UserPreferencesLinkSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,17 +51,37 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     UserInformation = serializers.CharField(required=False, allow_blank=True, default="")
     def validate(self, data):
         UserID = self.context.get('UserID')
+        RequesterID = self.context.get('RequesterID')
+        # check if the requester exists
+        try:
+            requester = User.objects.get(UserID=RequesterID)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("The requester does not exist.")
+        # check if the email address is already in use
         if data.get('EmailAddress'):
             if User.objects.exclude(UserID=UserID).filter(EmailAddress=data['EmailAddress']).exists():
                 raise serializers.ValidationError("The email address is already in use by another user!")
+            data["EmailAddress"] = data["EmailAddress"]
+        # if the password is provided, hash it and save it
         if data.get('Passwd'):
             data["Passwd"] = make_password(data["Passwd"])
+        
+        # check if the areas exist
         areas_data = data.get('Areas', [])
         for area_id in areas_data:
             if not Area.objects.filter(AreaID=area_id).exists():
                 raise serializers.ValidationError(f"Area with ID {area_id} does not exist.")
         data['Areas'] = areas_data
+        
+        # only allow non-admin users to keep their own role
+        if requester.UserRole != 5:
+            if UserID == RequesterID and data.get('UserRole')==requester.UserRole:
+                pass
+            else:
+                raise serializers.ValidationError("You do not have permission to perform this action.")
+            
         return data
+    
     
     def update(self, instance, validated_data):
         areas_data = validated_data.pop('Areas', [])
@@ -130,9 +163,3 @@ class RegisterSerializer(serializers.ModelSerializer):
             "Areas": areas_data
         }
 
-
-class AreaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Area
-        fields = "__all__"
-    

@@ -11,9 +11,7 @@ urlpatterns = [
     path("project_creation/", views.project_creation, name="project_creation"),
     path("student_signup/", views.student_signup, name="student_signup"),
     path("project_update/<int:id>/", views.project_update, name="project_update"),
-    # path('test_db_connection/', views.test_db_connection, name='test_db_connection'),
-    # 获取或更新用户个人资料接口
-    path("api/profile/", views.user_profile, name="user_profile"),
+
 ]
 urlpatterns += url.urls
 

@@ -18,7 +18,6 @@ interface UserInfo {
   interestAreas: Area[]
 }
 
-type UserInfoSlim = Omit<UserInfo, 'description' | 'interestAreas'>
 interface UserDTO {
   UserID: number
   FirstName: string
@@ -26,7 +25,15 @@ interface UserDTO {
   EmailAddress: string
   Passwd: string
 }
-
+interface UserProfileDTO {
+  UserID: number
+  FirstName: string
+  LastName: string
+  EmailAddress: string
+  UserRole: UserRole
+  UserInformation: string
+  Areas: AreaDTO[]
+}
 interface UserUpdate {
   FirstName: string
   LastName: string
@@ -46,9 +53,9 @@ export {
   UserSignup,
   UserLogin,
   UserRole,
-  UserInfoSlim,
   UserInfoSlimDTO,
   Area,
   AreaDTO,
   UserUpdate,
+  UserProfileDTO,
 }

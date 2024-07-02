@@ -17,7 +17,7 @@ import ActionGroup from './components/ActionGroup'
 import AccountManagementContextProvider, {
   useAccountManagementContext,
 } from '../../context/AccountManagementContext'
-import { UserUpdate } from '../../types/user'
+import { UserInfo, UserUpdate } from '../../types/user'
 
 interface DataType {
   key: number
@@ -41,15 +41,11 @@ const _AdminManagement = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-
-  const {
-    accountList,
-    getAccountList,
-    getAnUserProfile,
-    currProfileViewing,
-    deleteAccount,
-    updateAccount,
-  } = useAccountManagementContext()
+  const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
+    null
+  )
+  const { accountList, getAccountList, deleteAccount, updateAccount } =
+    useAccountManagementContext()
 
   const data = useMemo(
     () =>
@@ -167,9 +163,14 @@ const _AdminManagement = () => {
             currUsrIdOnRowRef.current = record.key
             setIsDeleteModalOpen(true)
           }}
-          handleManage={async () => {
+          handleManage={() => {
             currUsrIdOnRowRef.current = record.key
-            await getAnUserProfile(currUsrIdOnRowRef.current)
+            const usr = accountList.find(
+              (_usr: UserInfo) => _usr.id === record.key
+            )
+            setCurrProfileViewing(usr || null)
+            console.log(usr)
+
             setIsModalOpen(true)
           }}
         />
