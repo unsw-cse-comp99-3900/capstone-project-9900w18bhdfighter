@@ -6,14 +6,14 @@ from rest_framework.authtoken.models import Token
 from django.utils import timezone
 
 
-
 class Area(models.Model):
     AreaID = models.AutoField(primary_key=True)
     AreaName = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.AreaName
-    
+
+
 class User(models.Model):
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
@@ -26,6 +26,7 @@ class User(models.Model):
     UserInformation = models.CharField(max_length=255)
     Areas = models.ManyToManyField(Area, through='StudentArea')
     Notifications = models.ManyToManyField('Notification', through='NotificationReceiver')
+
     def __str__(self):
         return str(self.UserID)
 
@@ -88,8 +89,6 @@ class GroupProjectsLink(models.Model):
         return str(self.GroupProjectsLinkID)
 
 
-
-
 class StudentArea(models.Model):
     StudentAreaID = models.AutoField(primary_key=True)
     Area = models.ForeignKey(Area, on_delete=models.CASCADE)
@@ -143,11 +142,12 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.SenderUser}'
+
+
 class NotificationReceiver(models.Model):
     NotificationReceiverID = models.AutoField(primary_key=True)
     ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
-    NotificationID = models.ForeignKey(Notification, on_delete=models.CASCADE)
-    
+    Notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.ReceiverUser} - {self.NotificationID}'
+        return f'{self.ReceiverUser} - {self.Notification}'
