@@ -73,12 +73,16 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Area with ID {area_id} does not exist.")
         data['Areas'] = areas_data
         
-        # only allow non-admin users to keep their own role
+        # if not admin
         if requester.UserRole != 5:
+            # only alow the user to update their own information
+            if UserID != RequesterID:
+                raise serializers.ValidationError("You do not have permission to change another user's information.")
+            # do not allow the user to change their role to another
             if UserID == RequesterID and data.get('UserRole')==requester.UserRole:
                 pass
             else:
-                raise serializers.ValidationError("You do not have permission to perform this action.")
+                raise serializers.ValidationError("You do not have permission to change your role.")
             
         return data
     
