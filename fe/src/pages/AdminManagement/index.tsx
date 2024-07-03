@@ -19,6 +19,8 @@ import AccountManagementContextProvider, {
 } from '../../context/AccountManagementContext'
 import { UserInfo, UserUpdate } from '../../types/user'
 import { useAuthContext } from '../../context/AuthContext'
+import { Link } from 'react-router-dom'
+import route from '../../constant/route'
 
 interface DataType {
   key: number
@@ -133,7 +135,9 @@ const _AdminManagement = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-
+      render: (text, record) => (
+        <Link to={`${route.PROFILE}/${record.key}`}>{text}</Link>
+      ),
       ...getColumnSearchProps('name'),
     },
     {

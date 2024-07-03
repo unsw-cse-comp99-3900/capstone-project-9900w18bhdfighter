@@ -58,6 +58,10 @@ const routerConfig = [
         path: route.PROFILE,
       },
       {
+        element: <Profile />,
+        path: `${route.PROFILE}/:id`,
+      },
+      {
         element: <Projects />,
         path: route.PROJECTS,
       },

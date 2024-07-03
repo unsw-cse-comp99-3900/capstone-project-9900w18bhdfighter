@@ -11,6 +11,7 @@ import AccountManagementContextProvider, {
   useAccountManagementContext,
 } from '../../context/AccountManagementContext'
 import { UserUpdate } from '../../types/user'
+import { useParams } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -41,19 +42,28 @@ const Descriptions = styled(_Descriptions)`
   margin-top: 2rem;
   box-shadow: ${getThemeToken('boxShadow')};
 `
+
 const _Profile = () => {
   const { usrInfo, setUserInfo } = useAuthContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
-
+  const { id: usrId } = useParams() || {
+    id: undefined,
+  }
+  const isMyProfile = !usrId
   const { updateAccount, getAnUserProfile, currProfileViewing } =
     useAccountManagementContext()
+  // when user id is changed, get the user profile
   useEffect(() => {
-    usrInfo?.id && getAnUserProfile(usrInfo?.id as number)
-  }, [usrInfo?.id])
+    usrId
+      ? getAnUserProfile(parseInt(usrId))
+      : usrInfo && getAnUserProfile(usrInfo.id)
+  }, [usrInfo?.id, usrId])
 
+  //when my current profile is updated, update to my user info
   useEffect(() => {
-    setUserInfo(currProfileViewing)
+    isMyProfile && setUserInfo(currProfileViewing)
   }, [currProfileViewing])
+  //only for self
   const handleOk = async (form: FormInstance) => {
     try {
       const values = await form.validateFields()
@@ -73,7 +83,6 @@ const _Profile = () => {
       )
 
       if (!usrInfo) throw new Error('User not found')
-
       await updateAccount(usrInfo.id, updateInfo)
       await getAnUserProfile(usrInfo.id)
       setIsModalOpen(false)
@@ -108,6 +117,9 @@ const _Profile = () => {
           type="primary"
           onClick={() => {
             setIsModalOpen(true)
+          }}
+          style={{
+            display: isMyProfile ? 'block' : 'none',
           }}
         >
           Edit
