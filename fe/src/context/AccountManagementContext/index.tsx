@@ -92,7 +92,7 @@ const AccountManagementContextProvider = ({
         email: res.data.data.EmailAddress,
         role: res.data.data.UserRole,
         description: res.data.data.UserInformation,
-        interestAreas: res.data.areas.map((area: AreaDTO) => ({
+        interestAreas: res.data.data.Areas.map((area: AreaDTO) => ({
           id: area.AreaID,
           name: area.AreaName,
         })),

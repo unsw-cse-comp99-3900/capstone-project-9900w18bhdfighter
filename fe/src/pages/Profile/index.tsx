@@ -1,12 +1,16 @@
 import { Button, Descriptions as _Descriptions, Flex, Tag } from 'antd'
+import type { FormInstance } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
-
 import { useAuthContext } from '../../context/AuthContext'
 import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
 import ModalProfileEdit from '../../components/ModalProfileEdit'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import AccountManagementContextProvider, {
+  useAccountManagementContext,
+} from '../../context/AccountManagementContext'
+import { UserUpdate } from '../../types/user'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -37,27 +41,64 @@ const Descriptions = styled(_Descriptions)`
   margin-top: 2rem;
   box-shadow: ${getThemeToken('boxShadow')};
 `
-const Profile = () => {
-  const { usrInfo } = useAuthContext()
+const _Profile = () => {
+  const { usrInfo, setUserInfo } = useAuthContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const handleOk = () => {
-    setIsModalOpen(false)
+
+  const { updateAccount, getAnUserProfile, currProfileViewing } =
+    useAccountManagementContext()
+  useEffect(() => {
+    usrInfo?.id && getAnUserProfile(usrInfo?.id as number)
+  }, [usrInfo?.id])
+
+  useEffect(() => {
+    setUserInfo(currProfileViewing)
+  }, [currProfileViewing])
+  const handleOk = async (form: FormInstance) => {
+    try {
+      const values = await form.validateFields()
+      const updateInfo: UserUpdate = {
+        FirstName: values.firstName,
+        LastName: values.lastName,
+        UserInformation: values.description,
+        Areas: values.interestAreas,
+        UserRole: values.role,
+        Passwd: values.password,
+        EmailAddress: values.email,
+      }
+      Object.keys(updateInfo).forEach(
+        (key) =>
+          updateInfo[key as keyof UserUpdate] === undefined &&
+          delete updateInfo[key as keyof UserUpdate]
+      )
+
+      if (!usrInfo) throw new Error('User not found')
+
+      await updateAccount(usrInfo.id, updateInfo)
+      await getAnUserProfile(usrInfo.id)
+      setIsModalOpen(false)
+    } catch (e) {
+      console.error(e)
+    }
   }
   const handleCancel = () => {
     setIsModalOpen(false)
   }
-  const { role, email, firstName, lastName, description } = usrInfo || {
-    email: '',
-    role: 1,
-    firstName: '',
-    lastName: '',
-    description: '',
-  }
+  const { role, email, firstName, lastName, description, interestAreas } =
+    currProfileViewing || {
+      email: '',
+      role: 1,
+      firstName: '',
+      lastName: '',
+      description: '',
+      interestAreas: [],
+    }
   return (
     <Wrapper>
       <ModalProfileEdit
+        viewerRole={usrInfo?.role}
         title="Edit Profile"
-        userInfo={usrInfo}
+        userInfo={currProfileViewing}
         isModalOpen={isModalOpen}
         handleOk={handleOk}
         handleCancel={handleCancel}
@@ -91,46 +132,21 @@ const Profile = () => {
           {description}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Interest Areas">
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
+          {interestAreas.map((area) => (
+            <Tag key={area.id} style={{ margin: '0.1rem' }} color="magenta">
+              {area.name}
+            </Tag>
+          ))}
         </Descriptions.Item>
       </Descriptions>
     </Wrapper>
   )
 }
+
+const Profile = () => (
+  <AccountManagementContextProvider>
+    <_Profile />
+  </AccountManagementContextProvider>
+)
 
 export default Profile

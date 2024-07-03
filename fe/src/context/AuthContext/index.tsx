@@ -3,12 +3,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import type { UserInfo, UserLogin, UserSignup } from '../../types/user'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { AxiosError, isAxiosError } from 'axios'
 
 import route from '../../constant/route'
 import type { NavigateFunction } from 'react-router-dom'
@@ -21,6 +21,7 @@ interface AuthContextType {
   signup: (_user: UserSignup, _navigate: NavigateFunction) => void
   haveLoggedIn: () => boolean
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>
+  role: number | undefined
 }
 const GlobalAuthContext = createContext({} as AuthContextType)
 export const useAuthContext = () => useContext(GlobalAuthContext)
@@ -32,6 +33,8 @@ const AuthContextProvider = ({ children }: Props) => {
   //todo: implement auth context
   const { msg } = useGlobalComponentsContext()
   const [usrInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const role = useMemo(() => usrInfo?.role, [usrInfo])
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userInfo = localStorage.getItem('user_info')
@@ -81,32 +84,33 @@ const AuthContextProvider = ({ children }: Props) => {
         firstName: res.data.user.FirstName,
         lastName: res.data.user.LastName,
         email: res.data.user.EmailAddress,
-        role: res.data.user_profile.role,
-        description: res.data.user_profile.description,
-        interestAreas: res.data.user_profile.interestAreas,
+        role: res.data.user.role,
+        description: res.data.user.description,
+        interestAreas: res.data.user.interestAreas,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
 
       setUserInfo(_usrInfo)
       msg.success('Signup success')
+
       navigate(route.DASHBOARD)
     } catch (err) {
-      if (isAxiosError(err)) {
-        const error = err as AxiosError<{ error: string }>
-        const data = error.response?.data
-        if (data) {
-          msg.err(data.error)
-        }
-      }
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
+
   const haveLoggedIn = () => {
     return !!localStorage.getItem('token')
   }
 
   const ctx = {
     usrInfo,
+    role,
     setUserInfo,
     login,
     logout,

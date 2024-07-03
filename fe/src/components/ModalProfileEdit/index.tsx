@@ -2,7 +2,7 @@ import { Button, Form, Input, Modal, Select } from 'antd'
 import type { FormInstance, ModalProps } from 'antd'
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { UserInfo } from '../../types/user'
+import { UserInfo, UserRole } from '../../types/user'
 
 import AreaContextProvider, { useAreaContext } from '../../context/AreaContext'
 import { role as _role } from '../../constant/role'
@@ -12,6 +12,7 @@ type Props = {
   handleOk: (_form: FormInstance) => void
   handleCancel: () => void
   userInfo: UserInfo | null
+  viewerRole: UserRole | undefined
 } & ModalProps
 
 const Wrapper = styled(Modal)``
@@ -21,21 +22,21 @@ const _ModalProfileEdit = ({
   handleCancel,
   userInfo,
   handleOk,
+  viewerRole = _role.ADMIN,
   ...props
 }: Props) => {
   const [visible, setVisible] = useState(false)
   const [form] = Form.useForm()
   const { getAreaList, areaList } = useAreaContext()
-
+  const { firstName, lastName, description, interestAreas, role } =
+    userInfo || {
+      firstName: '',
+      lastName: '',
+      description: '',
+      interestAreas: [],
+      role: 1,
+    }
   useEffect(() => {
-    const { firstName, lastName, description, interestAreas, role } =
-      userInfo || {
-        firstName: '',
-        lastName: '',
-        description: '',
-        interestAreas: [],
-        role: 1,
-      }
     form.setFieldsValue({
       firstName: firstName,
       lastName: lastName,
@@ -102,7 +103,13 @@ const _ModalProfileEdit = ({
             }))}
           />
         </Form.Item>
-        <Form.Item label="Role" name="role">
+        <Form.Item
+          style={{
+            display: `${viewerRole === _role.ADMIN ? 'block' : 'none'}`,
+          }}
+          label="Role"
+          name="role"
+        >
           <Select
             style={{ width: '100%' }}
             placeholder="Role"

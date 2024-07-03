@@ -18,6 +18,7 @@ import AccountManagementContextProvider, {
   useAccountManagementContext,
 } from '../../context/AccountManagementContext'
 import { UserInfo, UserUpdate } from '../../types/user'
+import { useAuthContext } from '../../context/AuthContext'
 
 interface DataType {
   key: number
@@ -38,7 +39,7 @@ const Wrapper = styled(Flex)`
 const _AdminManagement = () => {
   const searchInput = useRef<InputRef>(null)
   const currUsrIdOnRowRef = useRef<number | null>(null)
-
+  const { usrInfo: _usrInfo } = useAuthContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
@@ -49,13 +50,15 @@ const _AdminManagement = () => {
 
   const data = useMemo(
     () =>
-      accountList.map((account) => ({
-        key: account.id,
-        name: account.firstName + ' ' + account.lastName,
-        role: roleNames[account.role],
-        email: account.email,
-      })),
-    [accountList]
+      accountList
+        .map((account) => ({
+          key: account.id,
+          name: account.firstName + ' ' + account.lastName,
+          role: roleNames[account.role],
+          email: account.email,
+        }))
+        .filter((account) => account.key !== _usrInfo?.id),
+    [accountList, _usrInfo]
   )
   useEffect(() => {
     getAccountList()
@@ -186,6 +189,7 @@ const _AdminManagement = () => {
         isModalOpen={isModalOpen}
         handleOk={handleOk}
         handleCancel={handleCancel}
+        viewerRole={role.ADMIN}
       ></ModalProfileEdit>
       <Modal
         title="You are about to delete a user. Are you sure?"

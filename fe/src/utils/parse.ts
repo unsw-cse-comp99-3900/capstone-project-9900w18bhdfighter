@@ -58,7 +58,8 @@ const errHandler = (
       axiosErrDo(data.error || data.errors)
     }
   } else {
-    otherErrDo('Something went wrong')
+    console.log('err:', err)
+    otherErrDo('Technical error, please view logs of console')
   }
 }
 

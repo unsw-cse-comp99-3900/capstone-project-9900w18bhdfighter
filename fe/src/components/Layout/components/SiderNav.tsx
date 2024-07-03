@@ -10,6 +10,8 @@ import { getThemeToken } from '../../../utils/styles'
 import { FaUserGroup } from 'react-icons/fa6'
 
 import { IoSettings } from 'react-icons/io5'
+import { useAuthContext } from '../../../context/AuthContext'
+import { role } from '../../../constant/role'
 const _Sider = styled(Sider)`
   padding-top: ${getThemeToken('paddingMD', 'px')};
 `
@@ -18,6 +20,7 @@ const SiderNav = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const [selectedKey, setSelectedKey] = useState(route.DASHBOARD)
+  const { role: _role } = useAuthContext()
   useEffect(() => {
     setSelectedKey(location.pathname)
   }, [location.pathname])
@@ -50,6 +53,9 @@ const SiderNav = () => {
             key: route.ADMIN,
             icon: <IoSettings />,
             label: 'Management',
+            style: {
+              display: _role === role.ADMIN ? 'block' : 'none',
+            },
           },
         ]}
       />
