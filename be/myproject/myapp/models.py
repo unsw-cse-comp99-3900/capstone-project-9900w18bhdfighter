@@ -25,7 +25,7 @@ class User(models.Model):
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
     Areas = models.ManyToManyField(Area, through='StudentArea')
-
+    Notifications = models.ManyToManyField('Notification', through='NotificationReceiver')
     def __str__(self):
         return str(self.UserID)
 
@@ -135,7 +135,6 @@ class GroupAssignProject(models.Model):
 class Notification(models.Model):
     NotificationID = models.AutoField(primary_key=True)
     SenderUser = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
-    ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
     Type = models.CharField(max_length=255)
     Message = models.TextField()
     AdditionalData = models.JSONField(null=True, blank=True)
@@ -143,4 +142,12 @@ class Notification(models.Model):
     CreatedAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f'{self.SenderUser} - {self.ReceiverUser}'
+        return f'{self.SenderUser}'
+class NotificationReceiver(models.Model):
+    NotificationReceiverID = models.AutoField(primary_key=True)
+    ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
+    NotificationID = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    
+
+    def __str__(self):
+        return f'{self.ReceiverUser} - {self.NotificationID}'

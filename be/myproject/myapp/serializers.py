@@ -32,7 +32,7 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
     Areas = AreaSerializer(many=True, read_only=True)
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole', 'UserInformation', 'Areas']
         extra_kwargs = {'Passwd': {'write_only': True}}
 
 class UserPreferencesLinkSerializer(serializers.ModelSerializer):
@@ -134,7 +134,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     Passwd2 = serializers.CharField(write_only=True, required=True)
     EmailAddress = serializers.EmailField(required=True)
     UserInformation = serializers.CharField(required=False, allow_blank=True, default="")
-
+ 
     class Meta:
         model = User
         fields = "__all__"
