@@ -419,7 +419,6 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
 
 
 # Area CRUD
-
 from .models import Area
 from .serializers import AreaSerializer
 

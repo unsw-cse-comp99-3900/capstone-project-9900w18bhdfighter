@@ -4,8 +4,8 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from rest_framework.authtoken.models import Token
 from django.utils import timezone
-
-
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 class Area(models.Model):
     AreaID = models.AutoField(primary_key=True)
     AreaName = models.CharField(max_length=255, unique=True)
@@ -133,11 +133,16 @@ class GroupAssignProject(models.Model):
 
 class Notification(models.Model):
     NotificationID = models.AutoField(primary_key=True)
-    SenderUser = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    sender_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE,default=1)
+    sender_object_id = models.PositiveIntegerField(default=1)
+    # so the sender can be any model(group, user, etc.)
+    # it would be stored like this:
+    # sender_content_type = User, sender_object_id = 1
+    # or sender_content_type = Group, sender_object_id = 1
+    Sender = GenericForeignKey('sender_content_type', 'sender_object_id')
     Type = models.CharField(max_length=255)
     Message = models.TextField()
     AdditionalData = models.JSONField(null=True, blank=True)
-    IsRead = models.BooleanField(default=False)
     CreatedAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -148,6 +153,6 @@ class NotificationReceiver(models.Model):
     NotificationReceiverID = models.AutoField(primary_key=True)
     ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
     Notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
-
+    IsRead = models.BooleanField(default=False)
     def __str__(self):
         return f'{self.ReceiverUser} - {self.Notification}'
