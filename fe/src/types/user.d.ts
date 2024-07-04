@@ -47,6 +47,14 @@ interface UserUpdate {
 type UserSignup = Omit<UserDTO, 'UserID'>
 type UserLogin = Pick<UserDTO, 'EmailAddress' | 'Passwd'>
 type UserInfoSlimDTO = Omit<UserDTO, 'Passwd'> & { UserRole: UserRole }
+type UserProfileSlimDTO = Pick<
+  UserProfileDTO,
+  'UserID' | 'FirstName' | 'LastName' | 'EmailAddress' | 'UserRole'
+>
+type UserProfileSlim = Pick<
+  UserInfo,
+  'id' | 'firstName' | 'lastName' | 'email' | 'role'
+>
 export {
   UserInfo,
   UserDTO,
@@ -58,4 +66,6 @@ export {
   AreaDTO,
   UserUpdate,
   UserProfileDTO,
+  UserProfileSlimDTO,
+  UserProfileSlim,
 }

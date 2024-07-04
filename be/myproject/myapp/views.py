@@ -400,9 +400,9 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         }, status=status.HTTP_200_OK)
     
      
-    @action(detail=False, methods=['get'], url_path='autocomplete/(?P<email_substring>[^/.]+)', url_name='autocomplete-email')
-    
-    def autocomplete_email(self, request, email_substring=None):
+    @action(detail=False, methods=['get'], url_path='autocomplete-email', url_name='autocomplete-email')
+    def autocomplete_email(self, request):
+        email_substring = request.query_params.get('email_substring', None)
         if email_substring:
             queryset = self.get_queryset().filter(EmailAddress__icontains=email_substring)[:10]
             serializer = UserSlimSerializer(queryset, many=True)

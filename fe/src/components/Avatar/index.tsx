@@ -15,7 +15,6 @@ const Wrapper = styled(_Avatar)`
   width: 3rem;
   height: 3rem;
   font-weight: bold;
-
   transition: opacity 0.2s;
   &:hover {
     opacity: 0.8;

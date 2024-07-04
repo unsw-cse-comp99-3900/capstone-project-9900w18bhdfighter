@@ -42,6 +42,10 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
         rowSelectedBg: _themeColor.grayscalePalette[20] as string,
         rowSelectedHoverBg: _themeColor.grayscalePalette[20] as string,
       },
+      Select: {
+        optionSelectedBg: _themeColor.highlightSecondary,
+        optionActiveBg: _themeColor.grayscalePalette[2] as string,
+      },
       Button: {
         colorPrimaryHover: _themeColor.grayscalePalette[35] as string,
       },

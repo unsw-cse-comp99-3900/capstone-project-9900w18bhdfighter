@@ -91,11 +91,13 @@ const AvatarDropdown = () => {
       }}
       trigger={['click']}
     >
-      <Avatar
-        firstName={firstName}
-        lastName={lastName}
-        emailForHashToColor={email}
-      />
+      <Flex>
+        <Avatar
+          firstName={firstName}
+          lastName={lastName}
+          emailForHashToColor={email}
+        />
+      </Flex>
     </Dropdown>
   )
 }

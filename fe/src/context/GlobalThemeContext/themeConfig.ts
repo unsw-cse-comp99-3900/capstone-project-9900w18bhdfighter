@@ -5,6 +5,7 @@ interface ThemeColor {
   basicBg: string
   highlightSecondary: string
   highlight: string
+
   primary: string
   font: string
 }
@@ -17,7 +18,8 @@ const themeColor: ThemeColor = {
   grayscalePalette: palette,
   basicBg: '#FFFFFF',
   highlight: '#FCDE12',
-  highlightSecondary: '#fce050',
+  highlightSecondary: '#fce362',
+
   primary: 'black',
   font: '#000000',
 }
