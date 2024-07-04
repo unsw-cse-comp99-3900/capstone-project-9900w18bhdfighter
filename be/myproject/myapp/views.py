@@ -20,7 +20,7 @@ from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserWithAreaSerializer
+from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -398,7 +398,17 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
-        
+    
+     
+    @action(detail=False, methods=['get'], url_path='autocomplete/(?P<email_substring>[^/.]+)', url_name='autocomplete-email')
+    
+    def autocomplete_email(self, request, email_substring=None):
+        if email_substring:
+            queryset = self.get_queryset().filter(EmailAddress__icontains=email_substring)[:10]
+            serializer = UserSlimSerializer(queryset, many=True)
+            return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+        return JsonResponse({'error': 'Email substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = UserWithAreaSerializer(instance)
