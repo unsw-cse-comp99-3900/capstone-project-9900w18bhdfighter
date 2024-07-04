@@ -140,13 +140,14 @@ class Notification(models.Model):
     # sender_content_type = User, sender_object_id = 1
     # or sender_content_type = Group, sender_object_id = 1
     Sender = GenericForeignKey('sender_content_type', 'sender_object_id')
+    # 1: new msg,2: ...
     Type = models.CharField(max_length=255)
     Message = models.TextField()
     AdditionalData = models.JSONField(null=True, blank=True)
     CreatedAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f'{self.SenderUser}'
+        return f'{self.Sender}'
 
 
 class NotificationReceiver(models.Model):
@@ -156,3 +157,4 @@ class NotificationReceiver(models.Model):
     IsRead = models.BooleanField(default=False)
     def __str__(self):
         return f'{self.ReceiverUser} - {self.Notification}'
+
