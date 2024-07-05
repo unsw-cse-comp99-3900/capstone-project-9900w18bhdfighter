@@ -5,4 +5,16 @@ interface Msg {
   msgId: number
 }
 
-export { Msg }
+interface MsgReqDTO {
+  channelType: 'GROUP' | 'PERSONAL'
+  content: string
+  receiverId: number
+}
+interface MsgRspDTO {
+  status_code: number
+  content?: string
+  senderId?: number
+  receiverId?: number
+  channelType?: 'GROUP' | 'PERSONAL'
+}
+export { Msg, MsgReqDTO, MsgRspDTO }

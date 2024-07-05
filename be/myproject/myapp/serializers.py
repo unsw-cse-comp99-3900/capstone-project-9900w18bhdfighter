@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, User, UserPreferencesLink, Area, StudentArea
+from .models import Project, User, UserPreferencesLink, Area, StudentArea, Message
 from django.contrib.auth.hashers import make_password
 
 
@@ -172,3 +172,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             "Areas": areas_data
         }
 
+class MessageSerializer(serializers.Serializer):
+    
+    class Meta:
+        model=Message
+        fields = ['message']

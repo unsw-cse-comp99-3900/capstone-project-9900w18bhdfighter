@@ -1,3 +1,4 @@
+
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
 from rest_framework import status
@@ -17,10 +18,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import User as UserProfile, User, UserPreferencesLink
-from .models import User
+from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
+from .serializers import MessageSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -462,3 +463,14 @@ class AreaAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
 
+
+class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset=Message.objects.all()
+    serializer_class=MessageSerializer
+    def create(self, request, *args, **kwargs):
+        serializer = MessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({'message': 'Message created successfully!'}, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

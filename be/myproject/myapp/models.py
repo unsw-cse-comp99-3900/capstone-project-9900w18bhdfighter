@@ -140,7 +140,7 @@ class Notification(models.Model):
     # sender_content_type = User, sender_object_id = 1
     # or sender_content_type = Group, sender_object_id = 1
     Sender = GenericForeignKey('sender_content_type', 'sender_object_id')
-    # 1: new msg,2: ...
+    # 1: msg_personal,2: msg_
     Type = models.CharField(max_length=255)
     Message = models.TextField()
     AdditionalData = models.JSONField(null=True, blank=True)
@@ -157,4 +157,21 @@ class NotificationReceiver(models.Model):
     IsRead = models.BooleanField(default=False)
     def __str__(self):
         return f'{self.ReceiverUser} - {self.Notification}'
+class Message(models.Model):
+    MessageID = models.AutoField(primary_key=True)
+    Sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    Content = models.TextField()
+    CreatedAt = models.DateTimeField(default=timezone.now)
 
+    def __str__(self):
+        return f'{self.Sender} - {self.Content}'
+
+class MessageReceiver(models.Model):
+    MessageReceiverID = models.AutoField(primary_key=True)
+    Message = models.ForeignKey(Message, on_delete=models.CASCADE)
+    receiver_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    receiver_object_id = models.PositiveIntegerField()
+    Receiver = GenericForeignKey('receiver_content_type', 'receiver_object_id')
+
+    def __str__(self):
+        return f'{self.Receiver} - {self.Message}'

@@ -1,8 +1,16 @@
-import { ReactNode, createContext, useContext, useState } from 'react'
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { UserProfileSlim, UserProfileSlimDTO } from '../../types/user'
 import api from '../../api/config'
 import { errHandler } from '../../utils/parse'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
+import { useAuthContext } from '../AuthContext'
 
 interface MessageContextType {
   getAutoCompleteContacts: (_email: string) => Promise<void>
@@ -10,6 +18,7 @@ interface MessageContextType {
   setCurrAutoCompleteContacts: React.Dispatch<
     React.SetStateAction<UserProfileSlim[]>
   >
+  socketRef: React.MutableRefObject<WebSocket | null>
 }
 const MessageContext = createContext({} as MessageContextType)
 export const useMessageContext = () => useContext(MessageContext)
@@ -17,12 +26,29 @@ export const useMessageContext = () => useContext(MessageContext)
 type Props = {
   children: ReactNode
 }
+
 export const MessageContextProvider = ({ children }: Props) => {
   const [currAutoCompleteContacts, setCurrAutoCompleteContacts] = useState<
     UserProfileSlim[]
   >([])
-
   const { msg } = useGlobalComponentsContext()
+  const socketRef = useRef<WebSocket | null>(null)
+  const { usrInfo } = useAuthContext()
+  const id = usrInfo?.id
+  useEffect(() => {
+    if (!id) return
+    const socket = new WebSocket(`ws://localhost:8000/ws/chat/user/${id}`)
+    socketRef.current = socket
+    socket.onopen = () => {
+      console.log('Connected to the chat server')
+    }
+    socket.onmessage = (event) => {
+      console.log('Message from server: ', event.data)
+    }
+    return () => {
+      socket.close()
+    }
+  }, [id])
 
   const getAutoCompleteContacts = async (email: string) => {
     try {
@@ -56,6 +82,7 @@ export const MessageContextProvider = ({ children }: Props) => {
     getAutoCompleteContacts,
     currAutoCompleteContacts,
     setCurrAutoCompleteContacts,
+    socketRef,
   }
 
   return (
