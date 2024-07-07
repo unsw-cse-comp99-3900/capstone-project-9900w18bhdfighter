@@ -7,13 +7,13 @@ from myapp.views import get_user_friendly_errors
 
 from rest_framework.decorators import action
 
-from .permission import DiyPermission
+from .permission import OnlyForAdmin
 
 
 class GroupsAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = [DiyPermission]
+    permission_classes = [OnlyForAdmin]
     lookup_field = "UserID"
 
     def get_serializer_class(self):
