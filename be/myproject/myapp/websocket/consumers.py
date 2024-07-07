@@ -31,9 +31,13 @@ class Consumer(AsyncWebsocketConsumer):
         
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(f"user_{self.user_id}", self.channel_name)
-        global curr_window
-        curr_window.pop(int(self.user_id))
         print("disconnect")
+        global curr_window
+        removed_user = curr_window.pop(int(self.user_id), None)
+        if removed_user is not None:
+            print(f"Removed user {self.user_id} from curr_window")
+        else:
+            print(f"User {self.user_id} was not found in curr_window")
         print(curr_window)
     
     # 服务器接收到消息传递给指定用户

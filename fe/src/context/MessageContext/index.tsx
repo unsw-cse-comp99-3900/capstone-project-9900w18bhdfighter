@@ -9,7 +9,11 @@ import {
 } from 'react'
 import { UserProfileSlim, UserProfileSlimDTO } from '../../types/user'
 import api from '../../api/config'
-import { errHandler } from '../../utils/parse'
+import {
+  channel_id_to_ids,
+  errHandler,
+  ids_to_channel_id,
+} from '../../utils/parse'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { useAuthContext } from '../AuthContext'
 import { useParams } from 'react-router-dom'
@@ -58,7 +62,9 @@ export const MessageContextProvider = ({ children }: Props) => {
     UserProfileSlim[]
   >([])
   const [contactList, setContactList] = useState<Contact[] | null>(null)
-
+  // const [groupContactList, setGroupContactList] = useState<Contact[] | null>(
+  //   null
+  // )
   const [msgMap, setMsgMap] = useState<MsgGrouped>({})
   const { msg } = useGlobalComponentsContext()
   const socketRef = useRef<WebSocket | null>(null)
@@ -66,43 +72,36 @@ export const MessageContextProvider = ({ children }: Props) => {
   const id = usrInfo?.id
   const params = useParams<RouteParams>()
 
-  const currContact = useMemo(
-    () =>
-      contactList?.find(
-        (contact) => contact.contact.id === Number(params.receiverId)
-      ),
-    [contactList, params]
-  )
+  //currConversation is a contact with messages
   const currConversation = useMemo(() => {
-    if (currContact) {
-      const channelKey = [id, params.receiverId].sort().join('_')
-      console.log(msgMap[channelKey])
+    if (!contactList || !params.receiverId || !id) return null
+    const currContact = contactList.find(
+      (contact) => contact.contact.id === Number(params.receiverId)
+    )
+    if (!currContact) return null
 
-      return {
-        ...currContact,
-        messages: msgMap[channelKey] || [],
-      }
+    const channelKey = ids_to_channel_id([id, currContact.contact.id])
+    return {
+      ...currContact,
+      messages: msgMap[channelKey] || [],
     }
-    return null
-  }, [currContact, msgMap, params.receiverId, id])
+  }, [contactList, params.receiverId, msgMap, id])
 
   const contactsDiff = useMemo(() => {
-    if (!contactList) {
+    if (!contactList || !id) {
+      //if contactList is not ready or id is not ready, return empty array
       return []
     }
-    //对比contactList中的contact的“id_userid”和msgMap中的channelKey,如果msgMap有而contactList没有就获取。
     const contactIds = contactList.map((contact) => contact.contact.id).sort()
-    if (contactIds.length === 0) {
-      console.log('contactIds is empty')
-      return Object.keys(msgMap)
-    }
     const channelKeys = Object.keys(msgMap)
     const currChannelKeys = contactIds.map((contact_id) =>
-      [contact_id, usrInfo?.id].sort().join('_')
+      ids_to_channel_id([id, contact_id])
     )
+    //return the difference between channelKeys and currChannelKeys
     const res = channelKeys.filter((key) => !currChannelKeys.includes(key))
+    //return the unique values
     return Array.from(new Set(res))
-  }, [contactList, msgMap, usrInfo?.id])
+  }, [contactList, msgMap, id])
 
   const getAutoCompleteContacts = async (email: string) => {
     try {
@@ -195,32 +194,29 @@ export const MessageContextProvider = ({ children }: Props) => {
     }
   }
   const getAllMessages = async () => {
-    {
-      try {
-        const res = await api.get<MsgRspDTO[]>('api/messages')
-
-        const groupedMsgs = res.data.reduce((acc, curr) => {
-          if (!acc[curr.ChannelId]) {
-            acc[curr.ChannelId] = []
-          }
-          acc[curr.ChannelId]?.push({
-            content: curr.Content,
-            senderId: curr.Sender,
-            receiverId: curr.Receiver,
-            createdAt: curr.CreatedAt,
-            isRead: curr.IsRead,
-            ChannelId: curr.ChannelId,
-          })
-          return acc
-        }, {} as MsgGrouped)
-        setMsgMap(groupedMsgs)
-      } catch (err) {
-        errHandler(
-          err,
-          (str) => msg.err(str),
-          (str) => msg.err(str)
-        )
-      }
+    try {
+      const res = await api.get<MsgRspDTO[]>('api/messages')
+      const groupedMsgs = res.data.reduce((acc, curr) => {
+        if (!acc[curr.ChannelId]) {
+          acc[curr.ChannelId] = []
+        }
+        acc[curr.ChannelId]?.push({
+          content: curr.Content,
+          senderId: curr.Sender,
+          receiverId: curr.Receiver,
+          createdAt: curr.CreatedAt,
+          isRead: curr.IsRead,
+          ChannelId: curr.ChannelId,
+        })
+        return acc
+      }, {} as MsgGrouped)
+      setMsgMap(groupedMsgs)
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
   const markAsRead = async (senderId: number) => {
@@ -241,10 +237,10 @@ export const MessageContextProvider = ({ children }: Props) => {
   //init socket when id is ready
   useEffect(() => {
     if (!id) return
-    const socket = socketRef.current
-      ? socketRef.current
-      : new WebSocket(`ws://127.0.0.1:8000/ws/chat/user/${id}`)
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/user/${id}`)
     socketRef.current = socket
+    console.log('connecting to chat server')
+
     socket.onopen = () => {
       console.log('Connected to the chat server')
     }
@@ -296,24 +292,22 @@ export const MessageContextProvider = ({ children }: Props) => {
         msg.err('Unknown error')
       }
     }
-  }, [id, params.receiverId])
-  //send currWindow to server
-  useEffect(() => {
-    if (!socketRef.current) return
-    if (socketRef.current.readyState !== 1) return
-    socketRef.current.send(
-      JSON.stringify({ currWindow: params.receiverId || -1 })
-    )
-  }, [params.receiverId, socketRef.current, socketRef.current?.readyState])
-
-  //close socket when unmount
-  useEffect(() => {
     return () => {
       console.log('closing socket')
       socketRef.current?.close()
       socketRef.current = null
     }
-  }, [])
+  }, [id])
+  //send currWindow to server
+  useEffect(() => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
+      return
+
+    socketRef.current.send(
+      JSON.stringify({ currWindow: params.receiverId || -1 })
+    )
+  }, [params.receiverId])
+
   //mark as read when conversation is opened
   useEffect(() => {
     if (!params.receiverId) return
@@ -327,27 +321,19 @@ export const MessageContextProvider = ({ children }: Props) => {
   }, [params.receiverId, currConversation])
   // if someone not in contactList but in msgMap, add to contactList
   useEffect(() => {
-    if (!id) return
-    if (contactsDiff.length === 0) return
-    if (Object.keys(msgMap).length === 0) return
     //add contact
-    const add = async () => {
-      console.log('contactsDiff:', contactsDiff)
-
+    const todo = async () => {
       await Promise.all(
-        contactsDiff.map((key) => {
-          const [id1, id2] = key.split('_').map(Number) as [number, number]
-          console.log('id1', id1, 'id2', id2)
-
+        contactsDiff.map((channel_id) => {
+          const [id1, id2] = channel_id_to_ids(channel_id)
           const contactId = id1 === id ? id2 : id1
-          console.log('contactId', contactId)
           return addContact({ Contact: contactId }, false)
         })
       )
       await getContacts()
     }
-    add()
-  }, [contactsDiff, id, msgMap])
+    todo()
+  }, [contactsDiff.length])
 
   const ctx = {
     getAutoCompleteContacts,

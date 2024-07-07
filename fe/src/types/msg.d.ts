@@ -58,7 +58,18 @@ interface Msg {
 interface MsgGrouped {
   [key: string]: Msg[]
 }
-
+interface GroupContact {
+  groupId: number
+  members: UserProfileSlim[]
+  unreadMsgsCount: number
+  msg: GroupMsg
+}
+interface GroupMsg {
+  content: string
+  createdAt: string
+  senderId: number
+  isRead: boolean
+}
 export {
   Msg,
   MsgReqDTO,
@@ -71,4 +82,5 @@ export {
   MsgGrouped,
   Conversation,
   MsgWSRspDTO,
+  GroupContact,
 }
