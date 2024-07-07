@@ -169,7 +169,6 @@ class ProjectCreationTests(TestCase):
         )
         self.url = reverse('project_creation')  
 
-        # Generate JWT token for client and coordinator
         self.client_token = jwt.encode({
             'user_id': self.client_user.pk,
             'role': self.client_user.UserRole,
