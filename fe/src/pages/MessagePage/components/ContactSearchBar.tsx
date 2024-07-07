@@ -36,7 +36,7 @@ const ContactSearchBar = () => {
         .filter((contact) => contact.email !== usrInfo?.email)
         .filter(
           (contact) =>
-            !contactList.find((c) => c.contact.email === contact.email)
+            !contactList?.find((c) => c.contact.email === contact.email)
         ),
     [currAutoCompleteContacts, usrInfo, contactList]
   )

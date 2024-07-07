@@ -42,7 +42,7 @@ interface MessageContextType {
   ) => Promise<void>
   addContact: (_postDto: ContactPostDTO) => Promise<void>
   params: Readonly<Partial<RouteParams>>
-  contactList: Contact[]
+  contactList: Contact[] | null
   currConversation: Conversation | null
 }
 
@@ -57,7 +57,7 @@ export const MessageContextProvider = ({ children }: Props) => {
   const [currAutoCompleteContacts, setCurrAutoCompleteContacts] = useState<
     UserProfileSlim[]
   >([])
-  const [contactList, setContactList] = useState<Contact[]>([])
+  const [contactList, setContactList] = useState<Contact[] | null>(null)
 
   const [msgMap, setMsgMap] = useState<MsgGrouped>({})
   const { msg } = useGlobalComponentsContext()
@@ -68,7 +68,7 @@ export const MessageContextProvider = ({ children }: Props) => {
 
   const currContact = useMemo(
     () =>
-      contactList.find(
+      contactList?.find(
         (contact) => contact.contact.id === Number(params.receiverId)
       ),
     [contactList, params]
@@ -87,16 +87,22 @@ export const MessageContextProvider = ({ children }: Props) => {
   }, [currContact, msgMap, params.receiverId, id])
 
   const contactsDiff = useMemo(() => {
+    if (!contactList) {
+      return []
+    }
     //对比contactList中的contact的“id_userid”和msgMap中的channelKey,如果msgMap有而contactList没有就获取。
-    const contactIds = contactList.map((contact) => contact.contact.id)
+    const contactIds = contactList.map((contact) => contact.contact.id).sort()
+    if (contactIds.length === 0) {
+      console.log('contactIds is empty')
+      return Object.keys(msgMap)
+    }
     const channelKeys = Object.keys(msgMap)
     const currChannelKeys = contactIds.map((contact_id) =>
       [contact_id, usrInfo?.id].sort().join('_')
     )
     const res = channelKeys.filter((key) => !currChannelKeys.includes(key))
-    //去重
     return Array.from(new Set(res))
-  }, [contactList.length, msgMap, usrInfo?.id])
+  }, [contactList, msgMap, usrInfo?.id])
 
   const getAutoCompleteContacts = async (email: string) => {
     try {
@@ -271,6 +277,7 @@ export const MessageContextProvider = ({ children }: Props) => {
         // if new_msg is not read, increment unreadMsgsCount
         if (new_msg.isRead === false) {
           setContactList((prev) => {
+            if (!prev) return prev
             const updatedList = prev.map((contact) => {
               if (contact.contact.id === new_msg.senderId) {
                 return {
@@ -321,8 +328,12 @@ export const MessageContextProvider = ({ children }: Props) => {
   // if someone not in contactList but in msgMap, add to contactList
   useEffect(() => {
     if (!id) return
+    if (contactsDiff.length === 0) return
+    if (Object.keys(msgMap).length === 0) return
     //add contact
     const add = async () => {
+      console.log('contactsDiff:', contactsDiff)
+
       await Promise.all(
         contactsDiff.map((key) => {
           const [id1, id2] = key.split('_').map(Number) as [number, number]
@@ -335,9 +346,9 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
       await getContacts()
     }
-
     add()
-  }, [JSON.stringify(contactsDiff), id])
+  }, [contactsDiff, id, msgMap])
+
   const ctx = {
     getAutoCompleteContacts,
     currAutoCompleteContacts,
