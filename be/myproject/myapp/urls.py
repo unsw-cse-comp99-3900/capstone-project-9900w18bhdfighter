@@ -7,7 +7,6 @@ url.register(r'api/users', views.UserAPIView)
 url.register(r'api/areas', views.AreaAPIView)
 url.register(r'api/messages', views.MessageAPIView)
 url.register(r'api/groups', groups_views.GroupsAPIView)
-url.register(r'api/groups', groups_views.GroupsAPIView)
 
 urlpatterns = [
     path("login/", views.student_login, name="student_login"),
