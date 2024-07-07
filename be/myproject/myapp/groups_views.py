@@ -1,56 +1,76 @@
 from rest_framework.viewsets import GenericViewSet
 from django.http import JsonResponse
 from .models import *
-from .group_seria import GroupSerializer, GrouPreferencesSerializer
+from .group_seria import GroupSerializer, GrouPreferencesSerializer, \
+    GrouPostPreferenceSerializer, GrouSkillEvaluationPreferenceSerializer, GrouSubmitPreferencesSerializer, \
+    GrouSettingsSerializer
 from rest_framework import viewsets, status, mixins
 from myapp.views import get_user_friendly_errors
-
 from rest_framework.decorators import action
 
-from .permission import OnlyForAdmin
+from .permission import OnlyForAdmin, ForValidToken, PartialRole
+from .serializers import ProjectSerializer
 
 
-class GroupsAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
+                    mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = [OnlyForAdmin]
-    lookup_field = "UserID"
+    permission_classes = [ForValidToken]
+    lookup_field = "GroupID"
 
     def get_serializer_class(self):
         dic = {
-            'preferences': GrouPreferencesSerializer
+            'preferences': GrouPreferencesSerializer,
+            'settings_uri': GrouSettingsSerializer,
+            'post_preferences': GrouPostPreferenceSerializer,
+            'skill_evaluation': GrouSkillEvaluationPreferenceSerializer,
+            'submit_preferences': GrouSubmitPreferencesSerializer,
         }
         return dic.get(self.action, self.serializer_class)
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = RegisterSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
-    #     errors = get_user_friendly_errors(serializer.errors)
-    #     return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
-    #
-    @action(detail=True, methods=['put'], url_path='preferences', url_name='preferences')
+    def get_permissions(self):
+        # (1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')
+        self.request.permission_range = [3, 4, 5]
+        if "preferences" in self.action_map.values():
+            return [PartialRole()]
+        return [permission() for permission in self.permission_classes]
+
+    @action(detail=True, methods=['get', 'post'], url_path='preferences', url_name='preferences')
     def preferences(self, request, *args, **kwargs):
+        method = request.method.lower()
+        if method == "post":
+            return self.post_preferences(request, *args, **kwargs)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True, context={'UserID': instance.UserID})
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
-        errors = get_user_friendly_errors(serializer.errors)
-        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
-    #
-    # def update(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #
-    #     serializer = self.get_serializer(instance, data=request.data, context={'UserID': instance.UserID}, partial=True)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return JsonResponse(serializer.data, status=status.HTTP_200_OK)
-    #     errors = get_user_friendly_errors(serializer.errors)
-    #     return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
-    #
-    # def destroy(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     instance.delete()
-    #     return JsonResponse({'message': 'User deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+        ProjectIDs = instance.grouppreferenceslink_set.all().values_list("ProjectID", flat=True)
+        queryset = Project.objects.filter(ProjectID__in=ProjectIDs)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ProjectSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = ProjectSerializer(queryset, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+    @action(detail=True, methods=['get'], url_path='settings', url_name='settings_uri')
+    def settings_uri(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return JsonResponse(serializer.data)
+
+    def post_preferences(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return JsonResponse(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='skill-evaluation', url_name='skill_evaluation')
+    def skill_evaluation(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return JsonResponse(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='submit-preferences', url_name='submit_preferences')
+    def submit_preferences(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return JsonResponse(serializer.data)

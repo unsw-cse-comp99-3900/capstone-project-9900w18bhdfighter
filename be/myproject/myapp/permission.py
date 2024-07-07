@@ -10,7 +10,7 @@ class OnlyForAdmin(BasePermission):
             token = request.headers.get('Authorization').split()[1]
         except Exception as e:
             return False
-        
+
         result = decode_jwt(token)
         if result['status'] == 'success':
             user_data = result['data']
@@ -23,6 +23,32 @@ class OnlyForAdmin(BasePermission):
             request.user = user
             return True
         return False
+
+
+class PartialRole(BasePermission):
+    def has_permission(self, request, view):
+        from myapp.views import decode_jwt
+        from myapp.models import User
+        try:
+            token = request.headers.get('Authorization').split()[1]
+        except Exception as e:
+            return False
+
+        result = decode_jwt(token)
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except Exception as e:
+                return False
+            print("permission_range: ", request.permission_range)
+            if user.UserRole not in request.permission_range:
+                raise PermissionDenied('You do not have permission to perform this action.')
+            request.user = user
+            return True
+        return False
+
+
 class ForValidToken(BasePermission):
     def has_permission(self, request, view):
         from myapp.views import decode_jwt
@@ -34,5 +60,8 @@ class ForValidToken(BasePermission):
             return False
         result = decode_jwt(token)
         if result['status'] == 'success':
+            user_data = result['data']
+            user = User.objects.get(pk=user_data['user_id'])
+            request.user = user
             return True
         return False

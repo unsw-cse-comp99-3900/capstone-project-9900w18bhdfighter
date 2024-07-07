@@ -6,6 +6,8 @@ from rest_framework.authtoken.models import Token
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+
+
 class Area(models.Model):
     AreaID = models.AutoField(primary_key=True)
     AreaName = models.CharField(max_length=255, unique=True)
@@ -133,7 +135,7 @@ class GroupAssignProject(models.Model):
 
 class Notification(models.Model):
     NotificationID = models.AutoField(primary_key=True)
-    sender_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE,default=1)
+    sender_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, default=1)
     sender_object_id = models.PositiveIntegerField(default=1)
     # so the sender can be any model(group, user, etc.)
     # it would be stored like this:
@@ -155,8 +157,11 @@ class NotificationReceiver(models.Model):
     ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
     Notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
     IsRead = models.BooleanField(default=False)
+
     def __str__(self):
         return f'{self.ReceiverUser} - {self.Notification}'
+
+
 class Message(models.Model):
     MessageID = models.AutoField(primary_key=True)
     Sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
@@ -165,6 +170,7 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.Sender} - {self.Content}'
+
 
 class MessageReceiver(models.Model):
     MessageReceiverID = models.AutoField(primary_key=True)
