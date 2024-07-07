@@ -10,7 +10,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
-from .models import User, StudentArea
+from .models import Contact, Group, GroupMessage, User, StudentArea
 import json
 import datetime
 from django.conf import settings
@@ -21,7 +21,7 @@ from .models import User as UserProfile, User, UserPreferencesLink
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import MessageSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, MessageSerializer, ProjectSerializer,   UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -311,12 +311,13 @@ def user_preference_detail(request, pk):
 
 
 def get_user_friendly_errors(serializer_errors):
+ 
     errors = {
         'errors': ''
     }
     for _, value in serializer_errors.items():
         errors['errors'] += f'{value[0]}\n'
-
+   
     return errors
 
 
@@ -400,7 +401,7 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
     
-     
+    
     @action(detail=False, methods=['get'], url_path='autocomplete-email', url_name='autocomplete-email')
     def autocomplete_email(self, request):
         email_substring = request.query_params.get('email_substring', None)
@@ -474,3 +475,111 @@ class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.U
             return JsonResponse({'message': 'Message created successfully!'}, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    
+
+class ContactAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset=Contact.objects.all()
+    serializer_class=ContactSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy','list']:
+            return [ForValidToken()]
+        else:
+            return []
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        serializer = ContactCreateSerializer(data=request.data, context=self.get_serializer_context())
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data
+                                , status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+        
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ContactUpdateSerializer(instance, data=request.data,context=self.get_serializer_context())
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def list(self, request, *args, **kwargs):
+        requester_id = self.get_serializer_context().get("requesterId")
+        # get all contacts of the requester
+        contacts = Contact.objects.filter(ContactUser=requester_id)
+        
+        serializer = ContactSerializer(contacts, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+        
+
+class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy','list','mark_as_read']:
+            return [ForValidToken()]
+        else:
+            return []
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        user_id = self.get_serializer_context().get("requesterId")
+        # 获取作为发送者或接收者的所有消息
+        from django.db.models import Q
+        queryset = self.queryset.filter(Q(Sender=user_id) | Q(Receiver=user_id))
+        # 将这些消息标记为已读
+        # 序列化数据
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['put'], url_path='mark-as-read/(?P<receiverId>\d+)')
+    def mark_as_read(self, request, receiverId=None):
+        user_id = self.get_serializer_context().get("requesterId")
+        if receiverId:
+            # 获取符合条件的消息
+            messages = self.queryset.filter(Sender=receiverId, Receiver=user_id, IsRead=False)
+            # 将消息标记为已读
+            updated_count = messages.update(IsRead=True)
+            return Response({"message": f"{updated_count} messages marked as read."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid receiverId"}, status=status.HTTP_400_BAD_REQUEST)
+    
+ 
+class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
+    queryset = GroupMessage.objects.all()
+    serializer_class = GroupMessageSerializer
+    def get_permissions(self):
+        if self.action in ['list']:
+            return [ForValidToken()]
+        else:
+            return []
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        user_id = self.request.user_id
+        # find all groups that the user is a member
+        groups = Group.objects.filter(groupuserslink__UserID=user_id)
+        # get all group messages that are sent to these groups
+        queryset = GroupMessage.objects.filter(ReceiverGroup__in=groups).distinct()
+        serializer = self.serializer_class(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+        
+    
+     

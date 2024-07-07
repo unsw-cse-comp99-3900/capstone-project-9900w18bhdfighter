@@ -6,6 +6,8 @@ url = SimpleRouter(trailing_slash=False)
 url.register(r'api/users', views.UserAPIView)
 url.register(r'api/areas', views.AreaAPIView)
 url.register(r'api/messages', views.MessageAPIView)
+url.register(r'api/contacts', views.ContactAPIView)
+url.register(r'api/group-messages', views.GroupMessageAPIView)
 urlpatterns = [
     path("login/", views.student_login, name="student_login"),
     path("project_creation/", views.project_creation, name="project_creation"),

@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { debounce } from '../../../utils/optimize'
 import { useMessageContext } from '../../../context/MessageContext'
 import { roleNames } from '../../../constant/role'
+import { useAuthContext } from '../../../context/AuthContext'
 
 const SearchBar = styled(Select)`
   width: 100%;
@@ -19,12 +20,26 @@ interface UserValue {
 
 const ContactSearchBar = () => {
   const [fetching, setFetching] = useState(false)
-  const [value, setValue] = useState<UserValue>()
+  const [value, setValue] = useState<UserValue | null>()
   const {
     getAutoCompleteContacts,
     currAutoCompleteContacts,
     setCurrAutoCompleteContacts,
+    addContact,
+    getContacts,
+    contactList,
   } = useMessageContext()
+  const { usrInfo } = useAuthContext()
+  const autoCompContactsWithoutSelf = useMemo(
+    () =>
+      currAutoCompleteContacts
+        .filter((contact) => contact.email !== usrInfo?.email)
+        .filter(
+          (contact) =>
+            !contactList.find((c) => c.contact.email === contact.email)
+        ),
+    [currAutoCompleteContacts, usrInfo, contactList]
+  )
 
   const debounceFetcher = useMemo(() => {
     const loadOptions = async (val: string) => {
@@ -34,7 +49,7 @@ const ContactSearchBar = () => {
       await getAutoCompleteContacts(val)
       setFetching(false)
     }
-    return debounce(loadOptions, 1000)
+    return debounce(loadOptions, 500)
   }, [])
 
   return (
@@ -48,11 +63,11 @@ const ContactSearchBar = () => {
         return (
           <Flex vertical>
             <Text strong>{option.label}</Text>
-            <Text type="secondary">{option.data.role}</Text>
+            <Text type="secondary">{option.data.email}</Text>
           </Flex>
         )
       }}
-      options={currAutoCompleteContacts.map((contact) => ({
+      options={autoCompContactsWithoutSelf.map((contact) => ({
         label: (
           <Text strong>
             {contact.firstName} {contact.lastName}
@@ -63,8 +78,12 @@ const ContactSearchBar = () => {
         role: roleNames[contact.role],
       }))}
       notFoundContent={fetching ? <Spin size="small" /> : 'No contacts found'}
-      onChange={(newValue) => {
-        setValue(newValue as UserValue)
+      onChange={async (val) => {
+        await addContact({
+          Contact: (val as { value: number }).value,
+        })
+        await getContacts()
+        setValue(null)
       }}
       placeholder="Type email to search"
       loading={fetching}

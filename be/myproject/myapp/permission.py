@@ -34,5 +34,12 @@ class ForValidToken(BasePermission):
             return False
         result = decode_jwt(token)
         if result['status'] == 'success':
+            request.user_id = result['data']['user_id']  
+            try:
+                User.objects.get(pk=request.user_id)
+            except Exception:
+                return PermissionDenied('The user does not exist.')
             return True
+        elif result['status'] == 'error':
+            raise PermissionDenied(result['error_message'])
         return False
