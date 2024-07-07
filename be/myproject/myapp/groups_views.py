@@ -7,7 +7,6 @@ from .group_seria import GroupSerializer, GrouPreferencesSerializer, \
 from rest_framework import viewsets, status, mixins
 from myapp.views import get_user_friendly_errors
 from rest_framework.decorators import action
-
 from .permission import OnlyForAdmin, ForValidToken, PartialRole
 from .serializers import ProjectSerializer
 
@@ -31,10 +30,16 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
     def get_permissions(self):
         # (1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')
-        self.request.permission_range = [3, 4, 5]
-        if "preferences" in self.action_map.values():
-            return [PartialRole()]
-        return [permission() for permission in self.permission_classes]
+        all_role = [tu[0] for tu in User.ROLE_CHOICES]
+        dic = {
+            "preferences": [3, 4, 5],
+            "settings_uri": all_role,
+        }
+        self.request.permission_range = all_role
+        for k, v in dic.items():
+            if k in self.action_map.values():
+                self.request.permission_range = v
+        return [PartialRole()]
 
     @action(detail=True, methods=['get', 'post'], url_path='preferences', url_name='preferences')
     def preferences(self, request, *args, **kwargs):

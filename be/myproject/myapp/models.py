@@ -17,13 +17,15 @@ class Area(models.Model):
 
 
 class User(models.Model):
+    ROLE_CHOICES = [(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')]
+
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
     LastName = models.CharField(max_length=50)
     EmailAddress = models.CharField(max_length=255, unique=True)
     Passwd = models.CharField(max_length=255)
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
-    UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
+    UserRole = models.IntegerField(choices=ROLE_CHOICES,
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
     Areas = models.ManyToManyField(Area, through='StudentArea')
