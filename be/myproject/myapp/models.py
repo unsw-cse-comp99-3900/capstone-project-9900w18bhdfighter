@@ -39,18 +39,11 @@ class Project(models.Model):
     ProjectOwner = models.CharField(max_length=255)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     MaxNumOfGroup = models.IntegerField(default=1)
-
+    
+    
     def __str__(self):
         return str(self.ProjectID)
 
-
-class UserPreferencesLink(models.Model):
-    UserPreferencesLinkID = models.AutoField(primary_key=True)
-    UserID = models.ForeignKey(User, on_delete=models.CASCADE)
-    ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return str(self.UserPreferencesLinkID)
 
 
 class Group(models.Model):
@@ -58,18 +51,19 @@ class Group(models.Model):
     GroupName = models.CharField(max_length=255)
     GroupDescription = models.TextField()
     CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
-
+    Preferences=models.ManyToManyField(Project, through='GroupPreference')
+    
     def __str__(self):
         return str(self.GroupID)
 
 
-class GroupPreferencesLink(models.Model):
-    GroupPreferencesLinkID = models.AutoField(primary_key=True)
-    GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
-    ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
-
+class GroupPreference(models.Model):
+    PreferenceID = models.AutoField(primary_key=True)
+    Preference=models.ForeignKey(Project, on_delete=models.CASCADE)
+    Group=models.ForeignKey(Group, on_delete=models.CASCADE)
+    Rank=models.IntegerField()
     def __str__(self):
-        return str(self.GroupPreferencesLinkID)
+        return str(self.PreferenceID)
 
 
 class GroupUsersLink(models.Model):

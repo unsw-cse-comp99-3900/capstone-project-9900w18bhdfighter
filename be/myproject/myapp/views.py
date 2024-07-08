@@ -2,26 +2,24 @@
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
 from rest_framework import status
-from rest_framework import viewsets, status, mixins
+from rest_framework import  status, mixins
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
-from .models import Contact, Group, GroupMessage, User, StudentArea
+from .models import Contact, Group, GroupMessage, GroupPreference, User, StudentArea
+from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet
 import json
 import datetime
 from django.conf import settings
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from .models import User as UserProfile, User, UserPreferencesLink
+from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, MessageSerializer, ProjectSerializer,   UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, GroupPreferenceSerializer, GroupPreferenceUpdateSerializer,GroupWithPreferencesSerializer, MessageSerializer, ProjectSerializer,  UserSlimSerializer, UserWithAreaSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -245,70 +243,48 @@ def project_update(request, id):
     return JsonResponse(serializer.error, staus=400)
 
 
-# #test
-# def test_db_connection(request):
-#     try:
-#         user_count = User.objects.count()
-#         return JsonResponse({'status': 'success', 'user_count': user_count}, status=200)
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)@api_view(['GET', 'PUT'])
-@permission_classes([IsAuthenticated])
-def user_profile(request):
-    user = request.user
-    if request.method == 'GET':
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        serializer = UserSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            if 'Passwd' in serializer.validated_data:
-                serializer.validated_data['Passwd'] = make_password(serializer.validated_data['Passwd'])
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def user_preferences(request):
-    user = request.user
+class GroupPreferenceAPIView(GenericViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupWithPreferencesSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy',"update_preferences"]:
+            return [ForValidToken()]
+        else:
+            return []
 
-    if request.method == 'GET':
-        preferences = UserPreferencesLink.objects.filter(UserID=user)
-        serializer = UserPreferencesLinkSerializer(preferences, many=True)
-        return Response(serializer.data)
+    @action(detail=True, methods=['put'], url_path='preferences')
+    def update_preferences(self, request, pk=None):
+        group = self.get_object()
+        preferences_data = request.data.get('Preferences', [])
+        print("preferences_data",preferences_data)
+        # 删除现有的偏好
+        GroupPreference.objects.filter(Group=group).delete()
 
-    elif request.method == 'POST':
-        request.data['UserID'] = user.UserID
-        serializer = UserPreferencesLinkSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # 添加新的偏好
+        for preference_data in preferences_data:
+            preference_serializer = GroupPreferenceUpdateSerializer(data=preference_data)
+            if preference_serializer.is_valid():
+                preference_serializer.save(Group=group)
+            else:
+                return Response(preference_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response({"message": "Preferences updated successfully"}, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'], url_path='preferences')
+    def list_preferences(self, request, pk=None):
+        group = self.get_object()
+        
 
-@api_view(['PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def user_preference_detail(request, pk):
-    user = request.user
-
-    try:
-        preference = UserPreferencesLink.objects.get(pk=pk, UserID=user)
-    except UserPreferencesLink.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PUT':
-        serializer = UserPreferencesLinkSerializer(preference, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        preference.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+        current_preferences = GroupPreference.objects.filter(Group=group)
+        current_preferences_serializer = GroupPreferenceSerializer(current_preferences, many=True)
+        
+        return Response({
+            "Preferences": current_preferences_serializer.data
+        }, status=status.HTTP_200_OK)
+    
 
 def get_user_friendly_errors(serializer_errors):
  

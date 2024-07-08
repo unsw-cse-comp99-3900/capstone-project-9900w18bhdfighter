@@ -1,6 +1,6 @@
-from email.headerregistry import Group
+
 from rest_framework import serializers
-from .models import Contact, GroupMessage, Project, User, UserPreferencesLink, Area, StudentArea, Message
+from .models import Contact, GroupMessage, GroupPreference, Project, User, Area, StudentArea, Message, Group
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count
 # ?
@@ -45,11 +45,6 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
         extra_kwargs = {'Passwd': {'write_only': True}}
 
 
-
-class UserPreferencesLinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserPreferencesLink
-        fields = '__all_'
 
 class StudentAreaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -252,6 +247,28 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['MessageID', 'Content', 'Sender', 'Receiver', 'CreatedAt', 'IsRead', 'ChannelId']
         
 class GroupMessageSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = GroupMessage
         fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
+        
+class GroupPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupPreference
+        fields = ['PreferenceID', 'Preference', 'Rank']
+        extra_kwargs = {
+            'PreferenceID': {'read_only': True}
+        }
+
+class GroupPreferenceUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupPreference
+        fields = ['Preference', 'Rank']
+
+
+
+class GroupWithPreferencesSerializer(serializers.ModelSerializer):
+    Preferences = GroupPreferenceSerializer(many=True, read_only=True)
+    class Meta:
+        model = Group
+        fields = ['GroupID', 'GroupName', 'GroupDescription', 'CreatedBy', 'Preferences']
