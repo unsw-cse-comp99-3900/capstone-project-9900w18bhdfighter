@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { UserProfileSlim, UserProfileSlimDTO } from '../../types/user'
+import { UserProfileSlim } from '../../types/user'
 import api from '../../api/config'
 import {
   channel_id_to_ids,
@@ -20,7 +20,6 @@ import { useParams } from 'react-router-dom'
 import {
   Contact,
   ContactPostDTO,
-  ContactRspDTO,
   ContactUpdateDTO,
   Conversation,
   Msg,
@@ -28,6 +27,17 @@ import {
   MsgRspDTO,
   MsgWSRspDTO,
 } from '../../types/msg'
+import {
+  getMyContactList,
+  getAutoCompleteContacts as getACC,
+  addOneContact,
+} from '../../api/contactAPI'
+import { getAllMsgsMine, markMsgsFromOneContactAsRead } from '../../api/msgAPI'
+import {
+  getAllMessagesMapper,
+  getAutoCompleteContactsMapper,
+  getContactsMapper,
+} from './mapper'
 type RouteParams = {
   receiverId: string
   type: string
@@ -65,7 +75,7 @@ export const MessageContextProvider = ({ children }: Props) => {
   // const [groupContactList, setGroupContactList] = useState<Contact[] | null>(
   //   null
   // )
-  const [msgMap, setMsgMap] = useState<MsgGrouped>({})
+  const [msgMap, setMsgMap] = useState<MsgGrouped | null>(null)
   const { msg } = useGlobalComponentsContext()
   const socketRef = useRef<WebSocket | null>(null)
   const { usrInfo } = useAuthContext()
@@ -74,7 +84,7 @@ export const MessageContextProvider = ({ children }: Props) => {
 
   //currConversation is a contact with messages
   const currConversation = useMemo(() => {
-    if (!contactList || !params.receiverId || !id) return null
+    if (!contactList || !params.receiverId || !id || !msgMap) return null
     const currContact = contactList.find(
       (contact) => contact.contact.id === Number(params.receiverId)
     )
@@ -88,9 +98,9 @@ export const MessageContextProvider = ({ children }: Props) => {
   }, [contactList, params.receiverId, msgMap, id])
 
   const contactsDiff = useMemo(() => {
-    if (!contactList || !id) {
+    if (!contactList || !id || !msgMap) {
       //if contactList is not ready or id is not ready, return empty array
-      return []
+      return null
     }
     const contactIds = contactList.map((contact) => contact.contact.id).sort()
     const channelKeys = Object.keys(msgMap)
@@ -100,28 +110,13 @@ export const MessageContextProvider = ({ children }: Props) => {
     //return the difference between channelKeys and currChannelKeys
     const res = channelKeys.filter((key) => !currChannelKeys.includes(key))
     //return the unique values
-    return Array.from(new Set(res))
+    return Array.from(new Set(res)).sort()
   }, [contactList, msgMap, id])
 
   const getAutoCompleteContacts = async (email: string) => {
     try {
-      const res = await api.get<{ data: UserProfileSlimDTO[] }>(
-        'api/users/autocomplete-email',
-        {
-          params: {
-            email_substring: email,
-          },
-        }
-      )
-      setCurrAutoCompleteContacts(
-        res.data.data.map((user) => ({
-          id: user.UserID,
-          firstName: user.FirstName,
-          lastName: user.LastName,
-          email: user.EmailAddress,
-          role: user.UserRole,
-        }))
-      )
+      const res = await getACC(email)
+      setCurrAutoCompleteContacts(getAutoCompleteContactsMapper(res.data.data))
     } catch (err) {
       errHandler(
         err,
@@ -132,23 +127,8 @@ export const MessageContextProvider = ({ children }: Props) => {
   }
   const getContacts = async () => {
     try {
-      const res = await api.get<{
-        data: ContactRspDTO[]
-      }>('api/contacts')
-      setContactList(
-        res.data.data.map((contact) => ({
-          contactId: contact.ContactID,
-          isFixed: contact.IsFixed,
-          contact: {
-            id: contact.Contact.UserID,
-            firstName: contact.Contact.FirstName,
-            lastName: contact.Contact.LastName,
-            email: contact.Contact.EmailAddress,
-            role: contact.Contact.UserRole,
-          },
-          unreadMsgsCount: contact.UnreadMsgsCount,
-        }))
-      )
+      const res = await getMyContactList()
+      setContactList(getContactsMapper(res.data.data))
     } catch (err) {
       errHandler(
         err,
@@ -176,13 +156,9 @@ export const MessageContextProvider = ({ children }: Props) => {
   }
   const addContact = async (postDto: ContactPostDTO, info = true) => {
     try {
-      await api.post<
-        ContactPostDTO & {
-          ContactUser: number
-        }
-      >('api/contacts', {
+      await addOneContact({
         ...postDto,
-        ContactUser: id,
+        ContactUser: id as number,
       })
       info && msg.success('Contact added')
     } catch (err) {
@@ -195,21 +171,8 @@ export const MessageContextProvider = ({ children }: Props) => {
   }
   const getAllMessages = async () => {
     try {
-      const res = await api.get<MsgRspDTO[]>('api/messages')
-      const groupedMsgs = res.data.reduce((acc, curr) => {
-        if (!acc[curr.ChannelId]) {
-          acc[curr.ChannelId] = []
-        }
-        acc[curr.ChannelId]?.push({
-          content: curr.Content,
-          senderId: curr.Sender,
-          receiverId: curr.Receiver,
-          createdAt: curr.CreatedAt,
-          isRead: curr.IsRead,
-          ChannelId: curr.ChannelId,
-        })
-        return acc
-      }, {} as MsgGrouped)
+      const res = await getAllMsgsMine()
+      const groupedMsgs = getAllMessagesMapper(res.data)
       setMsgMap(groupedMsgs)
     } catch (err) {
       errHandler(
@@ -221,7 +184,7 @@ export const MessageContextProvider = ({ children }: Props) => {
   }
   const markAsRead = async (senderId: number) => {
     try {
-      await api.put(`api/messages/mark-as-read/${senderId}`)
+      await markMsgsFromOneContactAsRead(senderId)
     } catch (err) {
       errHandler(
         err,
@@ -321,6 +284,7 @@ export const MessageContextProvider = ({ children }: Props) => {
   }, [params.receiverId, currConversation])
   // if someone not in contactList but in msgMap, add to contactList
   useEffect(() => {
+    if (!contactsDiff) return
     //add contact
     const todo = async () => {
       await Promise.all(
@@ -333,7 +297,7 @@ export const MessageContextProvider = ({ children }: Props) => {
       await getContacts()
     }
     todo()
-  }, [contactsDiff.length])
+  }, [JSON.stringify(contactsDiff)])
 
   const ctx = {
     getAutoCompleteContacts,
