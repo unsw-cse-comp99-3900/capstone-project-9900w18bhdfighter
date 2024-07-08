@@ -6,9 +6,10 @@ from rest_framework import  status, mixins
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
-from .models import Contact, Group, GroupMessage, GroupPreference, User, StudentArea
+from .models import Contact, Group, GroupMessage, GroupPreference, User, StudentArea, Notification, \
+    NotificationReceiver, GroupUsersLink
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 import json
@@ -19,12 +20,17 @@ from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, GroupPreferenceSerializer, GroupPreferenceUpdateSerializer,GroupWithPreferencesSerializer, MessageSerializer, ProjectSerializer,  UserSlimSerializer, UserWithAreaSerializer
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, \
+    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
+    ProjectSerializer, UserSlimSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
 from .serializers import ProjectSerializer, RegisterSerializer, UserUpdatePasswdSerializer
-
+from django.contrib.contenttypes.models import ContentType
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
 
 # from .utils import generate_auth_token 
 
@@ -556,6 +562,138 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
-        
-    
+
+############################################################################################
+#                                    Notification                                         #
+############################################################################################
+@api_view(['POST'])
+def create_notification(request):
+    """
+    创建新的通知，发送给指定的用户或群组
+    """
+    receivers = request.data.get('receivers', [])
+    receiver_type = request.data.get('receiver_type')
+    notification_type = request.data.get('type')
+    message = request.data.get('message')
+    additional_data = request.data.get('additionalData', {})
+
+    if not receivers or not receiver_type or not notification_type or not message:
+        return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 获取 ContentType
+    contentType = ContentType.objects.get(model=receiver_type, app_label="myapp")
+    sender_content_type_id = contentType.id
+
+    try:
+        if receiver_type == "user":
+            # 检查所有用户是否存在
+            users = User.objects.filter(UserID__in=receivers)
+            if users.count() != len(receivers):
+                return Response({"error": "One or more users do not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 为每个接收者创建通知
+            for receiver in receivers:
+                notification = Notification.objects.create(
+                    sender_content_type_id=sender_content_type_id,
+                    sender_object_id=receiver,
+                    Type=notification_type,
+                    Message=message,
+                    AdditionalData=additional_data
+                )
+                NotificationReceiver.objects.create(
+                    Notification_id=notification.NotificationID,
+                    ReceiverUser_id=receiver,
+                    IsRead=False
+                )
+
+        elif receiver_type == "group":
+            # 检查所有群组是否存在
+            groups = GroupUsersLink.objects.filter(GroupID__in=receivers).values('GroupID').distinct()
+            if groups.count() != len(receivers):
+                return Response({"error": "One or more groups do not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 为每个群组创建通知，并为群组中的每个用户创建通知接收记录
+            for receiver in receivers:
+                notification = Notification.objects.create(
+                    sender_content_type_id=sender_content_type_id,
+                    sender_object_id=receiver,
+                    Type=notification_type,
+                    Message=message,
+                    AdditionalData=additional_data
+                )
+                groupUsersLinks = GroupUsersLink.objects.filter(GroupID=receiver)
+                for group_user in groupUsersLinks:
+                    NotificationReceiver.objects.create(
+                        Notification_id=notification.NotificationID,
+                        ReceiverUser_id=group_user.UserID_id,
+                        IsRead=False
+                    )
+
+        else:
+            return Response({"error": "Invalid receiver type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"success": "Notifications created"}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['GET'])
+def fetch_notifications(request, user_id):
+    """
+    获取指定用户的所有通知。
+    """
+    try:
+        user = get_object_or_404(User, UserID=user_id)
+    except User.DoesNotExist:
+        return Response({"error": "user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取用户的所有通知接收者
+    notification_receivers = NotificationReceiver.objects.filter(ReceiverUser_id=user.UserID)
+
+    # 准备一个列表来存储序列化后的通知
+    notifications_data = []
+
+    # 遍历每个通知接收者，并获取对应的通知
+    for notification_receiver in notification_receivers:
+        notification_id = notification_receiver.Notification_id
+        notification = get_object_or_404(Notification, NotificationID=notification_id)
+        serializer = NotificationSerializer(notification)
+        notification_data = serializer.data
+        notification_data['IsRead'] = notification_receiver.IsRead  # 添加已读/未读状态字段
+        notification_data['NotificationReceiverID'] = notification_receiver.NotificationReceiverID  # 添加已读/未读状态字段
+        notifications_data.append(notification_data)
+
+    return Response(notifications_data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def update_notification_status(request, notificationReceiverId):
+    """
+    更新通知状态（例如，标记为已读）
+    """
+    try:
+        notificationReceiver = NotificationReceiver.objects.get(NotificationReceiverID=notificationReceiverId)
+    except NotificationReceiver.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status is not None:
+        notificationReceiver.IsRead = new_status
+        notificationReceiver.save()
+
+    return Response({"success": "Notification updated successfully"}, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+def delete_notification(request, notificationReceiverId):
+    """
+    删除用户的通知
+    """
+    try:
+        notificationReceiver = NotificationReceiver.objects.get(NotificationReceiverID=notificationReceiverId)
+        notificationReceiver.delete()
+    except NotificationReceiver.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({"success": "Notification deleted successfully"}, status=status.HTTP_200_OK)
+
      

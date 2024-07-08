@@ -14,8 +14,10 @@ urlpatterns = [
     path("project_creation/", views.project_creation, name="project_creation"),
     path("student_signup/", views.student_signup, name="student_signup"),
     path("project_update/<int:id>/", views.project_update, name="project_update"),
-    
-
+    path('api/notifications', views.create_notification, name='create_notification'),
+    path('api/notifications/<int:user_id>/', views.fetch_notifications, name='fetch_notifications'),
+    path('api/notifications/<int:notificationReceiverId>/status', views.update_notification_status,name='update_notification_status'),
+    path('api/notifications/<int:notificationReceiverId>/delete', views.delete_notification,name='delete_notification'),
 ]
 urlpatterns += url.urls
 
