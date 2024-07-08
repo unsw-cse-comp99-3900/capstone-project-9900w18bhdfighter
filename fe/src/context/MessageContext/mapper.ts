@@ -1,4 +1,10 @@
-import { Contact, ContactRspDTO, MsgGrouped, MsgRspDTO } from '../../types/msg'
+import {
+  Contact,
+  ContactRspDTO,
+  Msg,
+  MsgGrouped,
+  MsgRspDTO,
+} from '../../types/msg'
 import { UserProfileSlim, UserProfileSlimDTO } from '../../types/user'
 
 const getAllMessagesMapper: (_data: MsgRspDTO[]) => MsgGrouped = (data) => {
@@ -46,8 +52,19 @@ const getAutoCompleteContactsMapper: (
   }))
 }
 
+const MsgRespDTOMapper: (_msg: MsgRspDTO) => Msg = (msg) => {
+  return {
+    content: msg.Content,
+    senderId: msg.Sender,
+    receiverId: msg.Receiver,
+    createdAt: msg.CreatedAt,
+    isRead: msg.IsRead,
+    ChannelId: msg.ChannelId,
+  }
+}
 export {
   getAllMessagesMapper,
   getContactsMapper,
   getAutoCompleteContactsMapper,
+  MsgRespDTOMapper,
 }

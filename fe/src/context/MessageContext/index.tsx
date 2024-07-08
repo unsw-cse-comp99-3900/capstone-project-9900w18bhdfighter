@@ -22,7 +22,6 @@ import {
   ContactPostDTO,
   ContactUpdateDTO,
   Conversation,
-  Msg,
   MsgGrouped,
   MsgRspDTO,
   MsgWSRspDTO,
@@ -34,6 +33,7 @@ import {
 } from '../../api/contactAPI'
 import { getAllMsgsMine, markMsgsFromOneContactAsRead } from '../../api/msgAPI'
 import {
+  MsgRespDTOMapper,
   getAllMessagesMapper,
   getAutoCompleteContactsMapper,
   getContactsMapper,
@@ -128,7 +128,7 @@ export const MessageContextProvider = ({ children }: Props) => {
   const getContacts = async () => {
     try {
       const res = await getMyContactList()
-      setContactList(getContactsMapper(res.data.data))
+      setContactList(getContactsMapper(res.data.data).sort())
     } catch (err) {
       errHandler(
         err,
@@ -193,44 +193,52 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
     }
   }
-  //get all messages
+  //get all contacts and messages
   useEffect(() => {
     getAllMessages()
+    getContacts()
   }, [])
+
+  useEffect(() => {
+    // 如果当前的receiverId不在contactList里面，就添加到contactList里面
+    if (!contactList) return
+    if (!params.receiverId) return
+    console.log(contactList)
+
+    if (
+      !contactList.find(
+        (contact) => contact.contact.id === Number(params.receiverId)
+      )
+    ) {
+      console.log('adding contact')
+
+      addContact({ Contact: Number(params.receiverId) }, false).then(() =>
+        getContacts()
+      )
+    }
+  }, [JSON.stringify(contactList)])
+
   //init socket when id is ready
   useEffect(() => {
     if (!id) return
     const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/user/${id}`)
     socketRef.current = socket
-    console.log('connecting to chat server')
-
     socket.onopen = () => {
       console.log('Connected to the chat server')
     }
     socket.onmessage = (event) => {
       const res = JSON.parse(event.data) as MsgWSRspDTO
-
       if (res.status_code === 201) {
         // a msg is sent
       }
       // a msg is received or a msg is sent
       if (res.status_code >= 200 && res.status_code < 300) {
         const msgDto = res.data as MsgRspDTO
-        const new_msg = {
-          content: msgDto.Content,
-          senderId: msgDto.Sender,
-          receiverId: msgDto.Receiver,
-          createdAt: msgDto.CreatedAt,
-          isRead: msgDto.IsRead,
-          ChannelId: msgDto.ChannelId,
-        }
+        const new_msg = MsgRespDTOMapper(msgDto)
         setMsgMap((prev) => {
           const key = new_msg.ChannelId
           const updatedMap = { ...prev }
-          if (!updatedMap[key]) {
-            updatedMap[key] = []
-          }
-          updatedMap[key] = [...(updatedMap[key] as Msg[]), new_msg]
+          updatedMap[key] = [...(updatedMap[key] || []), new_msg]
           return updatedMap
         })
         // if new_msg is not read, increment unreadMsgsCount
@@ -276,7 +284,6 @@ export const MessageContextProvider = ({ children }: Props) => {
     if (!params.receiverId) return
     if (!currConversation) return
     const todo = async () => {
-      console.log('mark as read')
       await markAsRead(Number(params.receiverId))
       await getContacts()
     }

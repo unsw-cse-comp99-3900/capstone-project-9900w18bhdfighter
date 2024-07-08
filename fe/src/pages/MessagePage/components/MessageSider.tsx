@@ -4,7 +4,6 @@ import type { CollapseProps, FlexProps } from 'antd'
 import Avatar from '../../../components/Avatar'
 import ContactSearchBar from './ContactSearchBar'
 import { useMessageContext } from '../../../context/MessageContext'
-import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const RecentContactList = styled(Flex)`
@@ -20,12 +19,9 @@ const ContactCard = styled(Flex)`
 
 type Props = Partial<FlexProps>
 const MessageSider = (props: Props) => {
-  const { contactList, getContacts } = useMessageContext()
+  const { contactList } = useMessageContext()
 
   const navigate = useNavigate()
-  useEffect(() => {
-    getContacts()
-  }, [])
 
   const items: CollapseProps['items'] = [
     {
