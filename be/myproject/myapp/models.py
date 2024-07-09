@@ -51,6 +51,7 @@ class Group(models.Model):
     GroupName = models.CharField(max_length=255)
     GroupDescription = models.TextField()
     CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
+    MaxMemberNumber = models.IntegerField(default=1)
     Preferences=models.ManyToManyField(Project, through='GroupPreference')
     
     def __str__(self):
