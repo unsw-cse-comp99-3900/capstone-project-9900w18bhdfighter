@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, User, UserPreferencesLink, Area, StudentArea, Group
+from .models import Project, Skill, User, UserPreferencesLink, Area, StudentArea, Group
 from django.contrib.auth.hashers import make_password
 
 
@@ -8,12 +8,33 @@ class StudentsignupSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['FirstName', 'LastName', 'EmailAddres', 'Passwd']
 
+class StudentAreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentArea
+        fields = ['AreaID', 'AreaName']
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = "__all__"
+    
+
+class SkillSerializer(serializers.ModelSerializer):
+    Area = AreaSerializer()
+    class Meta:
+        model = Skill
+        fields = ['SkillID', 'SkillName']
+
 class ProjectSerializer(serializers.ModelSerializer):
+    RequiredSkills = serializers.SerializerMethodField()
     class Meta:
         model = Project
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup']
-
-
+    
+    def get_RequiredSkills(self, obj):
+        skills = Skill.objects.filter(project=obj)
+        return SkillSerializer(skills, many=True).data
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -30,10 +51,7 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber']
-class StudentAreaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudentArea
-        fields = ['AreaID', 'AreaName']
+
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd2 = serializers.CharField(write_only=True, required=False, default="")
@@ -142,9 +160,3 @@ class RegisterSerializer(serializers.ModelSerializer):
             "Areas": areas_data
         }
 
-
-class AreaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Area
-        fields = "__all__"
-    
