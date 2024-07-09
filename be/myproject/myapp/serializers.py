@@ -1,6 +1,7 @@
 
 from rest_framework import serializers
-from .models import Contact, GroupMessage, GroupPreference, Project, User, Area, StudentArea, Message, Group
+from .models import Contact, GroupMessage, GroupPreference, Project, User, Area, StudentArea, Message, Group, \
+    Notification, NotificationReceiver
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count
 # ?
@@ -272,3 +273,14 @@ class GroupWithPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ['GroupID', 'GroupName', 'GroupDescription', 'CreatedBy', 'Preferences']
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+
+class NotificationReceiverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationReceiver
+        fields = '__all__'
