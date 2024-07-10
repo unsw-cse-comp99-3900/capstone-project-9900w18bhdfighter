@@ -62,5 +62,17 @@ const errHandler = (
     otherErrDo('Technical error, please view logs of console')
   }
 }
-
-export { shortName, isDarkColor, stringToColorPair, errHandler }
+const ids_to_channel_id = (ids: [number, number]) => {
+  return ids.sort().join('_')
+}
+const channel_id_to_ids = (channel_id: string) => {
+  return channel_id.split('_').map(Number) as [number, number]
+}
+export {
+  shortName,
+  isDarkColor,
+  stringToColorPair,
+  errHandler,
+  ids_to_channel_id,
+  channel_id_to_ids,
+}

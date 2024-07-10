@@ -14,6 +14,8 @@ import Teams from './pages/Teams'
 import AdminManagement from './pages/AdminManagement'
 import ProjectDetail from './pages/ProjectDetail'
 import MessagePage from './pages/MessagePage'
+import MessageLanding from './pages/MessagePage/components/MessageLanding'
+import { MessageMain } from './pages/MessagePage/components/MessageMain'
 
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
@@ -76,8 +78,18 @@ const routerConfig = [
       },
       {
         element: <MessagePage />,
-        path: route.MESSAGE,
+        children: [
+          {
+            element: <MessageLanding />,
+            path: route.MESSAGE,
+          },
+          {
+            element: <MessageMain />,
+            path: `${route.MESSAGE}/user/:receiverId`,
+          },
+        ],
       },
+
       {
         element: <AdminManagement />,
         path: route.ADMIN,
