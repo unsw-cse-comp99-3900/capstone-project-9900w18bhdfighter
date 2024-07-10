@@ -460,14 +460,18 @@ def group_leave(request):
 
 
 
-
-
 @csrf_exempt
 def get_projects_list(request):
     if request.method == 'GET':
         
         projects = Project.objects.all()
         serializer = ProjectSerializer(projects, many=True)
+
+        project_data = serializer.data
+
+        for project in project_data:
+            user = User.objects.get(EmailAdress=project['ProjectOwner']) 
+            project['projectgOwner_id'] = user.UserID
         return JsonResponse(serializer.data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
     
@@ -523,12 +527,6 @@ def get_project_list_owner_creator(request, creator, owner):
             project['projectOwner_id'] = user.UserID
         return JsonResponse(project_data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
-
-
-
-
-
 
 
 
