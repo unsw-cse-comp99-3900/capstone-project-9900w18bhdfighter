@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'channels',
+    
     "myapp"
 ]
 
@@ -82,8 +84,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'myproject.wsgi.application'
+ASGI_APPLICATION = 'myproject.asgi.application'
 
-
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 

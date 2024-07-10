@@ -1,3 +1,5 @@
+import { AxiosError, isAxiosError } from 'axios'
+
 const shortName = (firstName = '', lastName = '') => {
   console.log('firstName:', firstName)
 
@@ -44,6 +46,33 @@ const stringToColorPair = (input = '') => {
   return [color1, color2]
 }
 
-// 使用示例
-
-export { shortName, isDarkColor, stringToColorPair }
+const errHandler = (
+  err: unknown,
+  axiosErrDo: (_errStr: string) => void,
+  otherErrDo: (_errStr: string) => void
+) => {
+  if (isAxiosError(err)) {
+    const error = err as AxiosError<{ error: string; errors: string }>
+    const data = error.response?.data
+    if (data) {
+      axiosErrDo(data.error || data.errors)
+    }
+  } else {
+    console.log('err:', err)
+    otherErrDo('Technical error, please view logs of console')
+  }
+}
+const ids_to_channel_id = (ids: [number, number]) => {
+  return ids.sort().join('_')
+}
+const channel_id_to_ids = (channel_id: string) => {
+  return channel_id.split('_').map(Number) as [number, number]
+}
+export {
+  shortName,
+  isDarkColor,
+  stringToColorPair,
+  errHandler,
+  ids_to_channel_id,
+  channel_id_to_ids,
+}

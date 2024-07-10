@@ -2,6 +2,7 @@ import { Avatar as _Avatar } from 'antd'
 import type { AvatarProps } from 'antd/es/avatar'
 import { shortName, stringToColorPair } from '../../utils/parse'
 import styled from 'styled-components'
+import { useMemo } from 'react'
 
 type Props = {
   emailForHashToColor: string
@@ -14,7 +15,6 @@ const Wrapper = styled(_Avatar)`
   width: 3rem;
   height: 3rem;
   font-weight: bold;
-
   transition: opacity 0.2s;
   &:hover {
     opacity: 0.8;
@@ -27,6 +27,10 @@ const Avatar = ({
   ...props
 }: Props) => {
   const [bgColor, color] = stringToColorPair(emailForHashToColor)
+  const renderName = useMemo(
+    () => shortName(firstName, lastName),
+    [firstName, lastName]
+  )
   return (
     <Wrapper
       {...props}
@@ -40,7 +44,7 @@ const Avatar = ({
 >>>>>>> 611021aaf88104bacc9b8f80151c444a7c13fb19
       }}
     >
-      {shortName(firstName, lastName)}
+      {renderName}
     </Wrapper>
   )
 }

@@ -34,6 +34,7 @@
           "unnamedComponents": "arrow-function" 
         }
       ],
+  
       "no-useless-return": "error",
       "import/no-named-as-default": "off",
       "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
@@ -54,7 +55,7 @@
         }
       ],
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "off",
       "import/prefer-default-export": "off",
       "react/prop-types": "off",
       "prettier/prettier": [ "error", { "endOfLine": "auto" } ]
