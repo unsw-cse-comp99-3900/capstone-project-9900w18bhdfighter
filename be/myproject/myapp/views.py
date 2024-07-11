@@ -230,7 +230,10 @@ def project_creation(request):
                 response_data = ProjectSerializer(project).data
                 return JsonResponse(response_data, status=201)
             return JsonResponse(serializer.errors, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
 ############################################################################################
 #                                    Project Updating                                      #
 ############################################################################################
@@ -256,11 +259,11 @@ def project_update(request, id):
             
             if user_data['role'] in [1, 3]:
                 return JsonResponse({'error': 'Permission denied. Cannot update projects.'}, status=403)
-            elif user_data['role'] in [2]:
+            elif user_data['role'] == 2:
                 if project.CreatedBy.pk != user.pk:
                     return JsonResponse({'error': 'Permission denied. Clients can only update projects they created.'}, status=403)
-            elif user_data['role'] in [5, 4]:
-                pass 
+            elif user_data['role'] in [4, 5]:
+                pass
             else:
                 return JsonResponse({'error': 'Permission denied.'}, status=403)
 
@@ -281,6 +284,8 @@ def project_update(request, id):
                 serializer.save(CreatedBy=user)
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
             return JsonResponse(serializer.errors, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
@@ -295,12 +300,15 @@ def group_creation(request):
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
 
-        if result['status'] == 'success':
-            user_data = result['data']
-            try:
-                user = User.objects.get(pk=user_data['user_id'])
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
         if user_data['role'] not in [1, 3, 4, 5]:
             return JsonResponse({'error': 'Permission denied'}, status=403)
         
@@ -315,12 +323,11 @@ def group_creation(request):
             try:
                 group = serializer.save(CreatedBy=user)
                 
-                if user_data['role'] in [1]:
-                    GroupUsersLink.objects.create(GroupID=group,UserID=user)
-                    return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
-                else:
-                    return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
-            except:
+                if user_data['role'] == 1:
+                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                
+                return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
+            except Exception as e:
                 return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
@@ -330,6 +337,7 @@ def group_creation(request):
 #                                     Group Operation                                      #
 ############################################################################################
 
+# Join Group 
 @csrf_exempt
 def group_join(request):
     if request.method == 'POST':
@@ -337,16 +345,19 @@ def group_join(request):
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
 
-        if result['status'] == 'success':
-            user_data = result['data']
-            try:
-                user = User.objects.get(pk=user_data['user_id'])
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
         try:
             add_user = User.objects.get(UserID=data['student_id'])
         except User.DoesNotExist:
-            return JsonResponse({'error': 'User do not exists'}, status=404)
+            return JsonResponse({'error': 'User does not exist'}, status=404)
             
         if user_data['role'] not in [1, 3, 4, 5]:
             return JsonResponse({'error': 'Permission denied'}, status=403)
@@ -354,7 +365,7 @@ def group_join(request):
         try:
             group = Group.objects.get(GroupID=data['group_id'])
         except Group.DoesNotExist:
-            return JsonResponse({'error': 'Group do not exists'}, status=404)
+            return JsonResponse({'error': 'Group does not exist'}, status=404)
 
         if GroupUsersLink.objects.filter(UserID=user).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
@@ -364,7 +375,7 @@ def group_join(request):
         if current_group_number >= group.MaxMemberNumber:
             if user.UserRole in [3, 4, 5]:
                 GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-                return JsonResponse({'message': 'Added students to full group successfully!'}, status=201)
+                return JsonResponse({'message': 'Added student to full group successfully!'}, status=201)
             return JsonResponse({'error': 'Group is full'}, status=400)
         else:
             if user_data['role'] == 1:
@@ -372,11 +383,11 @@ def group_join(request):
                     GroupUsersLink.objects.create(GroupID=group, UserID=user)
                     return JsonResponse({'message': 'Joined group successfully!'}, status=201)
                 else:
-                    return JsonResponse({'error': 'You cannot add other studens into a group'}, status=403)
+                    return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
             return JsonResponse({'error': 'You cannot join a group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-
+# Leave Group
 @csrf_exempt
 def group_leave(request):
     if request.method == 'POST':
@@ -384,16 +395,19 @@ def group_leave(request):
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
 
-        if result['status'] == 'success':
-            user_data = result['data']
-            try:
-                user = User.objects.get(pk=user_data['user_id'])
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Authentication failed'}, status=401)
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
         try:
             leave_user = User.objects.get(UserID=data['student_id'])
         except User.DoesNotExist:
-            return JsonResponse({'error': 'User do not exists'}, status=404)
+            return JsonResponse({'error': 'User does not exist'}, status=404)
             
         if user_data['role'] not in [1, 3, 4, 5]:
             return JsonResponse({'error': 'Permission denied'}, status=403)
@@ -401,30 +415,28 @@ def group_leave(request):
         try:
             group = Group.objects.get(GroupID=data['group_id'])
         except Group.DoesNotExist:
-            return JsonResponse({'error': 'Group do not exists'}, status=404)
+            return JsonResponse({'error': 'Group does not exist'}, status=404)
 
         if not GroupUsersLink.objects.filter(UserID=user).exists():
             return JsonResponse({'error': 'Student is not in this group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
-       
         if user.UserRole in [3, 4, 5]:
             if current_group_number > 0:
                 GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-                return JsonResponse({'message': 'delete user to from the group successfully!'}, status=201)
+                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
             return JsonResponse({'error': 'Group is empty'}, status=400)
     
         if user_data['role'] == 1:
             if current_group_number > 1:
                 if user == leave_user:
                     GroupUsersLink.objects.filter(GroupID=group, UserID=user).delete()
-                    return JsonResponse({'message': 'Leave group successfully!'}, status=201)
+                    return JsonResponse({'message': 'Left group successfully!'}, status=201)
                 else:
-                    return JsonResponse({'error': 'You cannot remove other student from the group'}, status=403)
+                    return JsonResponse({'error': 'You cannot remove other students from the group'}, status=403)
             return JsonResponse({'error': 'You are the last student in the group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 ############################################################################################
 #                                     Get project list                                     #
