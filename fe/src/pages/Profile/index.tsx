@@ -5,21 +5,13 @@ import { getThemeToken } from '../../utils/styles'
 import { useAuthContext } from '../../context/AuthContext'
 import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
-<<<<<<< HEAD
-import ModalProfileEdit from './components/ModalProfileEdit'
-=======
-import ModalProfileEdit from '../../components/ModalProfileEdit'
-<<<<<<< HEAD
->>>>>>> 611021aaf88104bacc9b8f80151c444a7c13fb19
-import { useState } from 'react'
-=======
 import { useEffect, useState } from 'react'
 import AccountManagementContextProvider, {
   useAccountManagementContext,
 } from '../../context/AccountManagementContext'
 import { UserUpdate } from '../../types/user'
 import { useParams } from 'react-router-dom'
->>>>>>> aefc731fcea26025ca16f221d35bd5660f97b00b
+import ModalProfileEdit from '../../components/ModalProfileEdit'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -113,19 +105,10 @@ const _Profile = () => {
   return (
     <Wrapper>
       <ModalProfileEdit
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        title="Edit Profile"
->>>>>>> 611021aaf88104bacc9b8f80151c444a7c13fb19
-        userInfo={usrInfo}
-=======
         viewerRole={usrInfo?.role}
-        title="Edit Profile"
-        userInfo={currProfileViewing}
->>>>>>> aefc731fcea26025ca16f221d35bd5660f97b00b
-        isModalOpen={isModalOpen}
         handleOk={handleOk}
+        userInfo={currProfileViewing}
+        isModalOpen={isModalOpen}
         handleCancel={handleCancel}
       ></ModalProfileEdit>
       <Header>
