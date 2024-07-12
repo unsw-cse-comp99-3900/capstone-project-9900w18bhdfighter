@@ -298,12 +298,12 @@ def project_update(request, id):
                     except Area.DoesNotExist:
                         return JsonResponse({'error': 'Area not found.'}, status=404)
                     
-                    skill=Skill.objects.filter(SkillName=skill,Area=area)
+                    skill=Skill.objects.filter(SkillName=skill,Area=area).first()
       
                     if not skill:
                         skill_object, _ = Skill.objects.get_or_create(SkillName=skill, Area=area)
                     else:
-                        skill_object=skill[0]
+                        skill_object=skill
                     skill_objects.append(skill_object)
       
                 SkillProject.objects.filter(Project=project).delete()
