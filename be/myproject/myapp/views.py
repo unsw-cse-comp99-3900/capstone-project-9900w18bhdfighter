@@ -281,7 +281,25 @@ def project_update(request, id):
 
             serializer = ProjectSerializer(project, data=data, partial=True)
             if serializer.is_valid():
+
                 serializer.save(CreatedBy=user)
+                required_skills = data.get('requiredSkills', [])
+
+                for skill_data in required_skills:
+                    interest_area = skill_data.get('area_id')
+                    skill = skill_data.get('skill')
+
+                    if not interest_area or not skill:
+                        return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
+                    
+                    try:
+                        area = Area.objects.get(pk=interest_area)
+                    except Area.DoesNotExist:
+                        return JsonResponse({'error': 'Area not found.'}, status=404)
+                    
+                    skill_object, _ = Skill.objects.get_or_create(SkillName=skill, defaults={'Area': area})
+                    SkillProject.objects.create(Skill=skill_object, Project=project)
+
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
             return JsonResponse(serializer.errors, status=400)
         else:
