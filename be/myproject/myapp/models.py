@@ -71,7 +71,6 @@ class GroupUsersLink(models.Model):
     GroupUsersLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
-
     def __str__(self):
         return str(self.GroupUsersLinkID)
 
