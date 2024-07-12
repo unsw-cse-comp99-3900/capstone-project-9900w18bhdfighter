@@ -3,9 +3,14 @@ import styled from 'styled-components'
 
 import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
-import ProjectsListItem, { DataType } from './ProjectsListItem'
+import ProjectsListItem from './ProjectsListItem'
 import { getThemeToken } from '../../../utils/styles'
 import Filter from './Filter'
+import { getAllProjects } from '../../../api/projectAPI'
+import { Project } from '../../../types/proj'
+
+import { mapProjectDTOToProject } from '../mapper'
+import route from '../../../constant/route'
 
 type Props = {
   className?: string
@@ -19,16 +24,19 @@ const _ProjectsList = styled(List)`
 
   overflow-y: auto;
 `
-const count = 15
-const fakeDataUrl = `https://randomuser.me/api/?results=${count}&inc=name,gender,email,nat,picture&noinfo`
+
 const ProjectsList = ({ className = '' }: Props) => {
-  const [list, setList] = useState<DataType[]>([])
+  const [list, setList] = useState<Project[]>([])
   useEffect(() => {
-    fetch(fakeDataUrl)
-      .then((res) => res.json())
-      .then((res) => {
-        setList(res.results)
-      })
+    const toFetch = async () => {
+      try {
+        const res = await getAllProjects()
+        setList(res.data.map(mapProjectDTOToProject))
+      } catch (e) {
+        console.log(e)
+      }
+    }
+    toFetch()
   }, [])
   return (
     <Wrapper className={className}>
@@ -44,12 +52,16 @@ const ProjectsList = ({ className = '' }: Props) => {
         renderItem={(item) => (
           <List.Item
             actions={[
-              <LinkButton to="/projects/1" key="list-loadmore-more">
+              <LinkButton
+                size="small"
+                to={`${route.PROJECTS}/${(item as Project).id}`}
+                key={(item as Project).id}
+              >
                 More
               </LinkButton>,
             ]}
           >
-            <ProjectsListItem item={item as DataType} />
+            <ProjectsListItem item={item as Project} />
           </List.Item>
         )}
       ></_ProjectsList>

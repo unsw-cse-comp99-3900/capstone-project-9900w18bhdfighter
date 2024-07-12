@@ -39,7 +39,7 @@ class Project(models.Model):
     ProjectOwner = models.CharField(max_length=255)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     MaxNumOfGroup = models.IntegerField(default=1)
-    
+    Groups=models.ManyToManyField('Group', through='GroupProjectsLink')
     
     def __str__(self):
         return str(self.ProjectID)
@@ -190,6 +190,3 @@ class Contact(models.Model):
 
 
    
-   
-
-        

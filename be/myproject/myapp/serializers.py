@@ -41,11 +41,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     RequiredSkills = serializers.SerializerMethodField()
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills']
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy"]
     
     def get_RequiredSkills(self, obj):
         skills = SkillProject.objects.filter(Project=obj)
         return SkillProjectSerializer(skills, many=True).data
+
+    
+
     
 class AreaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,7 +82,7 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model=Group
-        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber']
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

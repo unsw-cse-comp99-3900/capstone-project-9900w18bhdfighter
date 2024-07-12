@@ -1,37 +1,29 @@
-import { Avatar, List, Skeleton } from 'antd'
+import { Flex, List, Tag } from 'antd'
 import { Link } from 'react-router-dom'
 
-export interface DataType {
-  gender?: string
-  name: {
-    title?: string
-    first?: string
-    last?: string
-  }
-  email?: string
-  picture: {
-    large?: string
-    medium?: string
-    thumbnail?: string
-  }
-  nat?: string
-  loading: boolean
-}
+import { Project } from '../../../types/proj'
+import route from '../../../constant/route'
 
 type Props = {
-  item: DataType
+  item: Project
 }
 const ProjectsListItem = ({ item }: Props) => {
   return (
-    <Skeleton avatar title={false} loading={(item as DataType).loading} active>
-      <List.Item.Meta
-        avatar={<Avatar src={(item as DataType).picture.large} />}
-        title={
-          <Link to="https://ant.design">{(item as DataType).name?.last}</Link>
-        }
-        description="Lorem ipsum dolor sit amet consectetur, adipisicing elit. "
-      />
-    </Skeleton>
+    <List.Item.Meta
+      title={<Link to={`${route.PROJECTS}/${item.id}`}>{item.name}</Link>}
+      description={
+        <Flex vertical>
+          <Flex>{item.description}</Flex>
+          <Flex wrap>
+            {item.requiredSkills.map((skill) => (
+              <Tag color="orange" key={skill.skillId}>
+                {skill.skillName}
+              </Tag>
+            ))}
+          </Flex>
+        </Flex>
+      }
+    />
   )
 }
 

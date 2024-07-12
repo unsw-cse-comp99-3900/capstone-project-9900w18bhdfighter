@@ -22,7 +22,7 @@ from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
-    ProjectSerializer, UserSlimSerializer, UserWithAreaSerializer, NotificationSerializer
+    ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -206,7 +206,7 @@ def project_creation(request):
                 return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
                 
             data['ProjectOwner'] = project_owner_email  
-
+            data["CreatedBy"]=user_data['user_id']
             serializer = ProjectSerializer(data=data)
             if serializer.is_valid():
                 project = serializer.save(CreatedBy=user)
@@ -224,7 +224,7 @@ def project_creation(request):
                     except Area.DoesNotExist:
                         return JsonResponse({'error': 'Area not found.'}, status=404)
                     
-                    skill_object, _ = Skill.objects.get_or_create(SkillName=skill, defaults={'Area': area})
+                    skill_object, _ = Skill.objects.get_or_create(SkillName=skill, Area=area)
                     SkillProject.objects.create(Skill=skill_object, Project=project)
 
                 response_data = ProjectSerializer(project).data
@@ -278,7 +278,8 @@ def project_update(request, id):
                 if data['ProjectOwner'] != user_data['email']:
                     return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
                 data['ProjectOwner'] = user_data['email']
-
+            data["CreatedBy"]=user_data['user_id']
+            
             serializer = ProjectSerializer(project, data=data, partial=True)
             skill_objects=[]
             if serializer.is_valid():
@@ -288,9 +289,8 @@ def project_update(request, id):
 
                 for skill_data in required_skills:
                     interest_area = skill_data.get('area_id')
-                    skill = skill_data.get('skill')
-                    print(interest_area, skill)    
-                    if not interest_area or not skill:
+                    skill_name = skill_data.get('skill')   
+                    if not interest_area or not skill_name:
                         return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
                     
                     try:
@@ -298,12 +298,12 @@ def project_update(request, id):
                     except Area.DoesNotExist:
                         return JsonResponse({'error': 'Area not found.'}, status=404)
                     
-                    skill=Skill.objects.filter(SkillName=skill,Area=area)
+                    skill=Skill.objects.filter(SkillName=skill_name,Area=area).first()
       
                     if not skill:
-                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill, Area=area)
+                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
                     else:
-                        skill_object=skill[0]
+                        skill_object=skill
                     skill_objects.append(skill_object)
       
                 SkillProject.objects.filter(Project=project).delete()
@@ -366,7 +366,6 @@ def group_creation(request):
                 return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 ############################################################################################
 #                                     Group Operation                                      #
@@ -473,6 +472,30 @@ def group_leave(request):
             return JsonResponse({'error': 'You are the last student in the group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+# get group list
+@csrf_exempt
+def get_groups_list(request):
+    if request.method == 'GET':
+        groups = Group.objects.all()
+        serializer = GroupSerializer(groups, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+# get group list by project
+@csrf_exempt
+def get_groups_list_by_project(request, id):
+    if request.method == 'GET':
+        try:
+            project = Project.objects.get(pk=id)
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'Project not found'}, status=404)
+        
+        groups = project.groups.all()
+        serializer = GroupSerializer(groups, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
 ############################################################################################
 #                                     Get project list                                     #
 ############################################################################################
@@ -545,9 +568,21 @@ def get_project_list_owner_creator(request, creator, owner):
         return JsonResponse(project_data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+@csrf_exempt
+def get_project(request, id):
+    if request.method == 'GET':
+        try:
+            project = Project.objects.get(pk=id)
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'Project not found'}, status=404)
+        
+        serializer = ProjectSerializer(project)
+        project_data = serializer.data
 
-
-
+        user = User.objects.get(EmailAddress=project_data['ProjectOwner'])
+        project_data['projectOwner_id'] = user.UserID
+        return JsonResponse(project_data, safe=False)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 
@@ -853,7 +888,7 @@ class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.U
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['put'], url_path='mark-as-read/(?P<receiverId>\d+)')
+    @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<receiverId>\d+)')
     def mark_as_read(self, request, receiverId=None):
         user_id = self.get_serializer_context().get("requesterId")
         if receiverId:
