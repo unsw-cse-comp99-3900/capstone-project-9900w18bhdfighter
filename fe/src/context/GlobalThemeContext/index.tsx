@@ -1,16 +1,31 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConfigProvider, theme as _theme } from 'antd'
 import type { ThemeConfig } from 'antd'
-import { Dispatch, ReactNode, createContext, useContext, useState } from 'react'
+import {
+  Dispatch,
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 import { ThemeProvider } from 'styled-components'
 import { ThemeColor, themeColor as _themeColor } from './themeConfig'
+
+import breakPoint, { BreakPointKey } from '../../constant/breakPoint'
 
 //https://ant.design/docs/spec/colors-cn
 type Props = {
   children: ReactNode
 }
-
+type OnWidth = (
+  bp: Partial<Record<BreakPointKey, any>> & { defaultValue: any }
+) => typeof bp.defaultValue
 interface GlobalThemeContextType {
   setThemeColor: Dispatch<ThemeColor>
+  windowWidth: number
+
+  onWidth: OnWidth
 }
 
 const GlobalThemeContext = createContext<GlobalThemeContextType>(
@@ -20,6 +35,37 @@ const GlobalThemeContext = createContext<GlobalThemeContextType>(
 export const useGlobalTheme = () => useContext(GlobalThemeContext)
 const GlobalAntdThemeProvider = ({ children }: Props) => {
   const { token } = _theme.useToken()
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+
+  const onWidth: OnWidth = (bp) => {
+    const keysWithoutDefault = Object.keys(breakPoint).filter(
+      (k) => k !== 'defaultValue'
+    ) as BreakPointKey[]
+
+    const defaultValue = bp.defaultValue
+
+    const key = keysWithoutDefault.find((k) => {
+      const value = breakPoint[k]
+      return windowWidth < value
+    })
+
+    if (key) {
+      return bp[key]
+    }
+
+    return defaultValue
+  }
+  useEffect(() => {
+    window.addEventListener('resize', () => {
+      setWindowWidth(window.innerWidth)
+    })
+    return () => {
+      window.removeEventListener('resize', () => {
+        setWindowWidth(window.innerWidth)
+      })
+    }
+  }, [])
+
   const [themeState] = useState<ThemeConfig>({
     components: {
       Typography: {
@@ -59,6 +105,8 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
 
   const ctx = {
     setThemeColor,
+    windowWidth,
+    onWidth,
   }
   return (
     <GlobalThemeContext.Provider value={ctx}>
