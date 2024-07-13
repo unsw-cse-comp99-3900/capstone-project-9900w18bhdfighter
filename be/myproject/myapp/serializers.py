@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Contact, GroupMessage, GroupPreference, Project, SkillProject, User, Area, StudentArea, Message,Skill, Group, \
+from .models import Contact, GroupMessage, GroupPreference, GroupProjectsLink, Project, SkillProject, User, Area, StudentArea, Message,Skill, Group, \
     Notification, NotificationReceiver
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count
@@ -334,3 +334,9 @@ class NotificationReceiverSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationReceiver
         fields = '__all__'
+
+
+class GroupProjectLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProjectsLink
+        fields = ['GroupID', 'ProjectID', 'GroupProjectsLinkID']

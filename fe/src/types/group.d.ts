@@ -4,12 +4,16 @@ import { UserProfileSlim, UserProfileSlimDTO } from './user'
 interface GroupPreferenceDTO {
   PreferenceID: number
   Preference: ProjectRespDTO
+  Rank: number
 }
 interface GroupPreference {
   preferenceId: number
   preference: Project
+  rank: number
 }
+
 interface GroupRspDTO {
+  GroupID: number
   GroupName: string
   GroupDescription: string
   MaxMemberNum: number
@@ -20,6 +24,7 @@ interface GroupRspDTO {
 }
 
 interface Group {
+  groupId: number
   groupName: string
   groupDescription: string
   maxMemberNum: number

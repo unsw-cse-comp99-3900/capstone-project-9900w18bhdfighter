@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
-from .models import Contact, Group, GroupMessage, GroupPreference, Skill, SkillProject, User, StudentArea, Notification, \
+from .models import Contact, Group, GroupMessage, GroupPreference, GroupProjectsLink, Skill, SkillProject, User, StudentArea, Notification, \
     NotificationReceiver, GroupUsersLink
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
@@ -21,7 +21,7 @@ from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupFetchSerializer, GroupMessageSerializer, \
-    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
+    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
@@ -472,13 +472,15 @@ def group_leave(request):
             return JsonResponse({'error': 'You are the last student in the group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-# get group list
+# get group list or delete group
 @csrf_exempt
-def get_groups_list(request):
+def groups_list_del(request,id=None):
     if request.method == 'GET':
         groups = Group.objects.all()
         serializer = GroupFetchSerializer(groups, many=True)
         return JsonResponse(serializer.data, safe=False)
+    if request.method == 'DELETE':
+        return del_group(request,id)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 # get group list by project
@@ -490,12 +492,19 @@ def get_groups_list_by_project(request, id):
         except Project.DoesNotExist:
             return JsonResponse({'error': 'Project not found'}, status=404)
         
-        groups = project.groups.all()
+        groups = project.Groups.all()
         serializer = GroupFetchSerializer(groups, many=True)
         return JsonResponse(serializer.data, safe=False)
+
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-
+def del_group(request, id):
+        try:
+            group = Group.objects.get(pk=id)
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group not found'}, status=404)
+        group.delete()
+        return JsonResponse({'message': 'Group deleted successfully!'}, status=200)
 ############################################################################################
 #                                     Get project list                                     #
 ############################################################################################
@@ -566,19 +575,6 @@ def get_project(request, id):
         return JsonResponse(serializer.data, safe=False)
     
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ############################################################################################
@@ -1042,4 +1038,61 @@ def delete_notification(request, notificationReceiverId):
 
     return Response({"success": "Notification deleted successfully"}, status=status.HTTP_200_OK)
 
-     
+class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = GroupProjectsLink.objects.all()
+    serializer_class = GroupProjectLinkSerializer
+    
+    def create(self, request, *args, **kwargs):
+        #如果存在则返回错误
+        try:    
+            project_id = request.data.get('ProjectID')
+            group_id = request.data.get('GroupID')
+            if GroupProjectsLink.objects.filter(ProjectID=project_id, GroupID=group_id).exists():
+                return JsonResponse({'error': 'Group project link already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return JsonResponse({'error': 'Invalid data.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = GroupProjectLinkSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = GroupProjectLinkSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        project_id = kwargs.get('projectID')
+        group_id = kwargs.get('groupID')
+        try:
+            instance = GroupProjectsLink.objects.get(ProjectID=project_id, GroupID=group_id)
+            instance.delete()
+            return JsonResponse({'message': 'Group project link deleted successfully!'}, status=status.HTTP_200_OK)
+        except GroupProjectsLink.DoesNotExist:
+            return JsonResponse({'error': 'Group project link not found.'}, status=status.HTTP_404_NOT_FOUND)
+    
+        
+        
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = GroupProjectLinkSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+
+#autocompletegroups
+
+@api_view(['GET'])
+def autocomplete_groups(request):
+    group_substring = request.GET.get('name_substring', None)
+    if group_substring:
+        queryset = Group.objects.filter(GroupName__icontains=group_substring)
+        serializer = GroupFetchSerializer(queryset, many=True)
+        return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+    return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)

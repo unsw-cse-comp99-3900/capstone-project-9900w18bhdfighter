@@ -6,7 +6,28 @@ import { mapUserSlimProfileDTOUserProfileSlim } from './userAPI'
 const getAllGroups = async () => {
   return api.get<GroupRspDTO[]>('groups')
 }
+const getGroupByProjectId = async (projectId: number | string) => {
+  return api.get<GroupRspDTO[]>(`groups/${projectId}`)
+}
 
+const assignGroupToProject = async (data: {
+  GroupID: number
+  ProjectID: number
+}) => {
+  return api.post('api/group-projects', data)
+}
+const removeGroupFromProject = async (projectId: number, groupId: number) => {
+  console.log(`api/group-projects/${projectId}/${groupId}/`)
+
+  return api.delete(`api/group-projects/${projectId}/${groupId}/`)
+}
+const getAutoCompleteGroups = async (groupName: string) => {
+  return api.get<{ data: GroupRspDTO[] }>('api/groups/autocomplete-name', {
+    params: {
+      name_substring: groupName,
+    },
+  })
+}
 //mapper
 
 const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
@@ -19,6 +40,7 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
     return {
       preferenceId: preference.PreferenceID,
       preference: mapProjectDTOToProject(preference.Preference),
+      rank: preference.Rank,
     }
   })
 
@@ -30,7 +52,15 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
     groupOwner: groupRspDTO.GroupOwner,
     createdBy: groupRspDTO.CreatedBy,
     preferences: groupPreference,
+    groupId: groupRspDTO.GroupID,
   }
 }
 
-export { getAllGroups, mapGroupDTOToGroup }
+export {
+  getAllGroups,
+  mapGroupDTOToGroup,
+  getGroupByProjectId,
+  assignGroupToProject,
+  removeGroupFromProject,
+  getAutoCompleteGroups,
+}

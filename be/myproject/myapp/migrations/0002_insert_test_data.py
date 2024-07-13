@@ -185,6 +185,21 @@ def add_group_preferences(apps, schema_editor):
             projects = projects.exclude(ProjectID=project.ProjectID)
     print("Group preferences added")
 
+def assign_group_to_projects(apps, schema_editor):
+    random.seed(42)
+    Project = apps.get_model('myapp', 'Project')
+    Group = apps.get_model('myapp', 'Group')
+    GroupProjectsLink = apps.get_model('myapp', 'GroupProjectsLink')
+    groups = Group.objects.annotate(num_members=models.Count('groupuserslink')).filter(num_members__gt=0)
+    existing_projects = list(Project.objects.all())
+
+    for project in existing_projects:
+        if groups.count() == 0:
+            break
+        group = random.choice(groups)
+        GroupProjectsLink.objects.create(GroupID=group, ProjectID=project)
+        groups=groups.exclude(GroupID=group.GroupID)
+    print("Groups assigned to projects")
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -199,4 +214,5 @@ class Migration(migrations.Migration):
         migrations.RunPython(add_groups),
         migrations.RunPython(assign_users_to_groups),
         migrations.RunPython(add_group_preferences),
+        migrations.RunPython(assign_group_to_projects),
     ]

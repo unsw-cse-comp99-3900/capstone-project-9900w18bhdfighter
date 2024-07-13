@@ -92,7 +92,7 @@ class GroupProjectsLink(models.Model):
     GroupProjectsLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
-
+    
     def __str__(self):
         return str(self.GroupProjectsLinkID)
 
@@ -104,11 +104,6 @@ class StudentArea(models.Model):
 
     def __str__(self):
         return f'{self.User} - {self.Area}'
-
-
-
-
-
 
 
 class GroupAssignProject(models.Model):
@@ -189,4 +184,3 @@ class Contact(models.Model):
 
 
 
-   

@@ -2,13 +2,14 @@ import { Button, Descriptions, Flex, List, Tag } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
-import { useParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { getProjectById, mapProjectDTOToProject } from '../../api/projectAPI'
-import { Project } from '../../types/proj'
+
 import { nanoid } from 'nanoid'
-import { getUserById } from '../../api/userAPI'
-import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
+
+import route from '../../constant/route'
+import GroupSearchBar from './components/GroupSearchBar'
+import ProjectDetailContextProvider, {
+  useProjectDetailContext,
+} from '../../context/ProjectDetailContext'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -18,31 +19,9 @@ const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
 `
 
-const ProjectDetail = () => {
-  const id = useParams<{ id: string }>().id
-  const [project, setProject] = useState<Project | null>(null)
-  const [ownerName, setOwnerName] = useState<string | null>(null)
-  const [creatorName, setCreatorName] = useState<string | null>(null)
-  const { msg } = useGlobalComponentsContext()
-  useEffect(() => {
-    if (!id) return
-    const toFetch = async () => {
-      try {
-        const res = await getProjectById(id)
-        const _project = mapProjectDTOToProject(res.data)
-        const ownerId = _project.projectOwnerId
-        const creatorId = _project.createdBy
-        const res1 = await getUserById(ownerId)
-        const res2 = await getUserById(creatorId)
-        setOwnerName(res1.data.data.FirstName + ' ' + res1.data.data.LastName)
-        setCreatorName(res2.data.data.FirstName + ' ' + res2.data.data.LastName)
-        setProject(_project)
-      } catch (e) {
-        msg.err('Failed to fetch project detail')
-      }
-    }
-    toFetch()
-  }, [id])
+const _ProjectDetail = () => {
+  const { project, ownerName, creatorName, groupsList, removeGroup } =
+    useProjectDetailContext()
 
   return (
     <Wrapper>
@@ -57,10 +36,18 @@ const ProjectDetail = () => {
           {project?.name}
         </Descriptions.Item>
         <Descriptions.Item span={2} label="Owner">
-          <Link href="/">{ownerName}</Link>
+          <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
+            {ownerName}
+          </Link>
         </Descriptions.Item>
         <Descriptions.Item span={2} label="Creator">
-          <Link href="/">{creatorName}</Link>
+          <Link
+            href={`
+            ${route.PROFILE}/${project?.createdBy}
+          `}
+          >
+            {creatorName}
+          </Link>
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
           {project?.description}
@@ -72,10 +59,8 @@ const ProjectDetail = () => {
             </Tag>
           ))}
         </Descriptions.Item>
-        <Descriptions.Item span={3} label="Paticipating Gorups">
-          <Button size="small" type="primary">
-            Assign Groups
-          </Button>
+        <Descriptions.Item span={3} label="Participating Groups">
+          <GroupSearchBar />
           <List
             bordered
             style={{
@@ -84,17 +69,24 @@ const ProjectDetail = () => {
               marginTop: '1rem',
             }}
           >
-            <List.Item
-              actions={[
-                <Button key="1" size="small" type="primary">
-                  Remove
-                </Button>,
-              ]}
-            >
-              Group 1
-            </List.Item>
-            <List.Item>Group 2</List.Item>
-            <List.Item>Group 3</List.Item>
+            {groupsList?.map((group) => (
+              <List.Item
+                key={group.groupId}
+                actions={[
+                  <Button
+                    onClick={() => removeGroup(group.groupId)}
+                    key="1"
+                    size="small"
+                    type="text"
+                    danger
+                  >
+                    Remove
+                  </Button>,
+                ]}
+              >
+                {group.groupName}
+              </List.Item>
+            ))}
           </List>
         </Descriptions.Item>
       </Descriptions>
@@ -102,4 +94,11 @@ const ProjectDetail = () => {
   )
 }
 
+const ProjectDetail = () => {
+  return (
+    <ProjectDetailContextProvider>
+      <_ProjectDetail />
+    </ProjectDetailContextProvider>
+  )
+}
 export default ProjectDetail
