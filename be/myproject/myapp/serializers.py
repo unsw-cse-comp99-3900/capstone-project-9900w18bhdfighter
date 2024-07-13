@@ -92,21 +92,15 @@ class GroupSerializer(serializers.ModelSerializer):
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
         
-class GroupPreferenceSerializer(serializers.ModelSerializer):
-    Preference = ProjectSerializer()
-    class Meta:
-        model = GroupPreference
-        fields = ['PreferenceID', 'Preference', 'Rank']
-        extra_kwargs = {
-            'PreferenceID': {'read_only': True}
-        }
 class GroupFetchSerializer(serializers.ModelSerializer):
     GroupMembers = UserSlimSerializer(many=True, read_only=True)
-    Preferences = GroupPreferenceSerializer(many=True, read_only=True)
+    Preferences = serializers.SerializerMethodField()
     class Meta:
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences"]
-
+    def get_Preferences(self, obj):
+        preferences = GroupPreference.objects.filter(Group=obj)
+        return GroupPreferenceSerializer(preferences, many=True).data
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd = serializers.CharField(write_only=True, required=False, default="")
@@ -269,7 +263,6 @@ class ContactCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Contact.objects.create(**validated_data)
 
-        
     
 class ContactUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -310,6 +303,7 @@ class GroupMessageSerializer(serializers.ModelSerializer):
         fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
         
 class GroupPreferenceSerializer(serializers.ModelSerializer):
+    Preference=ProjectSerializer()
     class Meta:
         model = GroupPreference
         fields = ['PreferenceID', 'Preference', 'Rank']
