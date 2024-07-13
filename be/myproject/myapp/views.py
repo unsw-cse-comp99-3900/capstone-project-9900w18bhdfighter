@@ -282,26 +282,25 @@ def project_update(request, id):
             serializer = ProjectSerializer(project, data=data, partial=True)
             skill_objects=[]
             if serializer.is_valid():
-
                 serializer.save(CreatedBy=user)
                 required_skills = data.get('requiredSkills', [])
 
                 for skill_data in required_skills:
                     interest_area = skill_data.get('area_id')
-                    skill = skill_data.get('skill')
-                    print(interest_area, skill)    
-                    if not interest_area or not skill:
+                    skill_name = skill_data.get('skill')
+
+                    if not interest_area or not skill_name:
                         return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
                     
                     try:
                         area = Area.objects.get(pk=interest_area)
                     except Area.DoesNotExist:
                         return JsonResponse({'error': 'Area not found.'}, status=404)
-                    
-                    skill=Skill.objects.filter(SkillName=skill,Area=area).first()
+                                        
+                    skill=Skill.objects.filter(SkillName=skill_name,Area=area).first()
       
                     if not skill:
-                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill, Area=area)
+                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
                     else:
                         skill_object=skill
                     skill_objects.append(skill_object)
@@ -311,18 +310,11 @@ def project_update(request, id):
                 for skill_object in skill_objects:
                     SkillProject.objects.create(Skill=skill_object, Project=project)
                     
-                  
-                    
-                        
-                    
-
-                    
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
             return JsonResponse(serializer.errors, status=400)
         else:
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 ############################################################################################
 #                                     Group Creation                                       #
@@ -366,7 +358,6 @@ def group_creation(request):
                 return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 ############################################################################################
 #                                     Group Operation                                      #
