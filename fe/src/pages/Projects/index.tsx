@@ -1,12 +1,23 @@
-import { Button, Divider, Flex, Typography } from 'antd'
+import {
+  Button,
+  Card,
+  Col,
+  Divider,
+  Flex,
+  Row,
+  Tooltip,
+  Typography,
+} from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { useState } from 'react'
 import NewProjectModal from './components/NewProjectModal'
-import { ProjectCreate } from '../../types/proj'
+import { ProjectReqDTO } from '../../types/proj'
 import ProjectContextProvider, {
   useProjectContext,
 } from '../../context/ProjectContext'
+import { Link } from 'react-router-dom'
+import route from '../../constant/route'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -18,13 +29,15 @@ const Header = styled(Flex)`
   justify-content: space-between;
   align-items: center;
 `
+const ProjectCard = styled(Card)``
 
 const _Projects = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { createProject } = useProjectContext()
+  const { createProject, projectList } = useProjectContext()
 
-  const handleOk = async (projectCreateDto: ProjectCreate) => {
-    createProject(projectCreateDto)
+  const handleOk = async (projectCreateDto: ProjectReqDTO) => {
+    await createProject(projectCreateDto)
+
     setIsModalOpen(false)
   }
 
@@ -45,6 +58,29 @@ const _Projects = () => {
         </Button>
       </Header>
       <Divider />
+      <Row gutter={[16, 8]}>
+        {projectList.map((project) => (
+          <Col key={project.id} xs={24} sm={12} md={8} lg={6}>
+            <ProjectCard
+              style={{
+                height: '10rem',
+              }}
+              title={project.name}
+              extra={<Link to={`${route.PROJECTS}/${project.id}`}>More</Link>}
+            >
+              <Flex vertical>
+                <Flex>
+                  <Tooltip title={project.description}>
+                    <Typography.Paragraph ellipsis={{ rows: 3 }}>
+                      {project.description}
+                    </Typography.Paragraph>
+                  </Tooltip>
+                </Flex>
+              </Flex>
+            </ProjectCard>
+          </Col>
+        ))}
+      </Row>
     </Wrapper>
   )
 }

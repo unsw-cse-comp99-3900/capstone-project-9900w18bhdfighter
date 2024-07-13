@@ -1,6 +1,5 @@
-import { Flex, List, Tag } from 'antd'
+import { Flex, List, Tag, Tooltip, Typography } from 'antd'
 import { Link } from 'react-router-dom'
-
 import { Project } from '../../../types/proj'
 import route from '../../../constant/route'
 
@@ -13,7 +12,13 @@ const ProjectsListItem = ({ item }: Props) => {
       title={<Link to={`${route.PROJECTS}/${item.id}`}>{item.name}</Link>}
       description={
         <Flex vertical>
-          <Flex>{item.description}</Flex>
+          <Flex>
+            <Tooltip title={item.description}>
+              <Typography.Paragraph ellipsis={{ rows: 3 }}>
+                {item.description}
+              </Typography.Paragraph>
+            </Tooltip>
+          </Flex>
           <Flex wrap>
             {item.requiredSkills.map((skill) => (
               <Tag color="orange" key={skill.skillId}>

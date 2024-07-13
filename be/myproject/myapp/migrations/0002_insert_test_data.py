@@ -64,7 +64,38 @@ def create_test_users(apps, schema_editor):
             UserRole=1,
             UserInformation=f"Information for stu{i}"
         )
+    # Create additional clients
+    for i in range(10):
+        email=f"cli{i}@cli.com"
+        password = make_password("cli")
+
+        User.objects.create(
+            FirstName=f"cli{i}",
+            LastName=f"cli{i}",
+            EmailAddress=email,
+            Passwd=password,
+            UserRole=2,
+            UserInformation=f"Information for cli{i}"
+        )
+   
     print("Test users created successfully.")
+
+def add_projects(apps, schema_editor):
+    Project = apps.get_model('myapp', 'Project')
+    User = apps.get_model('myapp', 'User')
+    random.seed(42)
+    users = list(User.objects.filter(UserRole=2))
+    for i, user in enumerate(users):
+        Project.objects.create(
+            ProjectName=f"Project {i}",
+            ProjectDescription=f"Description for Project {i}",
+            ProjectOwner=user.EmailAddress,
+            CreatedBy=user,
+            MaxNumOfGroup=random.randint(1, 10)
+        )
+    print("Test projects created successfully.")
+ 
+     
 
 def add_groups(apps, schema_editor):
     User = apps.get_model('myapp', 'User')
@@ -146,6 +177,7 @@ class Migration(migrations.Migration):
         migrations.RunPython(add_roles),
         migrations.RunPython(add_areas),
         migrations.RunPython(create_test_users),
+        migrations.RunPython(add_projects),
         migrations.RunPython(add_groups),
         migrations.RunPython(assign_users_to_groups),
     ]

@@ -20,7 +20,7 @@ from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupMessageSerializer, \
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
@@ -477,7 +477,7 @@ def group_leave(request):
 def get_groups_list(request):
     if request.method == 'GET':
         groups = Group.objects.all()
-        serializer = GroupSerializer(groups, many=True)
+        serializer = GroupFetchSerializer(groups, many=True)
         return JsonResponse(serializer.data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
@@ -491,7 +491,7 @@ def get_groups_list_by_project(request, id):
             return JsonResponse({'error': 'Project not found'}, status=404)
         
         groups = project.groups.all()
-        serializer = GroupSerializer(groups, many=True)
+        serializer = GroupFetchSerializer(groups, many=True)
         return JsonResponse(serializer.data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
@@ -503,16 +503,10 @@ def get_groups_list_by_project(request, id):
 @csrf_exempt
 def get_projects_list(request):
     if request.method == 'GET':
-        
         projects = Project.objects.all()
         serializer = ProjectSerializer(projects, many=True)
-
-        project_data = serializer.data
-
-        for project in project_data:
-            user = User.objects.get(EmailAddress=project['ProjectOwner']) 
-            project['projectgOwner_id'] = user.UserID
         return JsonResponse(serializer.data, safe=False)
+    
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
     
 @csrf_exempt
@@ -525,13 +519,10 @@ def get_project_list_creator(request, email):
             return JsonResponse({'error': 'User not found.'}, status=404)
         
         serializer = ProjectSerializer(projects, many=True)
-        project_data = serializer.data
-
-        for project in project_data:
-            project['projectOwner_id'] = user.UserID
-        return JsonResponse(project_data, safe=False)
+        return JsonResponse(serializer.data, safe=False)
     
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
     
 @csrf_exempt
 def get_project_list_owner(request, email):
@@ -539,34 +530,29 @@ def get_project_list_owner(request, email):
         try:
             user = User.objects.get(EmailAddress=email)
             projects = Project.objects.filter(ProjectOwner=email)
-
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
         
         serializer = ProjectSerializer(projects, many=True)
-        project_data = serializer.data
-
-        for project in project_data:
-            project['projectOwner_id'] = user.UserID
-        return JsonResponse(project_data, safe=False)
+        return JsonResponse(serializer.data, safe=False)
+    
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 @csrf_exempt
 def get_project_list_owner_creator(request, creator, owner):
     if request.method == 'GET':
         try:
-            user = User.objects.get(EmailAddress=creator)
-            projects = Project.objects.filter(ProjectOwner=owner, CreatedBy=user)
+            user_creator = User.objects.get(EmailAddress=creator)
+            user_owner = User.objects.get(EmailAddress=owner)
+            projects = Project.objects.filter(ProjectOwner=user_owner.EmailAddress, CreatedBy=user_creator)
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
         
         serializer = ProjectSerializer(projects, many=True)
-        project_data = serializer.data
-
-        for project in project_data:
-            project['projectOwner_id'] = user.UserID
-        return JsonResponse(project_data, safe=False)
+        return JsonResponse(serializer.data, safe=False)
+    
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
 
 @csrf_exempt
 def get_project(request, id):
@@ -577,12 +563,10 @@ def get_project(request, id):
             return JsonResponse({'error': 'Project not found'}, status=404)
         
         serializer = ProjectSerializer(project)
-        project_data = serializer.data
-
-        user = User.objects.get(EmailAddress=project_data['ProjectOwner'])
-        project_data['projectOwner_id'] = user.UserID
-        return JsonResponse(project_data, safe=False)
+        return JsonResponse(serializer.data, safe=False)
+    
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
 
 
 

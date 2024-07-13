@@ -39,15 +39,23 @@ class SkillProjectSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     RequiredSkills = serializers.SerializerMethodField()
+    projectOwner_id = serializers.SerializerMethodField()
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy"]
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
     
     def get_RequiredSkills(self, obj):
         skills = SkillProject.objects.filter(Project=obj)
         return SkillProjectSerializer(skills, many=True).data
 
-    
+    def get_projectOwner_id(self, obj):
+        if obj.ProjectOwner:
+            try:
+                user = User.objects.get(EmailAddress=obj.ProjectOwner)
+                return user.UserID
+            except User.DoesNotExist:
+                return None
+        return None
 
     
 class AreaSerializer(serializers.ModelSerializer):
@@ -83,6 +91,21 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
+        
+class GroupPreferenceSerializer(serializers.ModelSerializer):
+    Preference = ProjectSerializer()
+    class Meta:
+        model = GroupPreference
+        fields = ['PreferenceID', 'Preference', 'Rank']
+        extra_kwargs = {
+            'PreferenceID': {'read_only': True}
+        }
+class GroupFetchSerializer(serializers.ModelSerializer):
+    GroupMembers = UserSlimSerializer(many=True, read_only=True)
+    Preferences = GroupPreferenceSerializer(many=True, read_only=True)
+    class Meta:
+        model=Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences"]
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

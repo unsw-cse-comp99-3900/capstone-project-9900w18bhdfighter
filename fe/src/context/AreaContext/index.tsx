@@ -1,8 +1,8 @@
 import { ReactNode, createContext, useContext, useState } from 'react'
-import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { Area, AreaDTO } from '../../types/user'
+import { Area } from '../../types/user'
 import { errHandler } from '../../utils/parse'
+import { getAreasList, mapAreaDTOToArea } from '../../api/areaAPI'
 
 interface AreaContextType {
   areaList: Area[]
@@ -17,11 +17,8 @@ const AreaContextProvider = ({ children }: { children: ReactNode }) => {
 
   const getAreaList = async () => {
     try {
-      const res = await api.get('api/areas')
-      const _areaList = res.data.data.map((area: AreaDTO) => ({
-        id: area.AreaID,
-        name: area.AreaName,
-      }))
+      const res = await getAreasList()
+      const _areaList = res.data.data.map(mapAreaDTOToArea)
       setAreaList(_areaList)
     } catch (err) {
       errHandler(

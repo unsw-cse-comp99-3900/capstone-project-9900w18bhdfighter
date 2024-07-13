@@ -6,10 +6,9 @@ import { useEffect, useState } from 'react'
 import ProjectsListItem from './ProjectsListItem'
 import { getThemeToken } from '../../../utils/styles'
 import Filter from './Filter'
-import { getAllProjects } from '../../../api/projectAPI'
+import { getAllProjects, mapProjectDTOToProject } from '../../../api/projectAPI'
 import { Project } from '../../../types/proj'
 
-import { mapProjectDTOToProject } from '../mapper'
 import route from '../../../constant/route'
 
 type Props = {
