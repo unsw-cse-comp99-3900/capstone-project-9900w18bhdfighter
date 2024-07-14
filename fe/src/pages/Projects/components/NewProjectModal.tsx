@@ -1,12 +1,12 @@
 import { Button, Flex, Form, Input, InputNumber, Modal, Select } from 'antd'
-import React from 'react'
-import type { SelectProps } from 'antd/es/select'
+import React, { CSSProperties, useMemo } from 'react'
 import styled from 'styled-components'
-import { ProjectCreate } from '../../../types/proj'
+import { ProjectReqDTO } from '../../../types/proj'
+import { useProjectContext } from '../../../context/ProjectContext'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
-  handleOk: (_projectCreateDto: ProjectCreate) => void
+  handleOk: (_projectCreateDto: ProjectReqDTO) => void
   handleCancel: () => void
 }
 
@@ -22,52 +22,78 @@ const ListItemWrapper = styled(Flex)`
   width: 100%;
   align-items: baseline;
 `
-const options: SelectProps['options'] = []
-
-for (let i = 1; i < 36; i++) {
-  options.push({
-    label: 'area' + i,
-    value: 'area' + i,
-  })
+const modalBodyStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+}
+type FormValues = {
+  projectName: string
+  description: string
+  skills: { area: string; skill: string }[]
+  email: string
+  maxGroupNumber: number
+}
+type Option = {
+  label: string
+  value: number | string
 }
 
 const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
-  const [form] = Form.useForm()
-
+  const [form] = Form.useForm<FormValues>()
+  const { areaList } = useProjectContext()
+  const areaOptions = useMemo<Option[]>(
+    () => areaList?.map((area) => ({ label: area.name, value: area.id })) || [],
+    [areaList]
+  )
+  const handleFinish = async () => {
+    try {
+      await form.validateFields()
+      const values = form.getFieldsValue()
+      handleOk({
+        ProjectName: values.projectName,
+        ProjectDescription: values.description,
+        ProjectOwner: values.email,
+        requiredSkills: values.skills.map(
+          (s: { area: string; skill: string }) => ({
+            area_id: s.area,
+            skill: s.skill,
+          })
+        ),
+        MaxNumOfGroup: values.maxGroupNumber,
+      })
+    } catch (e) {
+      console.log(e)
+    }
+  }
   return (
     <_Modal
       title="New Project"
       open={isModalOpen}
-      onOk={() =>
-        handleOk({
-          ProjectName: form.getFieldValue('projectName'),
-          ProjectDescription: form.getFieldValue('description'),
-          ProjectOwner: form.getFieldValue('email'),
-        })
-      }
+      onOk={handleFinish}
       onCancel={handleCancel}
       styles={{
-        body: {
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
+        body: modalBodyStyle,
       }}
     >
       <Form
         layout="vertical"
         initialValues={{
-          projectName: '',
+          projectName: undefined,
           description: '',
           skills: [{ area: '', skill: '' }],
-          email: '',
+          email: undefined,
           maxGroupNumber: 1,
         }}
         form={form}
         style={{ width: '100%' }}
       >
-        <Form.Item label="Project Name" name="projectName">
+        <Form.Item
+          rules={[{ required: true, message: 'Missing Project Name' }]}
+          label="Project Name"
+          name="projectName"
+        >
           <Input />
         </Form.Item>
         <Form.Item label="Description" name="description">
@@ -86,7 +112,7 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
                   >
                     <Select
                       placeholder="Select Area"
-                      options={options}
+                      options={areaOptions}
                       defaultActiveFirstOption={true}
                     />
                   </Form.Item>
@@ -109,10 +135,24 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
             </ListWrapper>
           )}
         </Form.List>
-        <Form.Item label="Project Owner's Email" name="email">
+        <Form.Item
+          rules={[{ required: true, message: 'Missing Email' }]}
+          label="Project Owner's Email"
+          name="email"
+        >
           <Input />
         </Form.Item>
-        <Form.Item label="Max Group Number" name="maxGroupNumber">
+        <Form.Item
+          rules={[
+            {
+              required: true,
+              message: 'Missing Max Group Number',
+              type: 'number',
+            },
+          ]}
+          label="Max Group Number"
+          name="maxGroupNumber"
+        >
           <InputNumber style={{ width: '100%' }} min={1} />
         </Form.Item>
       </Form>

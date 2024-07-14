@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { GlobalToken } from 'antd'
-
-import type { DefaultTheme } from 'styled-components'
+import { css, type DefaultTheme } from 'styled-components'
 import { ThemeColor } from '../context/GlobalThemeContext/themeConfig'
+import breakPoint from '../constant/breakPoint'
 
 // parse the theme token from styled-components
 const getThemeToken = <T extends keyof GlobalToken>(key: T, unit = '') => {
@@ -50,4 +51,51 @@ const generateColorPalette = (
   return palette
 }
 
-export { getThemeToken, getThemeColor, generateColorPalette, getHeaderHeight }
+type Media = {
+  sm: (
+    _strings: TemplateStringsArray,
+    ..._args: any[]
+  ) => ReturnType<typeof css>
+  md: (
+    _strings: TemplateStringsArray,
+    ..._args: any[]
+  ) => ReturnType<typeof css>
+  lg: (
+    _strings: TemplateStringsArray,
+    ..._args: any[]
+  ) => ReturnType<typeof css>
+}
+
+const media: Media = {
+  sm: (strings, ...args) => css`
+    @media (max-width: ${breakPoint.sm}) {
+      ${css(strings, ...args)}
+    }
+  `,
+  md: (strings, ...args) => css`
+    @media (max-width: ${breakPoint.md}) {
+      ${css(strings, ...args)}
+    }
+  `,
+  lg: (strings, ...args) => css`
+    @media (max-width: ${breakPoint.lg}) {
+      ${css(strings, ...args)}
+    }
+  `,
+}
+// const breakPoint = {
+//   xs: '480px',
+//   sm: '576px',
+//   md: '768px',
+//   lg: '992px',
+//   xl: '1200px', //1200px
+//   xxl: '1600px',
+// }
+
+export {
+  getThemeToken,
+  getThemeColor,
+  generateColorPalette,
+  getHeaderHeight,
+  media,
+}

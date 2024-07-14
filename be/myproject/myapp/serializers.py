@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Contact, GroupMessage, GroupPreference, Project, User, Area, StudentArea, Message, Group, \
+from .models import Contact, GroupMessage, GroupPreference, GroupProjectsLink, Project, SkillProject, User, Area, StudentArea, Message,Skill, Group, \
     Notification, NotificationReceiver
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count
@@ -12,12 +12,52 @@ class StudentsignupSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['FirstName', 'LastName', 'EmailAddres', 'Passwd']
 
+class StudentAreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentArea
+        fields = ['AreaID', 'AreaName']
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['AreaID', 'AreaName']
+    
+
+class SkillSerializer(serializers.ModelSerializer):
+    Area = AreaSerializer()
+    class Meta:
+        model = Skill
+        fields = ['SkillID', 'SkillName', 'Area']
+
+class SkillProjectSerializer(serializers.ModelSerializer):
+    Skill = SkillSerializer()
+
+    class Meta:
+        model = SkillProject
+        fields = ['Skill']
+
 class ProjectSerializer(serializers.ModelSerializer):
+    RequiredSkills = serializers.SerializerMethodField()
+    projectOwner_id = serializers.SerializerMethodField()
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner']
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
+    
+    def get_RequiredSkills(self, obj):
+        skills = SkillProject.objects.filter(Project=obj)
+        return SkillProjectSerializer(skills, many=True).data
 
+    def get_projectOwner_id(self, obj):
+        if obj.ProjectOwner:
+            try:
+                user = User.objects.get(EmailAddress=obj.ProjectOwner)
+                return user.UserID
+            except User.DoesNotExist:
+                return None
+        return None
 
+    
 class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
@@ -47,10 +87,20 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
 
 
 
-class StudentAreaSerializer(serializers.ModelSerializer):
+class GroupSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StudentArea
-        fields = ['AreaID', 'AreaName']
+        model=Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
+        
+class GroupFetchSerializer(serializers.ModelSerializer):
+    GroupMembers = UserSlimSerializer(many=True, read_only=True)
+    Preferences = serializers.SerializerMethodField()
+    class Meta:
+        model=Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences"]
+    def get_Preferences(self, obj):
+        preferences = GroupPreference.objects.filter(Group=obj)
+        return GroupPreferenceSerializer(preferences, many=True).data
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd = serializers.CharField(write_only=True, required=False, default="")
@@ -213,7 +263,6 @@ class ContactCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Contact.objects.create(**validated_data)
 
-        
     
 class ContactUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -254,6 +303,7 @@ class GroupMessageSerializer(serializers.ModelSerializer):
         fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
         
 class GroupPreferenceSerializer(serializers.ModelSerializer):
+    Preference=ProjectSerializer()
     class Meta:
         model = GroupPreference
         fields = ['PreferenceID', 'Preference', 'Rank']
@@ -284,3 +334,9 @@ class NotificationReceiverSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationReceiver
         fields = '__all__'
+
+
+class GroupProjectLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProjectsLink
+        fields = ['GroupID', 'ProjectID', 'GroupProjectsLinkID']

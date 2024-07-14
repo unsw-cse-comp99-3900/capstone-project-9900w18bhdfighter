@@ -6,8 +6,6 @@ from rest_framework.authtoken.models import Token
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-
-
 class Area(models.Model):
     AreaID = models.AutoField(primary_key=True)
     AreaName = models.CharField(max_length=255, unique=True)
@@ -43,21 +41,34 @@ class Project(models.Model):
     ProjectOwner = models.CharField(max_length=255)
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     MaxNumOfGroup = models.IntegerField(default=1)
-
-
+    Groups=models.ManyToManyField('Group', through='GroupProjectsLink')
+    
     def __str__(self):
         return str(self.ProjectID)
 
+class Skill(models.Model):
+    SkillID = models.AutoField(primary_key=True)
+    SkillName = models.CharField(max_length=255)
+    Area = models.ForeignKey(Area, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.SkillName
 
+class SkillProject(models.Model):
+    SkillProjectID = models.AutoField(primary_key=True)
+    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.SkillProjectID)
 class Group(models.Model):
     GroupID = models.AutoField(primary_key=True)
-    GroupName = models.CharField(max_length=255)
+    GroupName = models.CharField(max_length=255, unique=True)
     GroupDescription = models.TextField()
-    CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE)
+    CreatedBy = models.ForeignKey(User, on_delete=models.CASCADE, related_name='groups_created')
     MaxMemberNumber = models.IntegerField(default=1)
     Preferences=models.ManyToManyField(Project, through='GroupPreference')
-
+    GroupMembers = models.ManyToManyField(User, through='GroupUsersLink')
     def __str__(self):
         return str(self.GroupID)
 
@@ -75,7 +86,6 @@ class GroupUsersLink(models.Model):
     GroupUsersLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
-
     def __str__(self):
         return str(self.GroupUsersLinkID)
 
@@ -96,24 +106,6 @@ class StudentArea(models.Model):
 
     def __str__(self):
         return f'{self.User} - {self.Area}'
-
-
-class Skill(models.Model):
-    SkillID = models.AutoField(primary_key=True)
-    SkillName = models.CharField(max_length=255)
-    Area = models.ForeignKey(Area, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.SkillName
-
-
-class SkillProject(models.Model):
-    SkillProjectID = models.AutoField(primary_key=True)
-    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
-    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return str(self.SkillProjectID)
 
 
 class GroupAssignProject(models.Model):
@@ -195,7 +187,7 @@ class Contact(models.Model):
 
 
 
+   
+   
 
-
-
-
+        

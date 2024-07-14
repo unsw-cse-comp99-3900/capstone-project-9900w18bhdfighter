@@ -3,6 +3,14 @@ import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
 
+import { nanoid } from 'nanoid'
+
+import route from '../../constant/route'
+import GroupSearchBar from './components/GroupSearchBar'
+import ProjectDetailContextProvider, {
+  useProjectDetailContext,
+} from '../../context/ProjectDetailContext'
+
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -11,58 +19,48 @@ const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
 `
 
-const ProjectDetail = () => {
+const _ProjectDetail = () => {
+  const { project, ownerName, creatorName, groupsList, removeGroup } =
+    useProjectDetailContext()
+
   return (
     <Wrapper>
-      <Descriptions bordered title="Project Detail">
+      <Descriptions
+        style={{
+          width: '100%',
+        }}
+        bordered
+        title="Project Detail"
+      >
         <Descriptions.Item span={3} label="Project Name">
-          Mock Name
+          {project?.name}
         </Descriptions.Item>
         <Descriptions.Item span={2} label="Owner">
-          <Link href="/">Client</Link>
+          <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
+            {ownerName}
+          </Link>
         </Descriptions.Item>
         <Descriptions.Item span={2} label="Creator">
-          <Link href="/">TUT</Link>
+          <Link
+            href={`
+            ${route.PROFILE}/${project?.createdBy}
+          `}
+          >
+            {creatorName}
+          </Link>
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
-          123
+          {project?.description}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Expected Skills">
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
+          {project?.requiredSkills.map((skill) => (
+            <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
+              {skill.skillName}
+            </Tag>
+          ))}
         </Descriptions.Item>
-        <Descriptions.Item span={3} label="Paticipating Gorups">
-          <Button size="small" type="primary">
-            Assign Groups
-          </Button>
+        <Descriptions.Item span={3} label="Participating Groups">
+          <GroupSearchBar />
           <List
             bordered
             style={{
@@ -71,17 +69,24 @@ const ProjectDetail = () => {
               marginTop: '1rem',
             }}
           >
-            <List.Item
-              actions={[
-                <Button key="1" size="small" type="primary">
-                  Remove
-                </Button>,
-              ]}
-            >
-              Group 1
-            </List.Item>
-            <List.Item>Group 2</List.Item>
-            <List.Item>Group 3</List.Item>
+            {groupsList?.map((group) => (
+              <List.Item
+                key={group.groupId}
+                actions={[
+                  <Button
+                    onClick={() => removeGroup(group.groupId)}
+                    key="1"
+                    size="small"
+                    type="text"
+                    danger
+                  >
+                    Remove
+                  </Button>,
+                ]}
+              >
+                {group.groupName}
+              </List.Item>
+            ))}
           </List>
         </Descriptions.Item>
       </Descriptions>
@@ -89,4 +94,11 @@ const ProjectDetail = () => {
   )
 }
 
+const ProjectDetail = () => {
+  return (
+    <ProjectDetailContextProvider>
+      <_ProjectDetail />
+    </ProjectDetailContextProvider>
+  )
+}
 export default ProjectDetail
