@@ -1,110 +1,64 @@
-import React from 'react'
 import styled from 'styled-components'
-import { getThemeToken } from '../../../utils/styles'
-import { Collapse, Flex, List } from 'antd'
-import type { CollapseProps } from 'antd'
+import { Collapse, Flex, List, Tag } from 'antd'
+import type { CollapseProps, FlexProps } from 'antd'
 import Avatar from '../../../components/Avatar'
 import ContactSearchBar from './ContactSearchBar'
+import { useMessageContext } from '../../../context/MessageContext'
+import { useNavigate } from 'react-router-dom'
 
 const RecentContactList = styled(Flex)`
   flex-direction: column;
   align-items: center;
   width: 100%;
 `
-const Sider = styled(Flex)`
-  padding: ${getThemeToken('paddingLG', 'px')};
-  flex: 1;
-  height: 100%;
-  flex-direction: column;
-  align-items: center;
-`
+
 const ContactCard = styled(Flex)`
   width: 100%;
   align-items: center;
 `
 
-const items: CollapseProps['items'] = [
-  {
-    key: '1',
-    label: 'Fixed',
-    children: (
-      <List itemLayout="vertical">
-        <List.Item
-          style={{
-            padding: '0.5rem 0',
-          }}
-        >
-          <ContactCard gap={'0.5rem'}>
-            <Avatar
-              firstName="Kenny"
-              lastName="K"
-              emailForHashToColor="asdd"
-              size={35}
-            ></Avatar>
-            Kenny
-          </ContactCard>
-        </List.Item>
-      </List>
-    ),
-  },
-  {
-    key: '2',
-    label: 'Recent',
-    children: (
-      <List itemLayout="vertical">
-        <List.Item
-          style={{
-            padding: '0.5rem 0',
-          }}
-        >
-          <ContactCard gap={'0.5rem'}>
-            <Avatar
-              firstName="Kenny"
-              lastName="K"
-              emailForHashToColor="asdd"
-              size={35}
-            ></Avatar>
-            Kenny
-          </ContactCard>
-        </List.Item>
-        <List.Item
-          style={{
-            padding: '0.5rem 0',
-          }}
-        >
-          <ContactCard gap={'0.5rem'}>
-            <Avatar
-              firstName="Kenny"
-              lastName="K"
-              emailForHashToColor="asdd"
-              size={35}
-            ></Avatar>
-            Kenny
-          </ContactCard>
-        </List.Item>
-        <List.Item
-          style={{
-            padding: '0.5rem 0',
-          }}
-        >
-          <ContactCard gap={'0.5rem'}>
-            <Avatar
-              firstName="Kenny"
-              lastName="K"
-              emailForHashToColor="asdd"
-              size={35}
-            ></Avatar>
-            Kenny
-          </ContactCard>
-        </List.Item>
-      </List>
-    ),
-  },
-]
+type Props = Partial<FlexProps>
+const MessageSider = (props: Props) => {
+  const { contactList } = useMessageContext()
 
-const MessageSider = () => {
+  const navigate = useNavigate()
+
+  const items: CollapseProps['items'] = [
+    {
+      key: '2',
+      label: 'Recent',
+      children: (
+        <List itemLayout="vertical">
+          {contactList?.map((contact) => (
+            <List.Item
+              onClick={() => {
+                navigate(`/message/user/${contact.contact.id}`)
+              }}
+              key={contact.contactId}
+              style={{
+                padding: '0.5rem 0',
+                cursor: 'pointer',
+              }}
+            >
+              <ContactCard gap={'0.5rem'}>
+                <Avatar
+                  firstName={contact.contact.firstName}
+                  lastName={contact.contact.lastName}
+                  emailForHashToColor={contact.contact.email}
+                  size={35}
+                ></Avatar>
+                {contact.contact.firstName}
+                {<Tag>{contact.unreadMsgsCount} unread</Tag>}
+              </ContactCard>
+            </List.Item>
+          ))}
+        </List>
+      ),
+    },
+  ]
+
   return (
-    <Sider>
+    <Flex {...props}>
       <ContactSearchBar />
       <RecentContactList>
         <Collapse
@@ -117,7 +71,7 @@ const MessageSider = () => {
           defaultActiveKey={['1', '2']}
         />
       </RecentContactList>
-    </Sider>
+    </Flex>
   )
 }
 

@@ -7,6 +7,7 @@ const route = {
   PROJECTS: '/projects',
   TEAMS: '/teams',
   ADMIN: '/admin',
+  GROUPS: '/groups',
   MESSAGE: '/message',
 }
 

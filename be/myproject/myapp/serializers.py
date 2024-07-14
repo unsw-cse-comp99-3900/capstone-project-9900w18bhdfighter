@@ -1,20 +1,64 @@
+
 from rest_framework import serializers
-from .models import Project, User, UserPreferencesLink, Area, StudentArea, Message
+from .models import Contact, GroupMessage, GroupPreference, GroupProjectsLink, Project, SkillProject, User, Area, StudentArea, Message,Skill, Group, \
+    Notification, NotificationReceiver
 from django.contrib.auth.hashers import make_password
-
-
+from django.db.models import Count
 # ?
+from rest_framework.exceptions import PermissionDenied
+
 class StudentsignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['FirstName', 'LastName', 'EmailAddres', 'Passwd']
 
+class StudentAreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentArea
+        fields = ['AreaID', 'AreaName']
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['AreaID', 'AreaName']
+    
+
+class SkillSerializer(serializers.ModelSerializer):
+    Area = AreaSerializer()
+    class Meta:
+        model = Skill
+        fields = ['SkillID', 'SkillName', 'Area']
+
+class SkillProjectSerializer(serializers.ModelSerializer):
+    Skill = SkillSerializer()
+
+    class Meta:
+        model = SkillProject
+        fields = ['Skill']
+
 class ProjectSerializer(serializers.ModelSerializer):
+    RequiredSkills = serializers.SerializerMethodField()
+    projectOwner_id = serializers.SerializerMethodField()
+    ProjectDescription = serializers.CharField( allow_blank=True)
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner']
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
+    
+    def get_RequiredSkills(self, obj):
+        skills = SkillProject.objects.filter(Project=obj)
+        return SkillProjectSerializer(skills, many=True).data
 
+    def get_projectOwner_id(self, obj):
+        if obj.ProjectOwner:
+            try:
+                user = User.objects.get(EmailAddress=obj.ProjectOwner)
+                return user.UserID
+            except User.DoesNotExist:
+                return None
+        return None
 
+    
 class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
@@ -27,6 +71,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
         extra_kwargs = {'Passwd': {'write_only': True}}
+
+
 class UserSlimSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -40,15 +86,22 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
         fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole', 'UserInformation', 'Areas']
         extra_kwargs = {'Passwd': {'write_only': True}}
 
-class UserPreferencesLinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserPreferencesLink
-        fields = '__all_'
 
-class StudentAreaSerializer(serializers.ModelSerializer):
+
+class GroupSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StudentArea
-        fields = ['AreaID', 'AreaName']
+        model=Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
+        
+class GroupFetchSerializer(serializers.ModelSerializer):
+    GroupMembers = UserSlimSerializer(many=True, read_only=True)
+    Preferences = serializers.SerializerMethodField()
+    class Meta:
+        model=Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences"]
+    def get_Preferences(self, obj):
+        preferences = GroupPreference.objects.filter(Group=obj)
+        return GroupPreferenceSerializer(preferences, many=True).data
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd = serializers.CharField(write_only=True, required=False, default="")
@@ -177,3 +230,114 @@ class MessageSerializer(serializers.Serializer):
     class Meta:
         model=Message
         fields = ['message']
+
+class ContactSerializer(serializers.ModelSerializer):
+    Contact=UserSlimSerializer(read_only=True)
+    UnreadMsgsCount = serializers.SerializerMethodField()
+    class Meta:
+        model = Contact
+        fields = ['Contact', 'ContactUser', 'IsFixed', 'ContactID', 'UnreadMsgsCount']
+        
+    def get_UnreadMsgsCount (self, obj):
+        unread_count = Message.objects.filter(
+            Sender=obj.Contact,
+            Receiver=obj.ContactUser,
+            IsRead=False
+        ).count()
+        return unread_count
+        
+from .models import Contact, User
+
+class ContactCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ["Contact", "ContactUser", "IsFixed","ContactID"]
+
+    def validate(self, data):
+        requester_id = self.context.get('requesterId')
+        if requester_id != data['ContactUser'].UserID:
+            raise PermissionDenied("You do not have permission to create a contact for another user.")
+        return data
+  
+        
+
+    def create(self, validated_data):
+        return Contact.objects.create(**validated_data)
+
+    
+class ContactUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = "__all__"
+        extra_kwargs = {
+            'Contact': {'read_only': True},
+            'ContactUser': {'read_only': True}
+        }
+
+    def validate(self, data):
+        requester_id = self.context.get('requesterId')
+        # check if the requester is the same as the contact user
+        if requester_id != self.instance.ContactUser.UserID:
+            raise PermissionDenied("You do not have permission to update a contact for another user.")
+        return data
+
+    def update(self, instance, validated_data):
+        instance.IsFixed = validated_data.get('IsFixed', instance.IsFixed)
+        instance.save()
+        return instance
+
+class MessageSerializer(serializers.ModelSerializer):
+    ChannelId = serializers.SerializerMethodField()
+    
+    def get_ChannelId(self, obj):
+        if obj.Sender.UserID > obj.Receiver.UserID:
+            return f"{obj.Receiver.UserID}_{obj.Sender.UserID}"
+        return f"{obj.Sender.UserID}_{obj.Receiver.UserID}"
+    class Meta:
+        model = Message
+        fields = ['MessageID', 'Content', 'Sender', 'Receiver', 'CreatedAt', 'IsRead', 'ChannelId']
+        
+class GroupMessageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GroupMessage
+        fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
+        
+class GroupPreferenceSerializer(serializers.ModelSerializer):
+    Preference=ProjectSerializer()
+    class Meta:
+        model = GroupPreference
+        fields = ['PreferenceID', 'Preference', 'Rank']
+        extra_kwargs = {
+            'PreferenceID': {'read_only': True}
+        }
+
+class GroupPreferenceUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupPreference
+        fields = ['Preference', 'Rank']
+
+
+
+class GroupWithPreferencesSerializer(serializers.ModelSerializer):
+    Preferences = GroupPreferenceSerializer(many=True, read_only=True)
+    class Meta:
+        model = Group
+        fields = ['GroupID', 'GroupName', 'GroupDescription', 'CreatedBy', 'Preferences']
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+
+class NotificationReceiverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationReceiver
+        fields = '__all__'
+
+
+class GroupProjectLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProjectsLink
+        fields = ['GroupID', 'ProjectID', 'GroupProjectsLinkID']

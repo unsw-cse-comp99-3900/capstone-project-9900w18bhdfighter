@@ -2,32 +2,36 @@
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
 from rest_framework import status
-from rest_framework import viewsets, status, mixins
+from rest_framework import  status, mixins
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
-from .models import User, StudentArea
+from .models import Contact, Group, GroupMessage, GroupPreference, GroupProjectsLink, Skill, SkillProject, User, StudentArea, Notification, \
+    NotificationReceiver, GroupUsersLink
+from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet
 import json
 import datetime
 from django.conf import settings
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from .models import User as UserProfile, User, UserPreferencesLink
+from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import MessageSerializer, ProjectSerializer, UserSerializer, UserPreferencesLinkSerializer, UserSlimSerializer, UserWithAreaSerializer
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupFetchSerializer, GroupMessageSerializer, \
+    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
+    ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
 from .serializers import ProjectSerializer, RegisterSerializer, UserUpdatePasswdSerializer
-
-
+from django.contrib.contenttypes.models import ContentType
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+import logging
 # from .utils import generate_auth_token 
 
 
@@ -35,7 +39,6 @@ from .serializers import ProjectSerializer, RegisterSerializer, UserUpdatePasswd
 #     token, created = Token.objects.get_or_create(user=user)
 #     return token.key
 
-# every time when a user requests with a token, we will decode the token to get the user information and check if the token is valid or not.
 def decode_jwt(token):
     try:
         # Decode the token
@@ -129,7 +132,6 @@ def student_signup(request):
 def student_login(request):
     if request.method == 'POST':
         try:
-            # User Authentication
             data = json.loads(request.body)
             email = data.get('EmailAddress')
             password = data.get('Passwd')
@@ -179,12 +181,14 @@ def student_login(request):
 ############################################################################################
 #                                    Project Creation                                      #
 ############################################################################################
+
 @csrf_exempt
 def project_creation(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
+
         if result['status'] == 'success':
             user_data = result['data']
             try:
@@ -192,38 +196,53 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found.'}, status=404)
             
-            if user_data['role'] == 2:
-                if data['ProjectOwner'] == user_data['email']:
-                    project_owner_email = user_data['email']
-                else:
-                    return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
-            elif user_data['role'] in [3, 4, 5]:
+            if user_data['role'] in [2, 4, 5]:
                 try:
-                        project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                        project_owner_email = project_owner.EmailAddress
+                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                    project_owner_email = project_owner.EmailAddress
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Project owner not found.'}, status=404)
             else:
-                    return JsonResponse({'error': 'Permission denied.'}, status=403)
+                return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
                 
             data['ProjectOwner'] = project_owner_email  
-
+            data["CreatedBy"]=user_data['user_id']
             serializer = ProjectSerializer(data=data)
             if serializer.is_valid():
-                serializer.save(CreatedBy=user)
-                return JsonResponse({'message': 'Project created successfully!', 'project': serializer.data}, status=201)
-            return JsonResponse(serializer.errors, status=400)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+                project = serializer.save(CreatedBy=user)
+                required_skills = data.get('requiredSkills', [])
 
+                for skill_data in required_skills:
+                    interest_area = skill_data.get('area_id')
+                    skill = skill_data.get('skill')
+
+                    if not interest_area or not skill:
+                        return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
+                    
+                    try:
+                        area = Area.objects.get(pk=interest_area)
+                    except Area.DoesNotExist:
+                        return JsonResponse({'error': 'Area not found.'}, status=404)
+                    
+                    skill_object, _ = Skill.objects.get_or_create(SkillName=skill, Area=area)
+                    SkillProject.objects.create(Skill=skill_object, Project=project)
+
+                response_data = ProjectSerializer(project).data
+                return JsonResponse(response_data, status=201)
+            return JsonResponse(serializer.errors, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 ############################################################################################
 #                                    Project Updating                                      #
 ############################################################################################
+
 @csrf_exempt
 def project_update(request, id):
     try:
         project = Project.objects.get(pk=id)
-    except:
+    except Project.DoesNotExist:
         return JsonResponse({'error': 'Project not found'}, status=404)
 
     if request.method == 'PUT':
@@ -235,23 +254,332 @@ def project_update(request, id):
             user_data = result['data']
             try:
                 user = User.objects.get(pk=user_data['user_id'])
-            except Token.DoesNotExist:
+            except User.DoesNotExist:
                 return JsonResponse({'error': 'Authentication failed'}, status=401)
+            
+            if user_data['role'] in [1, 3]:
+                return JsonResponse({'error': 'Permission denied. Cannot update projects.'}, status=403)
+            elif user_data['role'] == 2:
+                if project.CreatedBy.pk != user.pk:
+                    return JsonResponse({'error': 'Permission denied. Clients can only update projects they created.'}, status=403)
+            elif user_data['role'] in [4, 5]:
+                pass
+            else:
+                return JsonResponse({'error': 'Permission denied.'}, status=403)
 
-    serializer = ProjectSerializer(project, data=data, partial=True)
-    if serializer.is_valid():
-        serializer.save(CreatedBy=user)
-        return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
-    return JsonResponse(serializer.error, staus=400)
+            if user_data['role'] in [4, 5]:
+                try:
+                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                    project_owner_email = project_owner.EmailAddress
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
+                data['ProjectOwner'] = project_owner_email  
+            elif user_data['role'] == 2:
+                if data['ProjectOwner'] != user_data['email']:
+                    return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
+                data['ProjectOwner'] = user_data['email']
+            data["CreatedBy"]=user_data['user_id']
+            
+            serializer = ProjectSerializer(project, data=data, partial=True)
+            skill_objects=[]
+            if serializer.is_valid():
+
+                serializer.save(CreatedBy=user)
+                required_skills = data.get('requiredSkills', [])
+
+                for skill_data in required_skills:
+                    interest_area = skill_data.get('area_id')
+                    skill_name = skill_data.get('skill')   
+                    if not interest_area or not skill_name:
+                        return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
+                    
+                    try:
+                        area = Area.objects.get(pk=interest_area)
+                    except Area.DoesNotExist:
+                        return JsonResponse({'error': 'Area not found.'}, status=404)
+                    
+                    skill=Skill.objects.filter(SkillName=skill_name,Area=area).first()
+      
+                    if not skill:
+                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
+                    else:
+                        skill_object=skill
+                    skill_objects.append(skill_object)
+      
+                SkillProject.objects.filter(Project=project).delete()
+         
+                for skill_object in skill_objects:
+                    SkillProject.objects.create(Skill=skill_object, Project=project)
+                    
+                  
+                    
+                        
+                    
+
+                    
+                return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
+            return JsonResponse(serializer.errors, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
-# #test
-# def test_db_connection(request):
-#     try:
-#         user_count = User.objects.count()
-#         return JsonResponse({'status': 'success', 'user_count': user_count}, status=200)
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)@api_view(['GET', 'PUT'])
+############################################################################################
+#                                     Group Creation                                       #
+############################################################################################
+
+@csrf_exempt
+def group_creation(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        if Group.objects.filter(GroupName=data['GroupName']).exists():
+            return JsonResponse({'error': 'Group name already exists'}, status=400)
+
+        if GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'You are already in a group'}, status=400)
+
+        serializer = GroupSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                group = serializer.save(CreatedBy=user)
+                
+                if user_data['role'] == 1:
+                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                
+                return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
+            except Exception as e:
+                return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
+        return JsonResponse(serializer.errors, status=400)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+############################################################################################
+#                                     Group Operation                                      #
+############################################################################################
+
+# Join Group 
+@csrf_exempt
+def group_join(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
+        try:
+            add_user = User.objects.get(UserID=data['student_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User does not exist'}, status=404)
+            
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        try:
+            group = Group.objects.get(GroupID=data['group_id'])
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group does not exist'}, status=404)
+
+        if GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'Student is already in a group'}, status=400)
+
+        current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+
+        if current_group_number >= group.MaxMemberNumber:
+            if user.UserRole in [3, 4, 5]:
+                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
+                return JsonResponse({'message': 'Added student to full group successfully!'}, status=201)
+            return JsonResponse({'error': 'Group is full'}, status=400)
+        else:
+            if user_data['role'] == 1:
+                if user == add_user:
+                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                    return JsonResponse({'message': 'Joined group successfully!'}, status=201)
+                else:
+                    return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
+            return JsonResponse({'error': 'You cannot join a group'}, status=403)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+# Leave Group
+@csrf_exempt
+def group_leave(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] != 'success':
+            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+
+        user_data = result['data']
+        try:
+            user = User.objects.get(pk=user_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+
+        try:
+            leave_user = User.objects.get(UserID=data['student_id'])
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User does not exist'}, status=404)
+            
+        if user_data['role'] not in [1, 3, 4, 5]:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        try:
+            group = Group.objects.get(GroupID=data['group_id'])
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group does not exist'}, status=404)
+
+        if not GroupUsersLink.objects.filter(UserID=user).exists():
+            return JsonResponse({'error': 'Student is not in this group'}, status=400)
+
+        current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+
+        if user.UserRole in [3, 4, 5]:
+            if current_group_number > 0:
+                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+            return JsonResponse({'error': 'Group is empty'}, status=400)
+    
+        if user_data['role'] == 1:
+            if current_group_number > 1:
+                if user == leave_user:
+                    GroupUsersLink.objects.filter(GroupID=group, UserID=user).delete()
+                    return JsonResponse({'message': 'Left group successfully!'}, status=201)
+                else:
+                    return JsonResponse({'error': 'You cannot remove other students from the group'}, status=403)
+            return JsonResponse({'error': 'You are the last student in the group'}, status=403)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+# get group list or delete group
+@csrf_exempt
+def groups_list_del(request,id=None):
+    if request.method == 'GET':
+        groups = Group.objects.all()
+        serializer = GroupFetchSerializer(groups, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    if request.method == 'DELETE':
+        return del_group(request,id)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+# get group list by project
+@csrf_exempt
+def get_groups_list_by_project(request, id):
+    if request.method == 'GET':
+        try:
+            project = Project.objects.get(pk=id)
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'Project not found'}, status=404)
+        
+        groups = project.Groups.all()
+        serializer = GroupFetchSerializer(groups, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+def del_group(request, id):
+        try:
+            group = Group.objects.get(pk=id)
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Group not found'}, status=404)
+        group.delete()
+        return JsonResponse({'message': 'Group deleted successfully!'}, status=200)
+############################################################################################
+#                                     Get project list                                     #
+############################################################################################
+
+@csrf_exempt
+def get_projects_list(request):
+    if request.method == 'GET':
+        projects = Project.objects.all()
+        serializer = ProjectSerializer(projects, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    
+@csrf_exempt
+def get_project_list_creator(request, email):
+    if request.method == 'GET':
+        try:
+            user = User.objects.get(EmailAddress=email)
+            projects = Project.objects.filter(CreatedBy=user)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+        
+        serializer = ProjectSerializer(projects, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+    
+@csrf_exempt
+def get_project_list_owner(request, email):
+    if request.method == 'GET':
+        try:
+            user = User.objects.get(EmailAddress=email)
+            projects = Project.objects.filter(ProjectOwner=email)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+        
+        serializer = ProjectSerializer(projects, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+@csrf_exempt
+def get_project_list_owner_creator(request, creator, owner):
+    if request.method == 'GET':
+        try:
+            user_creator = User.objects.get(EmailAddress=creator)
+            user_owner = User.objects.get(EmailAddress=owner)
+            projects = Project.objects.filter(ProjectOwner=user_owner.EmailAddress, CreatedBy=user_creator)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+        
+        serializer = ProjectSerializer(projects, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+@csrf_exempt
+def get_project(request, id):
+    if request.method == 'GET':
+        try:
+            project = Project.objects.get(pk=id)
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'Project not found'}, status=404)
+        
+        serializer = ProjectSerializer(project)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+############################################################################################
+#                                     User profile                                         #
+############################################################################################
 @permission_classes([IsAuthenticated])
 def user_profile(request):
     user = request.user
@@ -269,61 +597,58 @@ def user_profile(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def user_preferences(request):
-    user = request.user
+class GroupPreferenceAPIView(GenericViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupWithPreferencesSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy',"update_preferences"]:
+            return [ForValidToken()]
+        else:
+            return []
 
-    if request.method == 'GET':
-        preferences = UserPreferencesLink.objects.filter(UserID=user)
-        serializer = UserPreferencesLinkSerializer(preferences, many=True)
-        return Response(serializer.data)
+    @action(detail=True, methods=['put'], url_path='preferences')
+    def update_preferences(self, request, pk=None):
+        group = self.get_object()
+        preferences_data = request.data.get('Preferences', [])
+        print("preferences_data",preferences_data)
+        # 删除现有的偏好
+        GroupPreference.objects.filter(Group=group).delete()
 
-    elif request.method == 'POST':
-        request.data['UserID'] = user.UserID
-        serializer = UserPreferencesLinkSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # 添加新的偏好
+        for preference_data in preferences_data:
+            preference_serializer = GroupPreferenceUpdateSerializer(data=preference_data)
+            if preference_serializer.is_valid():
+                preference_serializer.save(Group=group)
+            else:
+                return Response(preference_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response({"message": "Preferences updated successfully"}, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'], url_path='preferences')
+    def list_preferences(self, request, pk=None):
+        group = self.get_object()
+        
 
-@api_view(['PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def user_preference_detail(request, pk):
-    user = request.user
-
-    try:
-        preference = UserPreferencesLink.objects.get(pk=pk, UserID=user)
-    except UserPreferencesLink.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PUT':
-        serializer = UserPreferencesLinkSerializer(preference, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        preference.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+        current_preferences = GroupPreference.objects.filter(Group=group)
+        current_preferences_serializer = GroupPreferenceSerializer(current_preferences, many=True)
+        
+        return Response({
+            "Preferences": current_preferences_serializer.data
+        }, status=status.HTTP_200_OK)
+    
 
 def get_user_friendly_errors(serializer_errors):
+ 
     errors = {
         'errors': ''
     }
     for _, value in serializer_errors.items():
         errors['errors'] += f'{value[0]}\n'
-
+   
     return errors
 
 
-from rest_framework.viewsets import GenericViewSet
-from .serializers import UserUpdateSerializer
-
-from rest_framework.decorators import action
 
 
 class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
@@ -400,7 +725,7 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
     
-     
+    
     @action(detail=False, methods=['get'], url_path='autocomplete-email', url_name='autocomplete-email')
     def autocomplete_email(self, request):
         email_substring = request.query_params.get('email_substring', None)
@@ -474,3 +799,329 @@ class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.U
             return JsonResponse({'message': 'Message created successfully!'}, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    
+
+class ContactAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset=Contact.objects.all()
+    serializer_class=ContactSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy','list']:
+            return [ForValidToken()]
+        else:
+            return []
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        serializer = ContactCreateSerializer(data=request.data, context=self.get_serializer_context())
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data
+                                , status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+        
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ContactUpdateSerializer(instance, data=request.data,context=self.get_serializer_context())
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def list(self, request, *args, **kwargs):
+        requester_id = self.get_serializer_context().get("requesterId")
+        # get all contacts of the requester
+        contacts = Contact.objects.filter(ContactUser=requester_id)
+        
+        serializer = ContactSerializer(contacts, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+        
+
+class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'destroy','list','mark_as_read']:
+            return [ForValidToken()]
+        else:
+            return []
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        user_id = self.get_serializer_context().get("requesterId")
+        # 获取作为发送者或接收者的所有消息
+        from django.db.models import Q
+        queryset = self.queryset.filter(Q(Sender=user_id) | Q(Receiver=user_id))
+        # 将这些消息标记为已读
+        # 序列化数据
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<receiverId>\d+)')
+    def mark_as_read(self, request, receiverId=None):
+        user_id = self.get_serializer_context().get("requesterId")
+        if receiverId:
+            # 获取符合条件的消息
+            messages = self.queryset.filter(Sender=receiverId, Receiver=user_id, IsRead=False)
+            # 将消息标记为已读
+            updated_count = messages.update(IsRead=True)
+            return Response({"message": f"{updated_count} messages marked as read."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid receiverId"}, status=status.HTTP_400_BAD_REQUEST)
+    
+ 
+class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
+    queryset = GroupMessage.objects.all()
+    serializer_class = GroupMessageSerializer
+    def get_permissions(self):
+        if self.action in ['list']:
+            return [ForValidToken()]
+        else:
+            return []
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["requesterId"] = self.request.user_id
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        user_id = self.request.user_id
+        # find all groups that the user is a member
+        groups = Group.objects.filter(groupuserslink__UserID=user_id)
+        # get all group messages that are sent to these groups
+        queryset = GroupMessage.objects.filter(ReceiverGroup__in=groups).distinct()
+        serializer = self.serializer_class(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+
+############################################################################################
+#                                    Notification                                         #
+############################################################################################
+@api_view(['POST'])
+def create_notification(request):
+    """
+    创建新的通知，发送给指定的用户或群组
+    """
+    receivers = request.data.get('receivers', [])
+    receiver_type = request.data.get('receiver_type')
+    notification_type = request.data.get('type')
+    message = request.data.get('message')
+    additional_data = request.data.get('additionalData', {})
+
+    if not receivers or not receiver_type or not notification_type or not message:
+        return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 获取 ContentType
+    contentType = ContentType.objects.get(model=receiver_type, app_label="myapp")
+    sender_content_type_id = contentType.id
+
+    try:
+        if receiver_type == "user":
+            # 检查所有用户是否存在
+            users = User.objects.filter(UserID__in=receivers)
+            if users.count() != len(receivers):
+                return Response({"error": "One or more users do not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 为每个接收者创建通知
+            for receiver in receivers:
+                notification = Notification.objects.create(
+                    sender_content_type_id=sender_content_type_id,
+                    sender_object_id=receiver,
+                    Type=notification_type,
+                    Message=message,
+                    AdditionalData=additional_data
+                )
+                NotificationReceiver.objects.create(
+                    Notification_id=notification.NotificationID,
+                    ReceiverUser_id=receiver,
+                    IsRead=False
+                )
+
+        elif receiver_type == "group":
+            # 检查所有群组是否存在
+            groups = GroupUsersLink.objects.filter(GroupID__in=receivers).values('GroupID').distinct()
+            if groups.count() != len(receivers):
+                return Response({"error": "One or more groups do not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 为每个群组创建通知，并为群组中的每个用户创建通知接收记录
+            for receiver in receivers:
+                notification = Notification.objects.create(
+                    sender_content_type_id=sender_content_type_id,
+                    sender_object_id=receiver,
+                    Type=notification_type,
+                    Message=message,
+                    AdditionalData=additional_data
+                )
+                groupUsersLinks = GroupUsersLink.objects.filter(GroupID=receiver)
+                for group_user in groupUsersLinks:
+                    NotificationReceiver.objects.create(
+                        Notification_id=notification.NotificationID,
+                        ReceiverUser_id=group_user.UserID_id,
+                        IsRead=False
+                    )
+
+        else:
+            return Response({"error": "Invalid receiver type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"success": "Notifications created"}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['GET'])
+def fetch_notifications(request, user_id):
+    """
+    获取指定用户的所有通知。
+    """
+    try:
+        user = get_object_or_404(User, UserID=user_id)
+    except User.DoesNotExist:
+        return Response({"error": "user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取用户的所有通知接收者
+    notification_receivers = NotificationReceiver.objects.filter(ReceiverUser_id=user.UserID)
+
+    # 准备一个列表来存储序列化后的通知
+    notifications_data = []
+
+    # 遍历每个通知接收者，并获取对应的通知
+    for notification_receiver in notification_receivers:
+        notification_id = notification_receiver.Notification_id
+        notification = get_object_or_404(Notification, NotificationID=notification_id)
+        serializer = NotificationSerializer(notification)
+        notification_data = serializer.data
+        notification_data['IsRead'] = notification_receiver.IsRead  # 添加已读/未读状态字段
+        notification_data['NotificationReceiverID'] = notification_receiver.NotificationReceiverID  # 添加已读/未读状态字段
+        notifications_data.append(notification_data)
+
+    return Response(notifications_data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def update_notification_status(request, notificationReceiverId):
+    """
+    更新通知状态（例如，标记为已读）
+    """
+    try:
+        notificationReceiver = NotificationReceiver.objects.get(NotificationReceiverID=notificationReceiverId)
+    except NotificationReceiver.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status is not None:
+        notificationReceiver.IsRead = new_status
+        notificationReceiver.save()
+
+    return Response({"success": "Notification updated successfully"}, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+def delete_notification(request, notificationReceiverId):
+    """
+    删除用户的通知
+    """
+    try:
+        notificationReceiver = NotificationReceiver.objects.get(NotificationReceiverID=notificationReceiverId)
+        notificationReceiver.delete()
+    except NotificationReceiver.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({"success": "Notification deleted successfully"}, status=status.HTTP_200_OK)
+
+class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    queryset = GroupProjectsLink.objects.all()
+    serializer_class = GroupProjectLinkSerializer
+    
+    def create(self, request, *args, **kwargs):
+        #如果存在则返回错误
+        try:    
+            project_id = request.data.get('ProjectID')
+            group_id = request.data.get('GroupID')
+            if GroupProjectsLink.objects.filter(ProjectID=project_id, GroupID=group_id).exists():
+                return JsonResponse({'error': 'Group project link already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return JsonResponse({'error': 'Invalid data.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = GroupProjectLinkSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = GroupProjectLinkSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        project_id = kwargs.get('projectID')
+        group_id = kwargs.get('groupID')
+        try:
+            instance = GroupProjectsLink.objects.get(ProjectID=project_id, GroupID=group_id)
+            instance.delete()
+            return JsonResponse({'message': 'Group project link deleted successfully!'}, status=status.HTTP_200_OK)
+        except GroupProjectsLink.DoesNotExist:
+            return JsonResponse({'error': 'Group project link not found.'}, status=status.HTTP_404_NOT_FOUND)
+    
+        
+        
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = GroupProjectLinkSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+
+#autocompletegroups
+
+@api_view(['GET'])
+def autocomplete_groups(request):
+    group_substring = request.GET.get('name_substring', None)
+    if group_substring:
+        queryset = Group.objects.filter(GroupName__icontains=group_substring)
+        serializer = GroupFetchSerializer(queryset, many=True)
+        return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+    return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_projects_by_participant(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    groups = Group.objects.filter(groupuserslink__UserID=user)
+    projects = Project.objects.filter(Groups__in=groups)
+    serializer = ProjectSerializer(projects, many=True)
+    return JsonResponse(serializer.data, safe=False)
+
+@api_view(['GET'])
+def get_groups_by_participant(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    groups = Group.objects.filter(groupuserslink__UserID=user)
+    serializer = GroupFetchSerializer(groups, many=True)
+    return JsonResponse(serializer.data, safe=False)
+@api_view(['GET'])
+def get_group_detail(request, id):
+    try:
+        group = Group.objects.get(pk=id)
+    except Group.DoesNotExist:
+        return JsonResponse({'error': 'Group not found'}, status=404)
+    serializer = GroupFetchSerializer(group)
+    return JsonResponse(serializer.data, safe=False)
