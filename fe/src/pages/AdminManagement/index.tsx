@@ -20,6 +20,8 @@ import AccountManagementContextProvider, {
 import { UserInfo, UserUpdate } from '../../types/user'
 import { useAuthContext } from '../../context/AuthContext'
 import ProfileLink from '../../components/ProfileLink'
+import { useGlobalTheme } from '../../context/GlobalThemeContext'
+import breakPoint from '../../constant/breakPoint'
 
 interface DataType {
   key: number
@@ -46,6 +48,7 @@ const _AdminManagement = () => {
   const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
     null
   )
+  const { windowWidth, onWidth } = useGlobalTheme()
   const { accountList, getAccountList, deleteAccount, updateAccount } =
     useAccountManagementContext()
 
@@ -181,6 +184,7 @@ const _AdminManagement = () => {
           }}
         />
       ),
+      responsive: ['md'],
     },
   ]
 
@@ -211,6 +215,32 @@ const _AdminManagement = () => {
           width: '100%',
           height: '100%',
         }}
+        size={onWidth({
+          sm: 'small',
+          defaultValue: 'large',
+        })}
+        expandable={
+          windowWidth > breakPoint.sm
+            ? {}
+            : {
+                expandedRowRender: (record) => (
+                  <ActionGroup
+                    handleDelete={() => {
+                      currUsrIdOnRowRef.current = record.key
+                      setIsDeleteModalOpen(true)
+                    }}
+                    handleManage={() => {
+                      currUsrIdOnRowRef.current = record.key
+                      const usr = accountList.find(
+                        (_usr: UserInfo) => _usr.id === record.key
+                      )
+                      setCurrProfileViewing(usr || null)
+                      setIsModalOpen(true)
+                    }}
+                  />
+                ),
+              }
+        }
         scroll={{ y: '65vh' }}
         columns={columns}
         dataSource={data}

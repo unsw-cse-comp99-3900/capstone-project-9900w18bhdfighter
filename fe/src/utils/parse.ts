@@ -54,13 +54,30 @@ const errHandler = (
   if (isAxiosError(err)) {
     const error = err as AxiosError<{ error: string; errors: string }>
     const data = error.response?.data
+
+    if (error.status === 500) {
+      axiosErrDo('Something went wrong')
+      return
+    }
     if (data) {
-      axiosErrDo(data.error || data.errors)
+      axiosErrDo(data.error || data.errors || JSON.stringify(data))
     }
   } else {
     console.log('err:', err)
     otherErrDo('Technical error, please view logs of console')
   }
 }
-
-export { shortName, isDarkColor, stringToColorPair, errHandler }
+const ids_to_channel_id = (ids: [number, number]) => {
+  return ids.sort().join('_')
+}
+const channel_id_to_ids = (channel_id: string) => {
+  return channel_id.split('_').map(Number) as [number, number]
+}
+export {
+  shortName,
+  isDarkColor,
+  stringToColorPair,
+  errHandler,
+  ids_to_channel_id,
+  channel_id_to_ids,
+}

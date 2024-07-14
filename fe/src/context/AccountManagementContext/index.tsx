@@ -1,8 +1,10 @@
 import { ReactNode, createContext, useContext, useState } from 'react'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { AreaDTO, UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
+import { UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
 import { errHandler } from '../../utils/parse'
+import { mapUserProfileDTOToUserInfo } from './mapper'
+import { getUserById } from '../../api/userAPI'
 
 interface AccountManagementContextType {
   deleteAccount: (_usrId: number) => Promise<void>
@@ -83,20 +85,8 @@ const AccountManagementContextProvider = ({
   }
   const getAnUserProfile = async (usrId: number) => {
     try {
-      const res = await api.get(`api/users/${usrId}`)
-      console.log(res.data)
-      setCurrProfileViewing({
-        id: res.data.data.UserID,
-        firstName: res.data.data.FirstName,
-        lastName: res.data.data.LastName,
-        email: res.data.data.EmailAddress,
-        role: res.data.data.UserRole,
-        description: res.data.data.UserInformation,
-        interestAreas: res.data.data.Areas.map((area: AreaDTO) => ({
-          id: area.AreaID,
-          name: area.AreaName,
-        })),
-      })
+      const res = await getUserById(usrId)
+      setCurrProfileViewing(mapUserProfileDTOToUserInfo(res.data.data))
     } catch (err) {
       errHandler(
         err,

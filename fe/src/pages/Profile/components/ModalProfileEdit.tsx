@@ -1,71 +1,47 @@
 import { Button, Form, Input, Modal, Select } from 'antd'
-import type { FormInstance, ModalProps } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import styled from 'styled-components'
-import { UserInfo, UserRole } from '../../types/user'
-
-import AreaContextProvider, { useAreaContext } from '../../context/AreaContext'
-import { role as _role } from '../../constant/role'
+import { UserInfo } from '../../../types/user'
 
 type Props = {
   isModalOpen: boolean
-  handleOk: (_form: FormInstance) => void
+  handleOk: () => void
   handleCancel: () => void
   userInfo: UserInfo | null
-  viewerRole: UserRole | undefined
-} & ModalProps
+}
 
 const Wrapper = styled(Modal)``
 
-const _ModalProfileEdit = ({
+const ModalProfileEdit = ({
   isModalOpen,
+  handleOk,
   handleCancel,
   userInfo,
-  handleOk,
-  viewerRole = _role.ADMIN,
-  ...props
 }: Props) => {
   const [visible, setVisible] = useState(false)
-  const [form] = Form.useForm()
-  const { getAreaList, areaList } = useAreaContext()
-  const { firstName, lastName, description, interestAreas, role } =
-    userInfo || {
-      firstName: '',
-      lastName: '',
-      description: '',
-      interestAreas: [],
-      role: 1,
-    }
-  useEffect(() => {
-    form.setFieldsValue({
-      firstName: firstName,
-      lastName: lastName,
-      description: description,
-      interestAreas: interestAreas.map((area) => area.id),
-      role: role,
-    })
-    console.log(interestAreas)
-  }, [userInfo, form])
-
-  useEffect(() => {
-    getAreaList()
-  }, [])
-  useEffect(() => {
-    if (!visible) {
-      form.setFieldsValue({
-        password: undefined,
-        confirmPassword: undefined,
-      })
-    }
-  }, [visible, form])
+  const { firstName, lastName, description, interestAreas } = userInfo || {
+    firstName: '',
+    lastName: '',
+    description: '',
+    interestAreas: [],
+  }
   return (
     <Wrapper
-      {...props}
+      title="Edit Profile"
       open={isModalOpen}
-      onOk={() => handleOk(form)}
+      onOk={handleOk}
       onCancel={handleCancel}
     >
-      <Form layout="vertical" form={form} style={{ width: '100%' }}>
+      <Form
+        layout="vertical"
+        style={{ width: '100%' }}
+        initialValues={{
+          firstName: firstName,
+          lastName: lastName,
+          description: description,
+          interestAreas: interestAreas,
+        }}
+      >
         <Form.Item
           style={{
             display: 'inline-block',
@@ -90,40 +66,29 @@ const _ModalProfileEdit = ({
           <Input />
         </Form.Item>
         <Form.Item label="Description" name="description">
-          <Input.TextArea
-            maxLength={255}
-            showCount
-            autoSize={{ minRows: 3, maxRows: 5 }}
-          />
+          <Input.TextArea />
         </Form.Item>
         <Form.Item label="Interest Areas" name="interestAreas">
           <Select
             mode="multiple"
             style={{ width: '100%' }}
             placeholder="Interest Areas"
-            options={areaList.map((area) => ({
-              label: area.name,
-              value: area.id,
-            }))}
-          />
-        </Form.Item>
-        <Form.Item
-          style={{
-            display: `${viewerRole === _role.ADMIN ? 'block' : 'none'}`,
-          }}
-          label="Role"
-          name="role"
-        >
-          <Select
-            style={{ width: '100%' }}
-            placeholder="Role"
             options={
-              Object.keys(_role).map((key) => ({
-                label: key,
-                value: _role[key as keyof typeof _role],
-              })) || []
+              [
+                { label: 'magenta', value: 'magenta' },
+                { label: 'red', value: 'red' },
+                { label: 'volcano', value: 'volcano' },
+                { label: 'orange', value: 'orange' },
+                { label: 'gold', value: 'gold' },
+                { label: 'lime', value: 'lime' },
+                { label: 'green', value: 'green' },
+                { label: 'cyan', value: 'cyan' },
+                { label: 'blue', value: 'blue' },
+                { label: 'geekblue', value: 'geekblue' },
+                { label: 'purple', value: 'purple' },
+              ] as { label: string; value: string }[]
             }
-          ></Select>
+          />
         </Form.Item>
         <Form.Item>
           <Button
@@ -140,6 +105,7 @@ const _ModalProfileEdit = ({
           }}
           label="Password"
           name="password"
+          rules={[{ required: true, message: 'Please input your password!' }]}
         >
           <Input.Password />
         </Form.Item>
@@ -151,6 +117,7 @@ const _ModalProfileEdit = ({
           name="confirmPassword"
           dependencies={['password']}
           rules={[
+            { required: true, message: 'Please confirm your password!' },
             ({ getFieldValue }) => ({
               validator(_, value) {
                 if (!value || getFieldValue('password') === value) {
@@ -165,25 +132,6 @@ const _ModalProfileEdit = ({
         </Form.Item>
       </Form>
     </Wrapper>
-  )
-}
-const ModalProfileEdit = ({
-  isModalOpen,
-  handleOk,
-  handleCancel,
-  userInfo,
-  ...props
-}: Props) => {
-  return (
-    <AreaContextProvider>
-      <_ModalProfileEdit
-        isModalOpen={isModalOpen}
-        handleOk={handleOk}
-        handleCancel={handleCancel}
-        userInfo={userInfo}
-        {...props}
-      ></_ModalProfileEdit>
-    </AreaContextProvider>
   )
 }
 

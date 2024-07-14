@@ -1,17 +1,23 @@
-import { Button, Descriptions as _Descriptions, Flex, Tag } from 'antd'
+import {
+  Button,
+  Descriptions as _Descriptions,
+  Flex,
+  Tag,
+  Typography,
+} from 'antd'
 import type { FormInstance } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { useAuthContext } from '../../context/AuthContext'
 import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
-import ModalProfileEdit from '../../components/ModalProfileEdit'
 import { useEffect, useState } from 'react'
 import AccountManagementContextProvider, {
   useAccountManagementContext,
 } from '../../context/AccountManagementContext'
 import { UserUpdate } from '../../types/user'
 import { useParams } from 'react-router-dom'
+import ModalProfileEdit from '../../components/ModalProfileEdit'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -106,10 +112,9 @@ const _Profile = () => {
     <Wrapper>
       <ModalProfileEdit
         viewerRole={usrInfo?.role}
-        title="Edit Profile"
+        handleOk={handleOk}
         userInfo={currProfileViewing}
         isModalOpen={isModalOpen}
-        handleOk={handleOk}
         handleCancel={handleCancel}
       ></ModalProfileEdit>
       <Header>
@@ -141,14 +146,26 @@ const _Profile = () => {
           {roleNames[role]}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
-          {description}
+          {description ? (
+            <Typography.Text>{description}</Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">
+              No description provided
+            </Typography.Text>
+          )}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Interest Areas">
-          {interestAreas.map((area) => (
-            <Tag key={area.id} style={{ margin: '0.1rem' }} color="magenta">
-              {area.name}
-            </Tag>
-          ))}
+          {interestAreas.length === 0 ? (
+            <Typography.Text type="secondary">
+              No interest areas provided
+            </Typography.Text>
+          ) : (
+            interestAreas.map((area) => (
+              <Tag key={area.id} style={{ margin: '0.1rem' }} color="magenta">
+                {area.name}
+              </Tag>
+            ))
+          )}
         </Descriptions.Item>
       </Descriptions>
     </Wrapper>

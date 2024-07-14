@@ -94,6 +94,12 @@ const routerConfig = [
           },
         ],
       },
+
+      {
+        element: <GroupDetail />,
+        path: `${route.GROUPDETAILS}/:id`,
+      },
+
       {
         element: <AdminManagement />,
         path: route.ADMIN,

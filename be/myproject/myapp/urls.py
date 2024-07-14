@@ -34,6 +34,7 @@ urlpatterns = [
     path("api/projects/users/<int:id>/", views.get_projects_by_participant,name="get_projects_by_participant"),
     path("api/groups/users/<int:id>/", views.get_groups_by_participant,name="get_groups_by_participant"),
     path("api/groups/<int:id>/", views.get_group_detail,name="get_group_detail"),
+
 ]
 
 

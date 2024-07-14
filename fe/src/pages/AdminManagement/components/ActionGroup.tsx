@@ -3,9 +3,10 @@ import { Button, Divider, Flex } from 'antd'
 type Props = {
   handleManage: () => void
   handleDelete: () => void
+  className?: string
 }
 
-const ActionGroup = ({ handleManage, handleDelete }: Props) => {
+const ActionGroup = ({ handleManage, handleDelete, className }: Props) => {
   return (
     <Flex
       align="center"
@@ -14,6 +15,7 @@ const ActionGroup = ({ handleManage, handleDelete }: Props) => {
         justifyContent: 'center',
         alignItems: 'center',
       }}
+      className={className}
     >
       <Button onClick={handleManage} size="small" type="link">
         Manage

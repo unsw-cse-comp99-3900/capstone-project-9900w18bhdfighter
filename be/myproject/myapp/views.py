@@ -1125,3 +1125,4 @@ def get_group_detail(request, id):
         return JsonResponse({'error': 'Group not found'}, status=404)
     serializer = GroupFetchSerializer(group)
     return JsonResponse(serializer.data, safe=False)
+

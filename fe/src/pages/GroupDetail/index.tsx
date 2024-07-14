@@ -112,6 +112,7 @@ const GroupDetail = () => {
     'Member 1',
     'Member 2',
     'Member 3',
+    'Member 4',
   ])
   const [newMember, setNewMember] = useState<string | undefined>(undefined)
   const [isUserMember, setIsUserMember] = useState<boolean>(false)
