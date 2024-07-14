@@ -28,8 +28,8 @@ const getAutoCompleteGroups = async (groupName: string) => {
     },
   })
 }
-//mapper
 
+//mapper
 const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
   groupRspDTO: GroupRspDTO
 ) => {

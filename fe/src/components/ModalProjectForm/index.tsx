@@ -1,13 +1,15 @@
 import { Button, Flex, Form, Input, InputNumber, Modal, Select } from 'antd'
 import React, { CSSProperties, useMemo } from 'react'
 import styled from 'styled-components'
-import { ProjectReqDTO } from '../../../types/proj'
-import { useProjectContext } from '../../../context/ProjectContext'
+import { ProjectReqDTO } from '../../types/proj'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
   handleOk: (_projectCreateDto: ProjectReqDTO) => void
   handleCancel: () => void
+  initialData?: FormValues | undefined
+  title: string
 }
 
 const _Modal = styled(Modal)`
@@ -28,10 +30,14 @@ const modalBodyStyle: CSSProperties = {
   justifyContent: 'center',
   alignItems: 'center',
 }
+type Skill = {
+  area: number
+  skill: string
+}
 type FormValues = {
   projectName: string
   description: string
-  skills: { area: string; skill: string }[]
+  skills: Skill[]
   email: string
   maxGroupNumber: number
 }
@@ -39,37 +45,52 @@ type Option = {
   label: string
   value: number | string
 }
-
-const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
+const initialValues = {
+  projectName: '',
+  description: '',
+  skills: [{ area: 1, skill: '' }],
+  email: '',
+  maxGroupNumber: 1,
+}
+const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
+  return {
+    ProjectName: values.projectName,
+    ProjectDescription: values.description,
+    ProjectOwner: values.email,
+    requiredSkills: values.skills.map((s: Skill) => ({
+      area_id: s.area,
+      skill: s.skill,
+    })),
+    MaxNumOfGroup: values.maxGroupNumber,
+  }
+}
+const ModalProjectForm = ({
+  title,
+  isModalOpen,
+  handleOk,
+  handleCancel,
+  initialData = initialValues,
+}: Props) => {
   const [form] = Form.useForm<FormValues>()
-  const { areaList } = useProjectContext()
+  const { AREA_LIST } = useGlobalConstantContext()
   const areaOptions = useMemo<Option[]>(
-    () => areaList?.map((area) => ({ label: area.name, value: area.id })) || [],
-    [areaList]
+    () =>
+      AREA_LIST?.map((area) => ({ label: area.name, value: area.id })) || [],
+    [AREA_LIST]
   )
+
   const handleFinish = async () => {
     try {
       await form.validateFields()
       const values = form.getFieldsValue()
-      handleOk({
-        ProjectName: values.projectName,
-        ProjectDescription: values.description,
-        ProjectOwner: values.email,
-        requiredSkills: values.skills.map(
-          (s: { area: string; skill: string }) => ({
-            area_id: s.area,
-            skill: s.skill,
-          })
-        ),
-        MaxNumOfGroup: values.maxGroupNumber,
-      })
+      handleOk(mapFormValuesToProjectReqDTO(values))
     } catch (e) {
       console.log(e)
     }
   }
   return (
     <_Modal
-      title="New Project"
+      title={title}
       open={isModalOpen}
       onOk={handleFinish}
       onCancel={handleCancel}
@@ -79,13 +100,7 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
     >
       <Form
         layout="vertical"
-        initialValues={{
-          projectName: undefined,
-          description: '',
-          skills: [{ area: '', skill: '' }],
-          email: undefined,
-          maxGroupNumber: 1,
-        }}
+        initialValues={initialData}
         form={form}
         style={{ width: '100%' }}
       >
@@ -160,4 +175,4 @@ const NewProjectModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   )
 }
 
-export default NewProjectModal
+export default ModalProjectForm

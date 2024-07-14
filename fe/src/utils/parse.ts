@@ -54,8 +54,13 @@ const errHandler = (
   if (isAxiosError(err)) {
     const error = err as AxiosError<{ error: string; errors: string }>
     const data = error.response?.data
+
+    if (error.status === 500) {
+      axiosErrDo('Something went wrong')
+      return
+    }
     if (data) {
-      axiosErrDo(data.error || data.errors)
+      axiosErrDo(data.error || data.errors || JSON.stringify(data))
     }
   } else {
     console.log('err:', err)

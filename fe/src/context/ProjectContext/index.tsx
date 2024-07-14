@@ -13,8 +13,7 @@ import {
   getProjectsByCreator,
   mapProjectDTOToProject,
 } from '../../api/projectAPI'
-import { getAreasList, mapAreaDTOToArea } from '../../api/areaAPI'
-import { Area } from '../../types/user'
+
 import { useAuthContext } from '../AuthContext'
 interface ProjectContextType {
   createProject: (_project: ProjectCreate) => Promise<void>
@@ -22,7 +21,6 @@ interface ProjectContextType {
   deleteProject: () => void
   getProjectsList: (_email: string) => Promise<void>
   projectList: Project[]
-  areaList: Area[] | null
 }
 
 const ProjectContext = createContext({} as ProjectContextType)
@@ -32,16 +30,7 @@ export const useProjectContext = () =>
 const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
   const { msg } = useGlobalComponentsContext()
   const [projectList, setProjectList] = useState<Project[]>([])
-  const [areaList, setAreaList] = useState<Area[] | null>(null)
   const { usrInfo } = useAuthContext()
-  const fetchAreasList = async () => {
-    try {
-      const res = await getAreasList()
-      setAreaList(res.data.data.map(mapAreaDTOToArea))
-    } catch (err) {
-      msg.err('Failed to fetch areas list')
-    }
-  }
 
   const updateProject = () => {
     //todo: implement update project
@@ -76,9 +65,7 @@ const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
 
     //todo: implement create project
   }
-  useEffect(() => {
-    fetchAreasList()
-  }, [])
+
   useEffect(() => {
     if (!usrInfo) return
     getProjectsList(usrInfo.email)
@@ -89,7 +76,6 @@ const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
     deleteProject,
     getProjectsList,
     projectList,
-    areaList,
   }
 
   return (

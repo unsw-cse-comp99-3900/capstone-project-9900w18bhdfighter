@@ -1096,3 +1096,14 @@ def autocomplete_groups(request):
         serializer = GroupFetchSerializer(queryset, many=True)
         return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
     return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_projects_by_participant(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    groups = Group.objects.filter(groupuserslink__UserID=user)
+    projects = Project.objects.filter(Groups__in=groups)
+    serializer = ProjectSerializer(projects, many=True)
+    return JsonResponse(serializer.data, safe=False)

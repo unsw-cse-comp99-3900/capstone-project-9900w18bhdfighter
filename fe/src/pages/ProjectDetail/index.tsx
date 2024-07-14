@@ -1,4 +1,4 @@
-import { Button, Descriptions, Flex, List, Tag } from 'antd'
+import { Button, Descriptions, Flex, List, Tag, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
@@ -11,6 +11,12 @@ import ProjectDetailContextProvider, {
   useProjectDetailContext,
 } from '../../context/ProjectDetailContext'
 
+import { useMemo, useState } from 'react'
+import { ProjectReqDTO } from '../../types/proj'
+import ModalProjectForm from '../../components/ModalProjectForm'
+import { role } from '../../constant/role'
+import { useAuthContext } from '../../context/AuthContext'
+
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -18,13 +24,79 @@ const Wrapper = styled(Flex)`
   align-items: center;
   padding: ${getThemeToken('paddingLG', 'px')};
 `
-
+const EditWrapper = styled(Flex)`
+  width: 100%;
+  justify-content: flex-end;
+`
+const EditButton = styled(Button)``
 const _ProjectDetail = () => {
-  const { project, ownerName, creatorName, groupsList, removeGroup } =
-    useProjectDetailContext()
+  const {
+    project,
+    ownerName,
+    creatorName,
+    groupsList,
+    removeGroup,
+    updateCurrentGroup,
+  } = useProjectDetailContext()
+  const [isOpened, setIsOpened] = useState(false)
+  const { role: _role, usrInfo } = useAuthContext()
+  const handleOk = async (projectUpdateDTO: ProjectReqDTO) => {
+    updateCurrentGroup(projectUpdateDTO)
+    setIsOpened(false)
+  }
+  const handleCancel = () => {
+    setIsOpened(false)
+  }
+  const initialData = useMemo(() => {
+    if (!project) return undefined
+    return {
+      projectName: project.name,
+      description: project.description,
+      skills: project.requiredSkills.map((skill) => ({
+        area: skill.area.id,
+        skill: skill.skillName,
+      })),
+      email: project.owner,
+      maxGroupNumber: project.maxNumOfGroup,
+    }
+  }, [project])
 
+  const isAdmin = () => {
+    return _role === role.ADMIN
+  }
+  const isManager = () => {
+    return _role === role.ADMIN || _role === role.TUTOR || _role === role.CORD
+  }
+  const isOwner = () => {
+    return project?.projectOwnerId === usrInfo?.id
+  }
+  const isCreator = () => {
+    return project?.createdBy === usrInfo?.id
+  }
+  const shouldDisplayEdit = () => {
+    return isAdmin() || isOwner() || isCreator()
+  }
+  const shouldDisplayRemove = () => {
+    return isManager()
+  }
   return (
     <Wrapper>
+      <ModalProjectForm
+        title="Edit Project"
+        initialData={initialData}
+        isModalOpen={isOpened}
+        handleOk={handleOk}
+        handleCancel={handleCancel}
+      />
+      <EditWrapper
+        style={{
+          display: shouldDisplayEdit() ? 'flex' : 'none',
+        }}
+      >
+        <EditButton type="primary" onClick={() => setIsOpened(true)}>
+          Edit
+        </EditButton>
+      </EditWrapper>
       <Descriptions
         style={{
           width: '100%',
@@ -50,14 +122,26 @@ const _ProjectDetail = () => {
           </Link>
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
-          {project?.description}
+          {project?.description ? (
+            <Typography.Text>{project?.description}</Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">
+              No description provided.
+            </Typography.Text>
+          )}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Expected Skills">
-          {project?.requiredSkills.map((skill) => (
-            <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
-              {skill.skillName}
-            </Tag>
-          ))}
+          {project?.requiredSkills.length ? (
+            project?.requiredSkills.map((skill) => (
+              <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
+                {skill.skillName}
+              </Tag>
+            ))
+          ) : (
+            <Typography.Text type="secondary">
+              No expected skills provided.
+            </Typography.Text>
+          )}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Participating Groups">
           <GroupSearchBar />
@@ -75,9 +159,12 @@ const _ProjectDetail = () => {
                 actions={[
                   <Button
                     onClick={() => removeGroup(group.groupId)}
-                    key="1"
+                    key={group.groupId}
                     size="small"
                     type="text"
+                    style={{
+                      display: shouldDisplayRemove() ? 'block' : 'none',
+                    }}
                     danger
                   >
                     Remove

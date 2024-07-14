@@ -23,7 +23,7 @@ interface Skill {
   skillName: string
 }
 interface SkillReqDTO {
-  area_id: string
+  area_id: number
   skill: string
 }
 

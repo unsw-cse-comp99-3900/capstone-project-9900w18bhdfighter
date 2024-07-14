@@ -10,6 +10,7 @@ import { getAllProjects, mapProjectDTOToProject } from '../../../api/projectAPI'
 import { Project } from '../../../types/proj'
 
 import route from '../../../constant/route'
+import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 
 type Props = {
   className?: string
@@ -26,13 +27,16 @@ const _ProjectsList = styled(List)`
 
 const ProjectsList = ({ className = '' }: Props) => {
   const [list, setList] = useState<Project[]>([])
+  const [filteredLists, setFilteredLists] = useState<Project[]>([])
+  const { msg } = useGlobalComponentsContext()
   useEffect(() => {
     const toFetch = async () => {
       try {
         const res = await getAllProjects()
         setList(res.data.map(mapProjectDTOToProject))
+        setFilteredLists(res.data.map(mapProjectDTOToProject))
       } catch (e) {
-        console.log(e)
+        msg.err('Network error')
       }
     }
     toFetch()
@@ -44,10 +48,10 @@ const ProjectsList = ({ className = '' }: Props) => {
         header={
           <Flex justify="space-between" align="center">
             Projects List
-            <Filter />
+            <Filter list={list} setFilteredLists={setFilteredLists} />
           </Flex>
         }
-        dataSource={list}
+        dataSource={filteredLists}
         renderItem={(item) => (
           <List.Item
             actions={[

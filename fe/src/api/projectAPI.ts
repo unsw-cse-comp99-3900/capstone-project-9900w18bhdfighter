@@ -12,7 +12,7 @@ const createProject = async (proj: ProjectReqDTO) => {
   return api.post<ProjectRespDTO>('project_creation/', proj)
 }
 
-const updateProject = async (proj: ProjectReqDTO, projId: number) => {
+const updateProject = async (proj: ProjectReqDTO, projId: number | string) => {
   return api.put<ProjectRespDTO>(`project_update/${projId}/`, proj)
 }
 
@@ -36,6 +36,9 @@ const getProjectById = async (id: number | string) => {
   return api.get<ProjectRespDTO>(`projects/${id}/`)
 }
 
+const getProjectByParticipant = async (participantId: string | number) => {
+  return api.get<ProjectRespDTO[]>(`api/projects/users/${participantId}/`)
+}
 //mapper
 const mapProjectDTOToProject: (_projectRespDTO: ProjectRespDTO) => Project = (
   projectRespDTO: ProjectRespDTO
@@ -79,4 +82,5 @@ export {
   getProjectsByOwnerAndCreator,
   getProjectById,
   mapProjectDTOToProject,
+  getProjectByParticipant,
 }

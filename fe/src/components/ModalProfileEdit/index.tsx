@@ -90,7 +90,11 @@ const _ModalProfileEdit = ({
           <Input />
         </Form.Item>
         <Form.Item label="Description" name="description">
-          <Input.TextArea />
+          <Input.TextArea
+            maxLength={255}
+            showCount
+            autoSize={{ minRows: 3, maxRows: 5 }}
+          />
         </Form.Item>
         <Form.Item label="Interest Areas" name="interestAreas">
           <Select
