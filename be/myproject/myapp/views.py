@@ -1107,3 +1107,21 @@ def get_projects_by_participant(request, id):
     projects = Project.objects.filter(Groups__in=groups)
     serializer = ProjectSerializer(projects, many=True)
     return JsonResponse(serializer.data, safe=False)
+
+@api_view(['GET'])
+def get_groups_by_participant(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    groups = Group.objects.filter(groupuserslink__UserID=user)
+    serializer = GroupFetchSerializer(groups, many=True)
+    return JsonResponse(serializer.data, safe=False)
+@api_view(['GET'])
+def get_group_detail(request, id):
+    try:
+        group = Group.objects.get(pk=id)
+    except Group.DoesNotExist:
+        return JsonResponse({'error': 'Group not found'}, status=404)
+    serializer = GroupFetchSerializer(group)
+    return JsonResponse(serializer.data, safe=False)

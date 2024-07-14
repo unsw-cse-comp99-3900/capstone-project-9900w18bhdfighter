@@ -38,6 +38,8 @@ import {
   getAutoCompleteContactsMapper,
   getContactsMapper,
 } from './mapper'
+import { getGroupListByUserId, mapGroupDTOToGroup } from '../../api/groupAPI'
+import { Group } from '../../types/group'
 type RouteParams = {
   receiverId: string
   type: string
@@ -58,6 +60,7 @@ interface MessageContextType {
   params: Readonly<Partial<RouteParams>>
   contactList: Contact[] | null
   currConversation: Conversation | null
+  groupsList: Group[] | null
 }
 
 const MessageContext = createContext({} as MessageContextType)
@@ -72,9 +75,7 @@ export const MessageContextProvider = ({ children }: Props) => {
     UserProfileSlim[]
   >([])
   const [contactList, setContactList] = useState<Contact[] | null>(null)
-  // const [groupContactList, setGroupContactList] = useState<Contact[] | null>(
-  //   null
-  // )
+  const [groupsList, setGroupsList] = useState<Group[] | null>(null)
   const [msgMap, setMsgMap] = useState<MsgGrouped | null>(null)
   const { msg } = useGlobalComponentsContext()
   const socketRef = useRef<WebSocket | null>(null)
@@ -193,10 +194,24 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
     }
   }
+  const getAllGroupMine = async () => {
+    if (!id) return
+    try {
+      const res = await getGroupListByUserId(id)
+      setGroupsList(res.data.map(mapGroupDTOToGroup))
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
   //get all contacts and messages
   useEffect(() => {
     getAllMessages()
     getContacts()
+    getAllGroupMine()
   }, [])
 
   useEffect(() => {
@@ -318,6 +333,7 @@ export const MessageContextProvider = ({ children }: Props) => {
     contactList,
     currConversation,
     msgMap,
+    groupsList,
   }
 
   return (
