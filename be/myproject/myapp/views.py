@@ -904,6 +904,18 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<groupId>\d+)')
+    def mark_as_read(self, request, groupId=None):
+        user_id = self.get_serializer_context().get("requesterId")
+        if groupId:
+            # 获取符合条件的消息
+            messages = self.queryset.filter(ReceiverGroup=groupId)
+            # 将自己加入到readby字段中
+            for message in messages:
+                message.ReadBy.add(user_id)
+            return Response({"message": f"Messages marked as read."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid groupId"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 ############################################################################################
 #                                    Notification                                         #

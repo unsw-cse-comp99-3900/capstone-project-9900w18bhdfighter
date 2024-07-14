@@ -1,10 +1,9 @@
 
 from .utils import is_both_on_same_room,format_msg
-from ..serializers import MessageSerializer
+from ..serializers import GroupMessageSerializer, MessageSerializer
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from myapp.models import Group, Message, User
-
+from myapp.models import Group, GroupMessage, Message, User
 import json
 curr_window = {}
 class Consumer(AsyncWebsocketConsumer):
@@ -42,16 +41,22 @@ class Consumer(AsyncWebsocketConsumer):
     
     # 服务器接收到消息传递给指定用户
     async def receive(self, text_data):
-        print("receive")
         data = json.loads(text_data)
+        type=data.get('type',None)
         if 'currWindow' in data:
             global curr_window
             # Set the user_id or other properties in the currWindow dict
             curr_window[int(self.user_id)] = int(data['currWindow'])
             return
-        else:
+        if type=='user':
             try:
                 await self.send_message_to_user(data)
+            except Exception as e:
+                    res=format_msg(400,f'Error: {str(e)}')
+                    await self.send(text_data=res)
+        elif type=='group':
+            try:
+                await self.send_message_to_group(data)
             except Exception as e:
                     res=format_msg(400,f'Error: {str(e)}')
                     await self.send(text_data=res)
@@ -62,7 +67,7 @@ class Consumer(AsyncWebsocketConsumer):
     
 
     @database_sync_to_async
-    def save_message(self, data,isRead):
+    def save_user_message(self, data,isRead):
         content = data['content']
         receiver_id = data['receiverId']
         sender= User.objects.get(UserID=self.user_id)
@@ -77,7 +82,22 @@ class Consumer(AsyncWebsocketConsumer):
         serializer = MessageSerializer(msg)
         return serializer.data
         
+    @database_sync_to_async
+    def save_group_message(self, data,readBy):
+        content = data['content']
+        receiver_id = data['receiverId']
+        sender= User.objects.get(UserID=self.user_id)
         
+        receiver=Group.objects.get(GroupID=receiver_id)
+        msg=GroupMessage.objects.create(
+            Content=content,
+            Sender=sender,
+            ReceiverGroup=receiver,
+            ReadBy=readBy
+        )
+        serializer = GroupMessageSerializer(msg)
+        print(serializer.data)
+        return serializer.data
     # 如果收到来自其他用户的消息，发送给当前用户
     async def receive_from_others(self, event):
         resp = event['message']
@@ -97,12 +117,11 @@ class Consumer(AsyncWebsocketConsumer):
         if receiver_channel_name in self.channel_layer.groups:
             print("用户在线")
             print(curr_window)
-            # res=await self.save_message(data,isRead=False)
             if is_both_on_same_room(sender_id, receiver_id,curr_window):
                 print("用户在同一个房间")
-                res=await self.save_message(data,isRead=True)
+                res=await self.save_user_message(data,isRead=True)
             else:
-                res=await self.save_message(data,isRead=False)
+                res=await self.save_user_message(data,isRead=False)
  
             await self.channel_layer.group_send(
                 receiver_channel_name,
@@ -118,7 +137,7 @@ class Consumer(AsyncWebsocketConsumer):
         
         else:
             # 如果用户不在线，存储消息
-            res=await self.save_message(data,isRead=False)
+            res=await self.save_user_message(data,isRead=False)
             print("用户不在线")
             #todo:创建通知
 
@@ -128,3 +147,36 @@ class Consumer(AsyncWebsocketConsumer):
         await self.send(text_data=_res)
         
         
+    async def send_message_to_group(self, data):
+        group_id = data['receiverId']
+        sender_id = int(self.user_id)
+        #找出组内所有用户
+        group=Group.objects.get(GroupID=group_id)
+        members=group.GroupMembers.all()
+        readBy=[sender_id]
+        for member in members:
+            receiver_channel_name = f"user_{member.UserID}"
+            # 如果用户在线，直接发送消息            
+            if receiver_channel_name in self.channel_layer.groups:
+                if is_both_on_same_room(sender_id, member.UserID,curr_window):
+                    readBy.append(member.UserID)
+        res=await self.save_group_message(data,readBy)
+        
+        for reader in readBy:
+            receiver_channel_name = f"user_{reader}"
+            await self.channel_layer.group_send(
+                receiver_channel_name,
+                {
+                    'type': 'receive_from_others',
+                    'message': {
+                        'status_code': 200,
+                        'message': 'Message delivered',
+                        "data":res
+                    }
+                }
+            )
+                        
+        
+        
+        
+    

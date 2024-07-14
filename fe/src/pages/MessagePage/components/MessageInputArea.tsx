@@ -51,6 +51,7 @@ const MessageInputArea = () => {
         onClick={() => {
           if (!value || !params.receiverId) return
           const msg: MsgReqDTO = {
+            type: 'user',
             content: value,
             receiverId: parseInt(params.receiverId),
           }

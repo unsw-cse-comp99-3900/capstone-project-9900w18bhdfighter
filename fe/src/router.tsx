@@ -85,11 +85,7 @@ const routerConfig = [
           },
           {
             element: <MessageMain />,
-            path: `${route.MESSAGE}/user/:receiverId`,
-          },
-          {
-            element: <MessageMain />,
-            path: `${route.MESSAGE}/group/:groupId`,
+            path: `${route.MESSAGE}/:type/:receiverId`,
           },
         ],
       },
