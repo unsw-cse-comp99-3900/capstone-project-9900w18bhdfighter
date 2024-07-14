@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import route from './constant/route'
 import Projects from './pages/Projects'
 import Teams from './pages/Teams'
+import GroupDetail from './pages/GroupDetail'
 import AdminManagement from './pages/AdminManagement'
 import ProjectDetail from './pages/ProjectDetail'
 import MessagePage from './pages/MessagePage'
@@ -88,6 +89,11 @@ const routerConfig = [
             path: `${route.MESSAGE}/user/:receiverId`,
           },
         ],
+      },
+
+      {
+        element: <GroupDetail />,
+        path: `${route.GROUPDETAILS}/:id`,
       },
 
       {

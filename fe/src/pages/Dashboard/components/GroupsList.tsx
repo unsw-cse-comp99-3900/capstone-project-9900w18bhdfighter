@@ -58,7 +58,7 @@ const GroupsList = ({ className = '' }: Props) => {
         renderItem={(item) => (
           <List.Item
             actions={[
-              <LinkButton to="" key="list-loadmore-more">
+              <LinkButton to="/groupdetails/1" key="list-loadmore-more">
                 More
               </LinkButton>,
             ]}

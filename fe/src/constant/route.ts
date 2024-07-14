@@ -8,6 +8,7 @@ const route = {
   TEAMS: '/teams',
   ADMIN: '/admin',
   MESSAGE: '/message',
+  GROUPDETAILS: '/groupdetails',
 }
 
 export default route
