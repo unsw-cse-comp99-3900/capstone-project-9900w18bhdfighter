@@ -34,13 +34,15 @@ class GrouPostPreferenceSerializer(serializers.ModelSerializer):
     def validate(self, data):
         return data
 
-class GrouSkillEvaluationPreferenceSerializer(serializers.ModelSerializer):
+class GroupSkillEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Group
+        model = GroupSkillEvaluation
         fields = "__all__"
 
-    def validate(self, data):
-        return data
+class LgwGroupPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupPreference
+        fields = "__all__"
 
 class GrouSubmitPreferencesSerializer(serializers.ModelSerializer):
     class Meta:

@@ -41,7 +41,6 @@ class PartialRole(BasePermission):
                 user = User.objects.get(pk=user_data['user_id'])
             except Exception as e:
                 return False
-            print("permission_range: ", request.permission_range)
             if user.UserRole not in request.permission_range:
                 raise PermissionDenied('You do not have permission to perform this action.')
             request.user = user

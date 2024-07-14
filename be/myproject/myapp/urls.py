@@ -8,7 +8,8 @@ url.register(r'api/areas', views.AreaAPIView)
 url.register(r'api/messages', views.MessageAPIView)
 url.register(r'api/contacts', views.ContactAPIView)
 url.register(r'api/group-messages', views.GroupMessageAPIView)
-url.register(r'api/groups', views.GroupPreferenceAPIView)
+# url.register(r'api/groups', views.GroupPreferenceAPIView)
+url.register(r'api/groups', groups_views.GroupsAPIView)
 url.register(r'api/group-projects', views.GroupProjectsLinkAPIView)
 urlpatterns = [
     path("login/", views.student_login, name="student_login"),

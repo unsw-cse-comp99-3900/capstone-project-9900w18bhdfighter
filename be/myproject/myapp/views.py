@@ -636,16 +636,24 @@ class GroupPreferenceAPIView(GenericViewSet):
         return Response({
             "Preferences": current_preferences_serializer.data
         }, status=status.HTTP_200_OK)
-    
+
+
+
+
+
 
 def get_user_friendly_errors(serializer_errors):
  
     errors = {
         'errors': ''
     }
-    for _, value in serializer_errors.items():
-        errors['errors'] += f'{value[0]}\n'
-   
+    if isinstance(serializer_errors, dict):
+        for _, value in serializer_errors.items():
+            errors['errors'] += f'{_}: {value}\n'
+    elif isinstance(serializer_errors, list):
+        for dic in serializer_errors:
+            for _, value in dic.items():
+                errors['errors'] += f'{_}: {value}\n'
     return errors
 
 
