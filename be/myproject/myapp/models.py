@@ -78,7 +78,7 @@ class GroupPreference(models.Model):
     Preference = models.ForeignKey(Project, on_delete=models.CASCADE)
     Group = models.ForeignKey(Group, on_delete=models.CASCADE)
     Rank = models.IntegerField(choices=[(1, 1), (2, 2), (3, 3)])
-    lock = models.BooleanField(default=False, null=True, blank=True)
+    Lock = models.BooleanField(default=False, null=True, blank=True)
 
     def __str__(self):
         return str(self.PreferenceID)

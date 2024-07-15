@@ -44,10 +44,11 @@ class LgwGroupPreferenceSerializer(serializers.ModelSerializer):
         model = GroupPreference
         fields = "__all__"
 
-class GrouSubmitPreferencesSerializer(serializers.ModelSerializer):
+
+class GroupUpdatePreferencesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Group
-        fields = "__all__"
+        model = GroupPreference
+        fields = ["Rank","Preference"]
 
     def validate(self, data):
         return data
