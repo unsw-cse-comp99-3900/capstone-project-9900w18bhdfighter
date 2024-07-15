@@ -48,6 +48,8 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
       preferenceId: preference.PreferenceID,
       preference: mapProjectDTOToProject(preference.Preference),
       rank: preference.Rank,
+      lock: preference.Lock,
+      groupId: preference.Group,
     }
   })
 
