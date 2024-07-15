@@ -8,9 +8,3 @@ declare module 'styled-components' {
     themeColor: ThemeColor
   }
 }
-
-declare module 'axios' {
-  export interface AxiosRequestConfig {
-    requiresToken?: boolean
-  }
-}

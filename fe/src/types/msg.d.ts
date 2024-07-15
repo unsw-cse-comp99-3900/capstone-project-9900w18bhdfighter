@@ -1,6 +1,8 @@
+import { Group } from './group'
 import { UserProfileSlim, UserProfileSlimDTO } from './user'
 
 interface MsgReqDTO {
+  type: 'user' | 'group'
   content: string
   receiverId: number
 }
@@ -17,6 +19,9 @@ interface Contact {
   unreadMsgsCount: number
 }
 interface Conversation extends Contact {
+  messages: Msg[]
+}
+interface GroupConversation extends Group {
   messages: Msg[]
 }
 interface ContactReqDTO {
@@ -55,6 +60,7 @@ interface Msg {
   isRead: boolean
   ChannelId: string
 }
+
 interface MsgGrouped {
   [key: string]: Msg[]
 }
@@ -64,11 +70,20 @@ interface GroupContact {
   unreadMsgsCount: number
   msg: GroupMsg
 }
+interface GroupMsgDTO {
+  GroupMessageID: number
+  Content: string
+  Sender: number
+  ReceiverGroup: number
+  CreatedAt: string
+  ReadBy: number[]
+}
 interface GroupMsg {
   content: string
-  createdAt: string
   senderId: number
-  isRead: boolean
+  receiverGroupId: number
+  createdAt: string
+  readBy: number[]
 }
 export {
   Msg,
@@ -83,4 +98,7 @@ export {
   Conversation,
   MsgWSRspDTO,
   GroupContact,
+  GroupMsg,
+  GroupMsgDTO,
+  GroupConversation,
 }

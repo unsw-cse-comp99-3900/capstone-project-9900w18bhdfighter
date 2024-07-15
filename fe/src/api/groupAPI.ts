@@ -28,8 +28,15 @@ const getAutoCompleteGroups = async (groupName: string) => {
     },
   })
 }
-//mapper
+const getGroupListByUserId = async (userId: number) => {
+  return api.get<GroupRspDTO[]>(`api/groups/users/${userId}`)
+}
 
+const getGroupDetailByGroupId = async (groupId: number) => {
+  return api.get<GroupRspDTO>(`api/groups/${groupId}`)
+}
+
+//mapper
 const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
   groupRspDTO: GroupRspDTO
 ) => {
@@ -63,4 +70,6 @@ export {
   assignGroupToProject,
   removeGroupFromProject,
   getAutoCompleteGroups,
+  getGroupListByUserId,
+  getGroupDetailByGroupId,
 }

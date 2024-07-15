@@ -42,6 +42,9 @@ const SiderNav = () => {
             key: route.PROJECTS,
             icon: <AiFillProject />,
             label: 'Projects',
+            style: {
+              display: _role !== role.STUDENT ? 'block' : 'none',
+            },
           },
           {
             key: route.TEAMS,

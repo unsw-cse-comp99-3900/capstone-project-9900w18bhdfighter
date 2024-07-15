@@ -4,7 +4,7 @@ import { getThemeToken } from '../../../utils/styles'
 import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
 import GroupsListItem from './GroupListItem'
-import Filter from './Filter'
+
 interface DataType {
   gender?: string
   name: {
@@ -51,7 +51,6 @@ const GroupsList = ({ className = '' }: Props) => {
         header={
           <Flex justify="space-between" align="center">
             Groups List
-            <Filter />
           </Flex>
         }
         bordered

@@ -11,13 +11,13 @@ import {
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { useState } from 'react'
-import NewProjectModal from './components/NewProjectModal'
 import { ProjectReqDTO } from '../../types/proj'
 import ProjectContextProvider, {
   useProjectContext,
 } from '../../context/ProjectContext'
 import { Link } from 'react-router-dom'
 import route from '../../constant/route'
+import ModalProjectForm from '../../components/ModalProjectForm'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -46,11 +46,12 @@ const _Projects = () => {
   }
   return (
     <Wrapper>
-      <NewProjectModal
+      <ModalProjectForm
+        title="New Project"
         isModalOpen={isModalOpen}
         handleOk={handleOk}
         handleCancel={handleCancel}
-      ></NewProjectModal>
+      ></ModalProjectForm>
       <Header>
         <Typography.Title level={3}>My Projects</Typography.Title>
         <Button onClick={() => setIsModalOpen(true)} type="primary">
@@ -71,9 +72,15 @@ const _Projects = () => {
               <Flex vertical>
                 <Flex>
                   <Tooltip title={project.description}>
-                    <Typography.Paragraph ellipsis={{ rows: 3 }}>
-                      {project.description}
-                    </Typography.Paragraph>
+                    {project.description ? (
+                      <Typography.Paragraph ellipsis={{ rows: 3 }}>
+                        {project.description}
+                      </Typography.Paragraph>
+                    ) : (
+                      <Typography.Paragraph type="secondary">
+                        No Description Provided.
+                      </Typography.Paragraph>
+                    )}
                   </Tooltip>
                 </Flex>
               </Flex>

@@ -8,10 +8,14 @@ import {
   useState,
 } from 'react'
 import { useParams } from 'react-router-dom'
-import { Project } from '../../types/proj'
+import { Project, ProjectReqDTO } from '../../types/proj'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { Group } from '../../types/group'
-import { getProjectById, mapProjectDTOToProject } from '../../api/projectAPI'
+import {
+  getProjectById,
+  mapProjectDTOToProject,
+  updateProject,
+} from '../../api/projectAPI'
 import { getUserById } from '../../api/userAPI'
 import {
   assignGroupToProject,
@@ -32,6 +36,7 @@ interface ProjectDetailContextType {
   fetchProjectDetail: () => Promise<void>
   removeGroup: (_groupId: number) => Promise<void>
   addGroup: (_data: { GroupID: number; ProjectID: number }) => Promise<void>
+  updateCurrentGroup: (_projectUpdateDTO: ProjectReqDTO) => Promise<void>
 }
 
 const ProjectDetailContext = createContext({} as ProjectDetailContextType)
@@ -48,6 +53,7 @@ const ProjectDetailContextProvider = ({
   const [ownerName, setOwnerName] = useState<string | null>(null)
   const [creatorName, setCreatorName] = useState<string | null>(null)
   const [groupsList, setGroupsList] = useState<Group[] | null>(null)
+
   const { msg } = useGlobalComponentsContext()
 
   const fetchProjectDetail = async () => {
@@ -78,7 +84,16 @@ const ProjectDetailContextProvider = ({
       msg.err('Failed to remove group')
     }
   }
-
+  const updateCurrentGroup = async (projectUpdateDTO: ProjectReqDTO) => {
+    if (!id) return
+    try {
+      await updateProject(projectUpdateDTO, id)
+      await fetchProjectDetail()
+      msg.success('Update project success')
+    } catch (e) {
+      msg.err('Failed to update project')
+    }
+  }
   const addGroup = async (data: { GroupID: number; ProjectID: number }) => {
     try {
       await assignGroupToProject(data)
@@ -103,6 +118,7 @@ const ProjectDetailContextProvider = ({
     fetchProjectDetail,
     removeGroup,
     addGroup,
+    updateCurrentGroup,
   }
   return (
     <ProjectDetailContext.Provider value={ctx}>

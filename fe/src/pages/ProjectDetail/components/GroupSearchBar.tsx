@@ -23,7 +23,7 @@ const GroupSearchBar = () => {
   const [options, setOptions] = useState<GroupValue[]>([])
   const autoCompGroups = useRef<Group[]>([])
   const { msg } = useGlobalComponentsContext()
-  const { addGroup, project } = useProjectDetailContext()
+  const { addGroup, project, groupsList } = useProjectDetailContext()
   const debounceFetcher = useMemo(() => {
     const loadOptions = async (val: string) => {
       setOptions([])
@@ -32,8 +32,11 @@ const GroupSearchBar = () => {
       try {
         const res = await getAutoCompleteGroups(val)
         autoCompGroups.current = res.data.data.map(mapGroupDTOToGroup)
+        const groupsListWithoutCurrent = autoCompGroups.current.filter(
+          (group) => !groupsList?.find((g) => g.groupId === group.groupId)
+        )
         setOptions(
-          autoCompGroups.current.map((group) => ({
+          groupsListWithoutCurrent.map((group) => ({
             label: group.groupName,
             value: group.groupId,
           }))
@@ -49,6 +52,7 @@ const GroupSearchBar = () => {
   const handleSelect = async (newValue: unknown) => {
     if (!project) return
     await addGroup({ GroupID: newValue as number, ProjectID: project.id })
+    setOptions(options.filter((option) => option.value !== newValue))
     setValue(null)
   }
   return (

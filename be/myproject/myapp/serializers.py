@@ -39,6 +39,7 @@ class SkillProjectSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     RequiredSkills = serializers.SerializerMethodField()
     projectOwner_id = serializers.SerializerMethodField()
+    ProjectDescription = serializers.CharField( allow_blank=True)
     class Meta:
         model = Project
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
