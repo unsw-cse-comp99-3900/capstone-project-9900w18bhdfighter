@@ -62,6 +62,7 @@ const MsgRespDTOMapper: (_msg: MsgRspDTO) => Msg = (msg) => {
     ChannelId: msg.ChannelId,
   }
 }
+
 export {
   getAllMessagesMapper,
   getContactsMapper,

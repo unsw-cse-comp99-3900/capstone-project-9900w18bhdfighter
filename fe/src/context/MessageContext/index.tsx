@@ -16,22 +16,30 @@ import {
   ContactPostDTO,
   ContactUpdateDTO,
   Conversation,
+  GroupContact,
   GroupConversation,
   MsgGrouped,
+  WSMsgReqDTO,
 } from '../../types/msg'
 import {
   getMyContactList,
   getAutoCompleteContacts as getACC,
   addOneContact,
 } from '../../api/contactAPI'
-import { getAllMsgsMine, markMsgsFromOneContactAsRead } from '../../api/msgAPI'
+import {
+  getAllGroupContactMine,
+  getAllGroupMsgsMine,
+  getAllMsgsMine,
+  mapGroupContactDTOToGroupContact,
+  mapGroupMsgDTOToMsgGrouped,
+  markMsgsFromOneContactAsRead,
+  markMsgsFromOneGroupAsRead,
+} from '../../api/msgAPI'
 import {
   getAllMessagesMapper,
   getAutoCompleteContactsMapper,
   getContactsMapper,
 } from './mapper'
-import { getGroupListByUserId, mapGroupDTOToGroup } from '../../api/groupAPI'
-import { Group } from '../../types/group'
 import useCurrConversation from './hooks/useCurrConversation'
 import useCurrGroupConversation from './hooks/useGroupConversation'
 import useContactsDiff from './hooks/useContactsDiff'
@@ -56,8 +64,15 @@ export interface MessageContextType {
   params: Readonly<Partial<RouteParams>>
   contactList: Contact[] | null
   currConversation: Conversation | null
-  groupsList: Group[] | null
+  groupContactList: GroupContact[] | null
   currGroupConversation: GroupConversation | null
+  conversationType: 'group' | 'user' | undefined
+  groupMsgMap: MsgGrouped | null
+  msgMap: MsgGrouped | null
+  sendWSMsg: (_data: WSMsgReqDTO) => void
+  setGroupContactList: React.Dispatch<
+    React.SetStateAction<GroupContact[] | null>
+  >
 }
 
 const MessageContext = createContext({} as MessageContextType)
@@ -72,8 +87,11 @@ export const MessageContextProvider = ({ children }: Props) => {
     UserProfileSlim[]
   >([])
   const [contactList, setContactList] = useState<Contact[] | null>(null)
-  const [groupsList, setGroupsList] = useState<Group[] | null>(null)
+  const [groupContactList, setGroupContactList] = useState<
+    GroupContact[] | null
+  >(null)
   const [msgMap, setMsgMap] = useState<MsgGrouped | null>(null)
+  const [groupMsgMap, setGroupMsgMap] = useState<MsgGrouped | null>(null)
   const { msg } = useGlobalComponentsContext()
   const { usrInfo } = useAuthContext()
   const socketRef = useChatSocket({
@@ -81,6 +99,8 @@ export const MessageContextProvider = ({ children }: Props) => {
     setMsgMap,
     setContactList,
     msg,
+    setGroupMsgMap,
+    setGroupContactList,
   })
   const id = usrInfo?.id
   const params = useParams<RouteParams>()
@@ -96,9 +116,9 @@ export const MessageContextProvider = ({ children }: Props) => {
 
   //currGroupConversation is a group with messages
   const currGroupConversation = useCurrGroupConversation({
-    groupsList,
+    groupsList: groupContactList,
     receiverId: params.receiverId,
-    msgMap,
+    msgMap: groupMsgMap,
     id: id as number,
     type: params.type,
   })
@@ -189,11 +209,9 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
     }
   }
-  const getAllGroupMine = async () => {
-    if (!id) return
+  const markAsReadGroup = async (groupId: number) => {
     try {
-      const res = await getGroupListByUserId(id)
-      setGroupsList(res.data.map(mapGroupDTOToGroup))
+      await markMsgsFromOneGroupAsRead(groupId)
     } catch (err) {
       errHandler(
         err,
@@ -202,12 +220,60 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
     }
   }
-  //get all contacts and messages
+  const getAllGroupContacts = async () => {
+    if (!id) return
+    try {
+      const res = await getAllGroupContactMine()
+      setGroupContactList(
+        res.data.data.map((groupContact) =>
+          mapGroupContactDTOToGroupContact(groupContact)
+        )
+      )
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const getAllGroupMsgs = async () => {
+    if (!id) return
+    try {
+      const res = await getAllGroupMsgsMine()
+      setGroupMsgMap(mapGroupMsgDTOToMsgGrouped(res.data.data, id))
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const sendWSMsg = (data: WSMsgReqDTO) => {
+    try {
+      if (
+        !socketRef.current ||
+        socketRef.current.readyState !== WebSocket.OPEN
+      ) {
+        throw new Error('WebSocket is not open')
+      }
+
+      socketRef.current.send(JSON.stringify(data))
+    } catch (err) {
+      msg.err('Lost connection to server.')
+    }
+  }
+  //handle user messages
   useEffect(() => {
     getContacts()
     getAllMessages()
-    getAllGroupMine()
   }, [])
+  //handle group messages
+  useEffect(() => {
+    getAllGroupContacts()
+    getAllGroupMsgs()
+  }, [id])
   //add contact if receiverId is in params but not in contactList
   useEffect(() => {
     if (!contactList) return
@@ -227,24 +293,41 @@ export const MessageContextProvider = ({ children }: Props) => {
 
   //send currWindow to server
   useEffect(() => {
+    if (!params.receiverId || !params.type) return
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
       return
+    console.log(params)
 
-    socketRef.current.send(
-      JSON.stringify({ currWindow: params.receiverId || -1 })
-    )
-  }, [params.receiverId])
+    sendWSMsg({
+      type: params.type,
+      currWindow: parseInt(params.receiverId),
+      action: 'CHANGE_WINDOW',
+    })
+  }, [params, socketRef.current])
 
   //mark as read when conversation is opened
   useEffect(() => {
     if (!params.receiverId) return
     if (!currConversation) return
+
     const todo = async () => {
       await markAsRead(Number(params.receiverId))
       await getContacts()
     }
+
     if (currConversation?.unreadMsgsCount > 0) todo()
-  }, [params.receiverId, currConversation])
+  }, [params, currConversation])
+
+  //mark as read when group conversation is opened
+  useEffect(() => {
+    if (!params.receiverId) return
+    if (!currGroupConversation) return
+    const todoGroup = async () => {
+      await markAsReadGroup(Number(params.receiverId))
+      await getAllGroupContacts()
+    }
+    if (currGroupConversation?.unreadMsgsCount > 0) todoGroup()
+  }, [params.receiverId, currGroupConversation])
 
   // if someone not in contactList but in msgMap, add to contactList
   useEffect(() => {
@@ -275,8 +358,13 @@ export const MessageContextProvider = ({ children }: Props) => {
     contactList,
     currConversation,
     msgMap,
-    groupsList,
     currGroupConversation,
+    conversationType: params.type,
+    groupMsgMap,
+    sendWSMsg,
+    setGroupContactList,
+    groupContactList,
+    markAsReadGroup,
   }
 
   return (

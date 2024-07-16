@@ -20,7 +20,7 @@ from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
-from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupFetchSerializer, GroupMessageSerializer, \
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
@@ -814,7 +814,7 @@ class ContactAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.U
     serializer_class=ContactSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'destroy','list']:
+        if self.action in ['create', 'update', 'destroy','list','get_group_contact']:
             return [ForValidToken()]
         else:
             return []
@@ -852,6 +852,16 @@ class ContactAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.U
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
         
+    @action(detail=False, methods=['get'], url_path='groups')
+    def get_group_contact(self, request, *args, **kwargs):
+        user_id = self.request.user_id
+        # find all groups that the user is a member
+        queryset = Group.objects.filter(groupuserslink__UserID=user_id)
+        serializer = GroupContactSerializer(queryset, many=True, context=self.get_serializer_context())
+        
+        return JsonResponse({
+            'data': serializer.data,
+            }, status=status.HTTP_200_OK)
 
 class MessageAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = Message.objects.all()
@@ -892,7 +902,7 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
     queryset = GroupMessage.objects.all()
     serializer_class = GroupMessageSerializer
     def get_permissions(self):
-        if self.action in ['list']:
+        if self.action in ['list','mark_as_read','get_group_contact']:
             return [ForValidToken()]
         else:
             return []
@@ -912,6 +922,24 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<groupId>\d+)')
+    def mark_as_read(self, request, groupId=None):
+        user_id = self.get_serializer_context().get("requesterId")
+        if groupId:
+            # 获取符合条件的消息
+            messages = self.queryset.filter(ReceiverGroup=groupId)
+            # 将自己加入到readby字段中
+            for message in messages:
+                message.ReadBy.add(user_id)
+            return Response({"message": f"Messages marked as read."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid groupId"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+        
+       
+        
+   
+        
     @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<groupId>\d+)')
     def mark_as_read(self, request, groupId=None):
         user_id = self.get_serializer_context().get("requesterId")

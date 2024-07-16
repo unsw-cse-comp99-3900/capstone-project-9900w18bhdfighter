@@ -19,7 +19,7 @@ const ContactCard = styled(Flex)`
 
 type Props = Partial<FlexProps>
 const MessageSider = (props: Props) => {
-  const { contactList, groupsList } = useMessageContext()
+  const { contactList, groupContactList } = useMessageContext()
 
   const navigate = useNavigate()
 
@@ -60,7 +60,7 @@ const MessageSider = (props: Props) => {
       label: 'My Groups',
       children: (
         <List itemLayout="vertical">
-          {groupsList?.map((group) => (
+          {groupContactList?.map((group) => (
             <List.Item
               onClick={() => {
                 navigate(`/message/group/${group.groupId}`)
@@ -71,7 +71,16 @@ const MessageSider = (props: Props) => {
                 cursor: 'pointer',
               }}
             >
-              <ContactCard gap={'0.5rem'}>{group.groupName}</ContactCard>
+              <ContactCard gap={'0.5rem'}>
+                <Avatar
+                  firstName={group.groupName}
+                  lastName={''}
+                  emailForHashToColor={group.groupName}
+                  size={35}
+                ></Avatar>
+                {group.groupName}
+                {<Tag>{group.unreadMsgsCount} unread</Tag>}
+              </ContactCard>
             </List.Item>
           ))}
         </List>

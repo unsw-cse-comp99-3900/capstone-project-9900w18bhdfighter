@@ -11,7 +11,8 @@ const Header = styled(Flex)`
   align-items: center;
 `
 const MessageHeader = () => {
-  const { currConversation } = useMessageContext()
+  const { currConversation, params, currGroupConversation } =
+    useMessageContext()
   const { contact } = currConversation || {
     contact: {
       firstName: '...',
@@ -19,28 +20,47 @@ const MessageHeader = () => {
       email: '...',
     },
   }
-
-  return (
-    <Header gap={'0.5rem'}>
-      <Avatar
-        style={{
-          width: '2.5rem',
-          height: '2.5rem',
-        }}
-        firstName={contact.firstName}
-        lastName={contact.lastName}
-        emailForHashToColor={contact.email}
-      />
-      <Typography.Title
-        level={4}
-        onClick={() => {
-          console.log(currConversation)
-        }}
-      >
-        {`${contact.firstName} ${contact.lastName}`}
-      </Typography.Title>
-    </Header>
-  )
+  const { groupName } = currGroupConversation || {
+    groupName: '...',
+  }
+  if (params.type === 'user') {
+    return (
+      <Header gap={'0.5rem'}>
+        <Avatar
+          style={{
+            width: '2.5rem',
+            height: '2.5rem',
+          }}
+          firstName={contact.firstName}
+          lastName={contact.lastName}
+          emailForHashToColor={contact.email}
+        />
+        <Typography.Title
+          level={4}
+          onClick={() => {
+            console.log(currConversation)
+          }}
+        >
+          {`${contact.firstName} ${contact.lastName}`}
+        </Typography.Title>
+      </Header>
+    )
+  } else {
+    return (
+      <Header gap={'0.5rem'}>
+        <Avatar
+          style={{
+            width: '2.5rem',
+            height: '2.5rem',
+          }}
+          firstName={groupName}
+          lastName={''}
+          emailForHashToColor={groupName}
+        />
+        <Typography.Title level={4}>{groupName}</Typography.Title>
+      </Header>
+    )
+  }
 }
 
 export default MessageHeader
