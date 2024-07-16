@@ -1,4 +1,4 @@
-import { Form, Input, Modal, message } from 'antd'
+import { Form, Input, InputNumber, Modal, message } from 'antd'
 import React from 'react'
 import styled from 'styled-components'
 import { GroupReqDTO } from '../../../types/group'
@@ -84,9 +84,15 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
         <Form.Item
           label="Group Max Member Number"
           name="groupMaxMemberNumber"
-          rules={[{ required: true, message: 'Max Number is required' }]}
+          rules={[
+            {
+              required: true,
+              min: 1,
+              type: 'number',
+            },
+          ]}
         >
-          <Input />
+          <InputNumber defaultValue={1} style={{ width: '100%' }} min={1} />
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea />

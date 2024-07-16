@@ -2,15 +2,12 @@ import { Button, Descriptions, Flex, List, Tag, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
-
 import { nanoid } from 'nanoid'
-
 import route from '../../constant/route'
 import GroupSearchBar from './components/GroupSearchBar'
 import ProjectDetailContextProvider, {
   useProjectDetailContext,
 } from '../../context/ProjectDetailContext'
-
 import { useMemo, useState } from 'react'
 import { ProjectReqDTO } from '../../types/proj'
 import ModalProjectForm from '../../components/ModalProjectForm'

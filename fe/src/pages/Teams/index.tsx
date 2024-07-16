@@ -1,21 +1,32 @@
-import { Button, Divider, Typography, Card, message } from 'antd'
+import {
+  Button,
+  Divider,
+  Typography,
+  Card,
+  message,
+  Row,
+  Col,
+  Tooltip,
+} from 'antd'
 import styled from 'styled-components'
 import { useState, useEffect } from 'react'
 import NewGroupModal from './components/NewGroupDetailModal'
-import GroupDetailModal from './components/GroupDetailModal'
 import { Group, GroupCreate, GroupRspDTO } from '../../types/group'
 import { UserProfileSlim } from '../../types/user'
 import GroupContextProvider from '../../context/GroupContext'
 import api from '../../api/config'
-import { mapGroupDTOToGroup } from '../../api/groupAPI'
+import { getAllGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
 import { useAuthContext } from '../../context/AuthContext' // 确保路径正确
+import { getThemeToken } from '../../utils/styles'
+import { Link } from 'react-router-dom'
+import route from '../../constant/route'
 
 const Wrapper = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: ${getThemeToken('paddingLG', 'px')};
 `
 
 const Header = styled.div`
@@ -24,17 +35,10 @@ const Header = styled.div`
   align-items: center;
 `
 
-const CardContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 16px;
-`
+const CardContainer = styled(Row)``
 
 const _Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
   // const { createGroup } = useGroupContext()
   const { usrInfo } = useAuthContext()
@@ -43,8 +47,7 @@ const _Teams = () => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await api.get<GroupRspDTO[]>('/groups')
-        console.log(response)
+        const response = await getAllGroups()
         const allGroups = response.data.map(mapGroupDTOToGroup)
         // 过滤当前用户参与的小组
         const userGroups = allGroups.filter((group: Group) =>
@@ -81,14 +84,6 @@ const _Teams = () => {
     setIsModalOpen(false)
   }
 
-  const handleCardClick = (group: Group) => {
-    setSelectedGroup(group)
-  }
-
-  const handleDetailModalClose = () => {
-    setSelectedGroup(null)
-  }
-
   return (
     <Wrapper>
       <NewGroupModal
@@ -96,13 +91,7 @@ const _Teams = () => {
         handleOk={handleOk}
         handleCancel={handleCancel}
       />
-      {selectedGroup && (
-        <GroupDetailModal
-          isVisible={!!selectedGroup}
-          group={selectedGroup}
-          handleClose={handleDetailModalClose}
-        />
-      )}
+
       <Header>
         <Typography.Title level={3}>My Groups</Typography.Title>
         <Button onClick={() => setIsModalOpen(true)} type="primary">
@@ -112,16 +101,27 @@ const _Teams = () => {
       <Divider />
       <CardContainer>
         {groups.map((group) => (
-          <Card
-            key={group.groupId} // 确保使用 group.groupId 作为唯一的 key
-            title={group.groupName}
-            style={{ width: 300 }}
-            onClick={() => handleCardClick(group)}
-          >
-            <Typography.Paragraph>
-              {group.groupDescription}
-            </Typography.Paragraph>
-          </Card>
+          <Col key={group.groupId} xs={24} sm={12} md={8} lg={6}>
+            <Card
+              title={group.groupName}
+              style={{
+                height: '10rem',
+              }}
+              extra={<Link to={`${route.GROUPS}/${group.groupId}`}>More</Link>}
+            >
+              <Tooltip title={group.groupDescription}>
+                {group.groupDescription ? (
+                  <Typography.Paragraph ellipsis={{ rows: 3 }}>
+                    {group.groupDescription}
+                  </Typography.Paragraph>
+                ) : (
+                  <Typography.Paragraph type="secondary">
+                    No Description Provided.
+                  </Typography.Paragraph>
+                )}
+              </Tooltip>
+            </Card>
+          </Col>
         ))}
       </CardContainer>
     </Wrapper>

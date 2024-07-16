@@ -11,12 +11,12 @@ import Profile from './pages/Profile'
 import route from './constant/route'
 import Projects from './pages/Projects'
 import Teams from './pages/Teams'
-import GroupDetail from './pages/GroupDetail'
 import AdminManagement from './pages/AdminManagement'
 import ProjectDetail from './pages/ProjectDetail'
 import MessagePage from './pages/MessagePage'
 import MessageLanding from './pages/MessagePage/components/MessageLanding'
 import { MessageMain } from './pages/MessagePage/components/MessageMain'
+import GroupDetail from './pages/GroupDetail'
 
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
@@ -62,6 +62,10 @@ const routerConfig = [
         path: route.PROFILE,
       },
       {
+        element: <Profile />,
+        path: `${route.PROFILE}/:id`,
+      },
+      {
         element: <Projects />,
         path: route.PROJECTS,
       },
@@ -88,16 +92,7 @@ const routerConfig = [
             element: <MessageMain />,
             path: `${route.MESSAGE}/:type/:receiverId`,
           },
-          {
-            element: <MessageMain />,
-            path: `${route.MESSAGE}/group/:groupId`,
-          },
         ],
-      },
-
-      {
-        element: <GroupDetail />,
-        path: `${route.GROUPDETAILS}/:id`,
       },
 
       {

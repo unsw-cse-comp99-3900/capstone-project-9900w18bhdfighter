@@ -111,4 +111,14 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         serializers = group_seria.LgwGroupPreferenceSerializer(group_preferences, many=True)
         return JsonResponse(serializers.data, status=status.HTTP_200_OK,safe=False)
         
-
+    @action(detail=True, methods=['get'], url_path='autocomplete-name', url_name='autocomplete_groups')
+    def autocomplete_groups(self,request, *args, **kwargs):
+        print("autocomplete groups")
+        group_substring = request.query_params.get('name_substring', None)
+        if group_substring:
+            queryset = Group.objects.filter(GroupName__icontains=group_substring)
+            #选取前10个
+            queryset = queryset[:10]
+            serializer = GroupFetchSerializer(queryset, many=True)
+            return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+        return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)

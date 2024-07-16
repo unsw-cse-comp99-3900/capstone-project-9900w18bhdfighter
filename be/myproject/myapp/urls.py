@@ -8,7 +8,6 @@ url.register(r'api/areas', views.AreaAPIView)
 url.register(r'api/messages', views.MessageAPIView)
 url.register(r'api/contacts', views.ContactAPIView)
 url.register(r'api/group-messages', views.GroupMessageAPIView)
-# url.register(r'api/groups', views.GroupPreferenceAPIView)
 url.register(r'api/groups', groups_views.GroupsAPIView)
 url.register(r'api/group-projects', views.GroupProjectsLinkAPIView)
 urlpatterns = [
@@ -31,9 +30,12 @@ urlpatterns = [
     path('api/notifications/<int:notificationReceiverId>/status', views.update_notification_status,name='update_notification_status'),
     path('api/notifications/<int:notificationReceiverId>/delete', views.delete_notification,name='delete_notification'),
     path('api/group-projects/<int:projectID>/<int:groupID>/', views.GroupProjectsLinkAPIView.as_view({'delete': 'destroy'})),
-    path('api/groups/autocomplete-name',views.autocomplete_groups,name='autocomplete_groups'),
     path("api/projects/users/<int:id>/", views.get_projects_by_participant,name="get_projects_by_participant"),
+    path("api/groups/users/<int:id>/", views.get_groups_by_participant,name="get_groups_by_participant"),
+    path("api/groups/<int:id>/", views.get_group_detail,name="get_group_detail"),
+    path("api/groups/autocomplete-name", groups_views.GroupsAPIView.as_view({'get': 'autocomplete_groups'}), name="autocomplete_groups"),
 ]
 
 
 urlpatterns += url.urls
+

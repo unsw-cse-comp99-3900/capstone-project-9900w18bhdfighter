@@ -10,6 +10,7 @@ import {
   Modal,
   Input,
   message,
+  Form,
 } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
@@ -28,11 +29,20 @@ import {
   GroupJoinDTO,
   GroupRspDTO,
 } from '../../types/group'
+import { roleNames } from '../../constant/role'
+import GroupDetailModal from '../Teams/components/GroupDetailModal'
+import ModalGroupForm from './components/GroupEditModal'
+import Paragraph from 'antd/es/typography/Paragraph'
+import api from '../../api/config'
 
 interface ErrorResponse {
   error: string
 }
-
+export type GroupDetailModalType =
+  | 'detail'
+  | 'metaEdit'
+  | 'allocation'
+  | 'confirm'
 // Mock API function
 const fakeApiAllocateProject = (): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -95,16 +105,13 @@ const DescriptionsContainer = styled.div`
 `
 
 const InnerDescriptionsContainer = styled.div`
-  max-width: 80%; /* Control the width of the table */
+  width: 100%;
 `
-
-const roleMap: { [key: number]: string } = {
-  1: 'student',
-  2: 'coordinator',
-  3: 'client',
-  4: 'admin',
-  5: 'tutor',
-}
+const EditWrapper = styled(Flex)`
+  width: 100%;
+  justify-content: flex-end;
+`
+const roleMap = roleNames
 
 const potentialMembers = [
   'Potential Member 1',
@@ -128,11 +135,20 @@ const GroupDetail = () => {
   ])
   const [newProjectPreference, setNewProjectPreference] = useState<string>('')
   const [selectedProject, setSelectedProject] = useState<string>('')
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [allocationResults, setAllocationResults] = useState<string | null>(
     null
   )
   const [allocationError, setAllocationError] = useState<string | null>(null)
+  const [open, setOpen] = useState({
+    detail: false,
+    metaEdit: false,
+    allocation: false,
+    confirm: false,
+  })
+  const [form] = Form.useForm()
+  const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
+  const hasProjectPreferencesAccess =
+    userRole && ['coordinator', 'admin', 'tutor'].includes(userRole)
 
   useEffect(() => {
     const fetchGroupDetails = async () => {
@@ -328,8 +344,30 @@ const GroupDetail = () => {
     }
   }
 
+  const handleModalClose = (type: GroupDetailModalType) => {
+    const dict = {
+      detail: () => setOpen({ ...open, detail: false }),
+      metaEdit: () => setOpen({ ...open, metaEdit: false }),
+      allocation: () => {
+        setOpen({ ...open, allocation: false })
+        setAllocationResults(null)
+        setAllocationError(null)
+      },
+      confirm: () => setOpen({ ...open, confirm: false }),
+    }
+    dict[type]()
+  }
+  const handleModalOpen = (type: GroupDetailModalType) => {
+    const dict = {
+      detail: () => setOpen({ ...open, detail: true }),
+      metaEdit: () => setOpen({ ...open, metaEdit: true }),
+      allocation: () => setOpen({ ...open, allocation: true }),
+      confirm: () => setOpen({ ...open, confirm: true }),
+    }
+    dict[type]()
+  }
   const handleAllocateProject = async () => {
-    setIsModalOpen(true)
+    handleModalOpen('allocation')
     setAllocationResults(null)
     setAllocationError(null)
     try {
@@ -340,15 +378,17 @@ const GroupDetail = () => {
     }
   }
 
-  const handleModalClose = () => {
-    setIsModalOpen(false)
-    setAllocationResults(null)
-    setAllocationError(null)
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields()
+      // Send the form data to the backend
+      await api.post('/api/savePreferences', values)
+      message.success('Preferences saved successfully')
+      handleModalClose('metaEdit')
+    } catch (error) {
+      message.error('Failed to save preferences')
+    }
   }
-
-  const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
-  const hasProjectPreferencesAccess =
-    userRole && ['coordinator', 'admin', 'tutor'].includes(userRole)
 
   if (loading) {
     return (
@@ -357,9 +397,44 @@ const GroupDetail = () => {
       </Wrapper>
     )
   }
-
   return (
     <Wrapper>
+      <Modal
+        title="Confirm Save"
+        open={open.confirm}
+        onOk={handleSave}
+        onCancel={() => handleModalClose('confirm')}
+      >
+        <Paragraph>
+          Are you sure you want to submit your project preferences? Once
+          submitted, they cannot be changed.
+        </Paragraph>
+      </Modal>
+      <GroupDetailModal
+        form={form}
+        isVisible={open.detail}
+        handleMultipleModalClose={handleModalClose}
+        handleMultipleModalOpen={handleModalOpen}
+        group={group}
+      ></GroupDetailModal>
+      <ModalGroupForm
+        title="Edit Group Meta Data"
+        initialData={group || undefined}
+        isModalOpen={open.metaEdit}
+        handleOk={() => handleModalClose('metaEdit')}
+        handleCancel={() => handleModalClose('metaEdit')}
+      ></ModalGroupForm>
+      <EditWrapper gap={10}>
+        <Button type="primary" onClick={() => handleModalOpen('detail')}>
+          Manage Preference
+        </Button>
+        {/* 
+        todo: 只给admin展示
+        */}
+        <Button type="primary" onClick={() => handleModalOpen('metaEdit')}>
+          Edit Group Meta Data
+        </Button>
+      </EditWrapper>
       <DescriptionsContainer>
         <InnerDescriptionsContainer>
           <Descriptions bordered title="Group Detail">
@@ -493,8 +568,8 @@ const GroupDetail = () => {
 
       <Modal
         title="Project Allocation"
-        visible={isModalOpen}
-        onCancel={handleModalClose}
+        open={open.allocation}
+        onCancel={() => handleModalClose('allocation')}
         footer={null}
       >
         <StyledModalContent>

@@ -1134,16 +1134,6 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
 
-#autocompletegroups
-
-@api_view(['GET'])
-def autocomplete_groups(request):
-    group_substring = request.GET.get('name_substring', None)
-    if group_substring:
-        queryset = Group.objects.filter(GroupName__icontains=group_substring)
-        serializer = GroupFetchSerializer(queryset, many=True)
-        return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
-    return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def get_projects_by_participant(request, id):

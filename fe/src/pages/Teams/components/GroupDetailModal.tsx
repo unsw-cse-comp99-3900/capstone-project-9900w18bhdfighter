@@ -1,22 +1,11 @@
-import {
-  Modal,
-  Descriptions,
-  Button,
-  Form,
-  Input,
-  Select,
-  Typography,
-  Row,
-  message,
-} from 'antd'
-import React, { useState } from 'react'
+import { Modal, Button, Form, Input, Select, Typography, Flex } from 'antd'
+import type { FormInstance } from 'antd'
+import React from 'react'
 import styled from 'styled-components'
 import type { SelectProps } from 'antd/es/select'
-import axios from 'axios'
 import { UserProfileSlim } from '../../../types/user'
 import { Project } from '../../../types/proj'
-
-const { Title, Paragraph } = Typography
+import { GroupDetailModalType } from '../../GroupDetail'
 
 interface GroupPreference {
   preferenceId: number
@@ -36,19 +25,11 @@ interface Group {
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isVisible: boolean
-  group: Group
-  handleClose: () => void
+  group: Group | null
+  handleMultipleModalClose: (_type: GroupDetailModalType) => void
+  handleMultipleModalOpen: (_type: GroupDetailModalType) => void
+  form: FormInstance
 }
-
-const StyledDescriptions = styled(Descriptions)`
-  width: 100%;
-  .ant-descriptions-item-label {
-    width: 30%;
-  }
-  .ant-descriptions-item-content {
-    width: 70%;
-  }
-`
 
 const _Modal = styled(Modal)`
   width: 800px;
@@ -101,20 +82,11 @@ for (let i = 0; i <= 10; i++) {
   })
 }
 
-const ProjectPreference = ({
-  name,
-  isEditable,
-}: {
-  name: number
-  isEditable: boolean
-}) => (
-  <React.Fragment>
-    <Title
-      level={4}
-      style={{ width: '100%', textAlign: 'left', marginTop: '1rem' }}
-    >
+const ProjectPreference = ({ name }: { name: number }) => (
+  <Flex vertical style={{ width: '100%' }}>
+    <Typography.Text style={{ margin: '0.25rem 0' }}>
       Project Preference {name + 1}
-    </Title>
+    </Typography.Text>
     <Form.Item
       name={[name, 'project']}
       rules={[{ required: true, message: 'Missing Project' }]}
@@ -123,7 +95,6 @@ const ProjectPreference = ({
         placeholder="Select Project"
         options={options}
         defaultActiveFirstOption={true}
-        disabled={!isEditable}
       />
     </Form.Item>
     <Form.List name={[name, 'skills']}>
@@ -137,7 +108,7 @@ const ProjectPreference = ({
                   name={[skillName, 'skill']}
                   rules={[{ required: true, message: 'Missing Skill' }]}
                 >
-                  <Input placeholder="Skill Name" disabled={!isEditable} />
+                  <Input placeholder="Skill Name" />
                 </Form.Item>
               </ItemWrapper>
               <ItemWrapper>
@@ -150,7 +121,6 @@ const ProjectPreference = ({
                     placeholder="Rate Skill (0-10)"
                     options={ratingOptions}
                     defaultActiveFirstOption={true}
-                    disabled={!isEditable}
                   />
                 </Form.Item>
               </ItemWrapper>
@@ -163,81 +133,43 @@ const ProjectPreference = ({
                   <Input.TextArea
                     placeholder="Comments"
                     autoSize={{ minRows: 1, maxRows: 1 }}
-                    disabled={!isEditable}
                   />
                 </Form.Item>
               </ItemWrapper>
-              {isEditable && (
-                <Button onClick={() => remove(skillName)}>-</Button>
-              )}
+
+              <Button onClick={() => remove(skillName)}>-</Button>
             </ListItemWrapper>
           ))}
-          {isEditable && (
-            <Form.Item>
-              <Button type="dashed" onClick={add} block>
-                Add Group Member Evaluation
-              </Button>
-            </Form.Item>
-          )}
+
+          <Form.Item>
+            <Button type="dashed" onClick={add} block>
+              Add Group Member Evaluation
+            </Button>
+          </Form.Item>
         </ListWrapper>
       )}
     </Form.List>
-  </React.Fragment>
+  </Flex>
 )
 
-const GroupDetailModal = ({ isVisible, group, handleClose }: Props) => {
-  const [form] = Form.useForm()
-  const [isEditable, setIsEditable] = useState(false)
-  const [confirmVisible, setConfirmVisible] = useState(false)
-
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields()
-      // Send the form data to the backend
-      await axios.post('/api/savePreferences', values)
-      message.success('Preferences saved successfully')
-      setIsEditable(false)
-      setConfirmVisible(false)
-    } catch (error) {
-      message.error('Failed to save preferences')
-    }
-  }
-
-  const handleConfirmSave = () => {
-    setConfirmVisible(true)
-  }
-
-  const handleConfirmCancel = () => {
-    setConfirmVisible(false)
-  }
-
+const GroupDetailModal = ({
+  isVisible,
+  group,
+  form,
+  handleMultipleModalClose,
+  handleMultipleModalOpen,
+}: Props) => {
   return (
     <_Modal
-      title={group.groupName}
+      title={group?.groupName}
       open={isVisible}
-      onCancel={handleClose}
-      footer={null}
+      onCancel={() => handleMultipleModalClose('detail')}
+      onOk={() => handleMultipleModalOpen('confirm')}
     >
-      <Row justify="end" style={{ marginBottom: '1rem' }}>
-        <Button
-          onClick={() =>
-            isEditable ? handleConfirmSave() : setIsEditable(true)
-          }
-        >
-          {isEditable ? 'Save' : 'Edit'}
-        </Button>
-      </Row>
-      <StyledDescriptions bordered column={1}>
-        <Descriptions.Item label="Group Name">
-          {group.groupName}
-        </Descriptions.Item>
-        <Descriptions.Item label="Description">
-          {group.groupDescription}
-        </Descriptions.Item>
-        {/* <Descriptions.Item label="Group Owner">
+      {/* <Descriptions.Item label="Group Owner">
           {group.groupOwner}
         </Descriptions.Item> */}
-      </StyledDescriptions>
+
       <Form
         layout="vertical"
         initialValues={{
@@ -251,20 +183,9 @@ const GroupDetailModal = ({ isVisible, group, handleClose }: Props) => {
         style={{ width: '100%', marginTop: '0.5rem' }}
       >
         {Array.from({ length: 3 }, (_, index) => (
-          <ProjectPreference key={index} name={index} isEditable={isEditable} />
+          <ProjectPreference key={index} name={index} />
         ))}
       </Form>
-      <Modal
-        title="Confirm Save"
-        visible={confirmVisible}
-        onOk={handleSave}
-        onCancel={handleConfirmCancel}
-      >
-        <Paragraph>
-          Are you sure you want to submit your project preferences? Once
-          submitted, they cannot be changed.
-        </Paragraph>
-      </Modal>
     </_Modal>
   )
 }
