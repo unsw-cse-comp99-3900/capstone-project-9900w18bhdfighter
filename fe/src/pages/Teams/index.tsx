@@ -1,66 +1,80 @@
-import { Button, Divider, Flex, Typography, Card } from 'antd'
+import { Button, Divider, Typography, Card, message } from 'antd'
 import styled from 'styled-components'
-import { getThemeToken } from '../../utils/styles'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import NewGroupModal from './components/NewGroupDetailModal'
 import GroupDetailModal from './components/GroupDetailModal'
-import { GroupCreate, Group } from '../../types/grp'
-import GroupContextProvider, {
-  useGroupContext,
-} from '../../context/GroupContext'
+import { Group, GroupCreate, GroupRspDTO } from '../../types/group'
+import { UserProfileSlim } from '../../types/user'
+import GroupContextProvider from '../../context/GroupContext'
+import api from '../../api/config'
+import { mapGroupDTOToGroup } from '../../api/groupAPI'
+import { useAuthContext } from '../../context/AuthContext' // 确保路径正确
 
-const Wrapper = styled(Flex)`
+const Wrapper = styled.div`
   width: 100%;
   height: 100%;
+  display: flex;
   flex-direction: column;
-  padding: ${getThemeToken('paddingLG', 'px')};
+  padding: 16px;
 `
 
-const Header = styled(Flex)`
+const Header = styled.div`
+  display: flex;
   justify-content: space-between;
   align-items: center;
 `
 
-const CardContainer = styled(Flex)`
+const CardContainer = styled.div`
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: ${getThemeToken('paddingMD', 'px')};
-  margin-top: ${getThemeToken('paddingLG', 'px')};
+  gap: 16px;
+  margin-top: 16px;
 `
-
-// 默认数据
-const defaultGroups: Group[] = [
-  {
-    id: 1,
-    name: 'Group 1',
-    description: 'This is group 1 description',
-    owner: 'owner1@example.com',
-  },
-  {
-    id: 2,
-    name: 'Group 2',
-    description: 'This is group 2 description',
-    owner: 'owner2@example.com',
-  },
-  {
-    id: 3,
-    name: 'Group 3',
-    description: 'This is group 3 description',
-    owner: 'owner3@example.com',
-  },
-]
 
 const _Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<Partial<Group> | null>(
-    null
-  )
-  const { createGroup } = useGroupContext()
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
+  const [groups, setGroups] = useState<Group[]>([])
+  // const { createGroup } = useGroupContext()
+  const { usrInfo } = useAuthContext()
+  const currentUserId = usrInfo?.id
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await api.get<GroupRspDTO[]>('/groups')
+        console.log(response)
+        const allGroups = response.data.map(mapGroupDTOToGroup)
+        // 过滤当前用户参与的小组
+        const userGroups = allGroups.filter((group: Group) =>
+          group.groupMembers.some(
+            (member: UserProfileSlim) => member.id === currentUserId
+          )
+        )
+        setGroups(userGroups)
+      } catch (error) {
+        message.error('Failed to fetch groups.')
+      }
+    }
+
+    if (currentUserId) {
+      fetchGroups()
+    }
+  }, [currentUserId])
 
   const handleOk = async (groupCreateDto: GroupCreate) => {
-    createGroup(groupCreateDto)
+    console.log('handleOk started with:', groupCreateDto)
     setIsModalOpen(false)
-    // 此处可以添加获取最新组数据的逻辑
+    // 获取最新组数据的逻辑
+    const response = await api.get<GroupRspDTO[]>('/groups')
+    const allGroups = response.data.map(mapGroupDTOToGroup)
+    const userGroups = allGroups.filter((group: Group) =>
+      group.groupMembers.some(
+        (member: UserProfileSlim) => member.id === currentUserId
+      )
+    )
+    setGroups(userGroups)
   }
 
   const handleCancel = () => {
@@ -82,11 +96,13 @@ const _Teams = () => {
         handleOk={handleOk}
         handleCancel={handleCancel}
       />
-      <GroupDetailModal
-        isVisible={!!selectedGroup}
-        group={selectedGroup || { id: 0, name: '', description: '', owner: '' }}
-        handleClose={handleDetailModalClose}
-      />
+      {selectedGroup && (
+        <GroupDetailModal
+          isVisible={!!selectedGroup}
+          group={selectedGroup}
+          handleClose={handleDetailModalClose}
+        />
+      )}
       <Header>
         <Typography.Title level={3}>My Groups</Typography.Title>
         <Button onClick={() => setIsModalOpen(true)} type="primary">
@@ -95,14 +111,16 @@ const _Teams = () => {
       </Header>
       <Divider />
       <CardContainer>
-        {defaultGroups.map((group) => (
+        {groups.map((group) => (
           <Card
-            key={group.id}
-            title={group.name}
+            key={group.groupId} // 确保使用 group.groupId 作为唯一的 key
+            title={group.groupName}
             style={{ width: 300 }}
             onClick={() => handleCardClick(group)}
           >
-            <Typography.Paragraph>{group.description}</Typography.Paragraph>
+            <Typography.Paragraph>
+              {group.groupDescription}
+            </Typography.Paragraph>
           </Card>
         ))}
       </CardContainer>

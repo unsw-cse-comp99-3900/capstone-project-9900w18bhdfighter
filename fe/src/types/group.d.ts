@@ -1,11 +1,33 @@
 import { Project, ProjectRespDTO } from './proj'
 import { UserProfileSlim, UserProfileSlimDTO } from './user'
 
+type GroupCreate = {
+  GroupName: string
+  GroupDescription: string
+  // GroupOwner: string
+}
+
+interface GroupReqDTO {
+  GroupName: string
+  GroupDescription: string
+  MaxMemberNumber: number
+}
+
+interface GroupJoinDTO {
+  group_id: number
+  student_id: number
+}
+
+interface GroupLeaveDTO {
+  group_id: number
+  student_id: number
+}
 interface GroupPreferenceDTO {
   PreferenceID: number
   Preference: ProjectRespDTO
   Rank: number
 }
+
 interface GroupPreference {
   preferenceId: number
   preference: Project
@@ -34,4 +56,12 @@ interface Group {
   preferences: GroupPreference[]
 }
 
-export { GroupRspDTO, Group, GroupPreferenceDTO }
+export {
+  GroupRspDTO,
+  Group,
+  GroupPreferenceDTO,
+  GroupCreate,
+  GroupReqDTO,
+  GroupJoinDTO,
+  GroupLeaveDTO,
+}

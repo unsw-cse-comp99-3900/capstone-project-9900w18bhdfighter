@@ -5,7 +5,6 @@ import {
   Form,
   Input,
   Select,
-  Flex,
   Typography,
   Row,
   message,
@@ -14,19 +13,30 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import type { SelectProps } from 'antd/es/select'
 import axios from 'axios'
+import { UserProfileSlim } from '../../../types/user'
+import { Project } from '../../../types/proj'
 
 const { Title, Paragraph } = Typography
 
+interface GroupPreference {
+  preferenceId: number
+  preference: Project
+  rank: number
+}
 interface Group {
-  id: number
-  name: string
-  description: string
-  owner: string
+  groupId: number
+  groupName: string
+  groupDescription: string
+  maxMemberNum: number
+  groupMembers: UserProfileSlim[]
+  groupOwner: string
+  createdBy: number
+  preferences: GroupPreference[]
 }
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isVisible: boolean
-  group: Partial<Group>
+  group: Group
   handleClose: () => void
 }
 
@@ -41,37 +51,37 @@ const StyledDescriptions = styled(Descriptions)`
 `
 
 const _Modal = styled(Modal)`
-  width: 800px; /* Adjust width as needed */
+  width: 800px;
   .ant-modal-body {
     display: flex;
     flex-direction: column;
   }
 `
 
-const ListWrapper = styled(Flex)`
+const ListWrapper = styled.div`
   flex-direction: column;
   width: 100%;
 `
 
-const ListItemWrapper = styled(Flex)`
+const ListItemWrapper = styled.div`
   width: 100%;
-  flex-direction: row; /* Arrange items horizontally */
+  flex-direction: row;
   align-items: center;
-  margin-bottom: 0.25rem; /* Reduced margin between rows */
+  margin-bottom: 0.25rem;
 `
 
 const ItemWrapper = styled.div`
   flex: 1;
   margin-right: 0.5rem;
   .ant-form-item {
-    margin-bottom: 0.25rem; /* Reduced margin between form items */
+    margin-bottom: 0.25rem;
   }
   .ant-select-selector,
   .ant-input {
-    height: 32px; /* Reduced height for select and input */
+    height: 32px;
   }
   .ant-input-textarea {
-    height: 32px; /* Reduced height for textarea */
+    height: 32px;
   }
 `
 
@@ -203,7 +213,7 @@ const GroupDetailModal = ({ isVisible, group, handleClose }: Props) => {
 
   return (
     <_Modal
-      title={group.name}
+      title={group.groupName}
       open={isVisible}
       onCancel={handleClose}
       footer={null}
@@ -218,11 +228,15 @@ const GroupDetailModal = ({ isVisible, group, handleClose }: Props) => {
         </Button>
       </Row>
       <StyledDescriptions bordered column={1}>
-        <Descriptions.Item label="Group Name">{group.name}</Descriptions.Item>
-        <Descriptions.Item label="Description">
-          {group.description}
+        <Descriptions.Item label="Group Name">
+          {group.groupName}
         </Descriptions.Item>
-        <Descriptions.Item label="Group Owner">{group.owner}</Descriptions.Item>
+        <Descriptions.Item label="Description">
+          {group.groupDescription}
+        </Descriptions.Item>
+        {/* <Descriptions.Item label="Group Owner">
+          {group.groupOwner}
+        </Descriptions.Item> */}
       </StyledDescriptions>
       <Form
         layout="vertical"

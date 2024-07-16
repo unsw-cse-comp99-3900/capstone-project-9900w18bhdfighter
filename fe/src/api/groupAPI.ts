@@ -1,13 +1,41 @@
-import { Group, GroupRspDTO } from '../types/group'
+import {
+  Group,
+  GroupRspDTO,
+  GroupReqDTO,
+  GroupJoinDTO,
+  GroupLeaveDTO,
+} from '../types/group'
 import api from './config'
 import { mapProjectDTOToProject } from './projectAPI'
 import { mapUserSlimProfileDTOUserProfileSlim } from './userAPI'
 
+// post request
+const createGroup = async (grp: GroupReqDTO) => {
+  return api.post<GroupRspDTO>('group_creation/', grp)
+}
+
+const joinGroup = async (grp: GroupJoinDTO) => {
+  return api.post<GroupJoinDTO[]>('/group_join/', grp)
+}
+
+const leaveGroup = async (grp: GroupLeaveDTO) => {
+  return api.post<GroupLeaveDTO[]>('/group_leave/', grp)
+}
+
+// get api
 const getAllGroups = async () => {
   return api.get<GroupRspDTO[]>('groups')
 }
+
 const getGroupByProjectId = async (projectId: number | string) => {
   return api.get<GroupRspDTO[]>(`groups/${projectId}`)
+}
+
+const getGroupByParticipant = async (groupId: string | number) => {
+  return api.get<GroupRspDTO[]>(`api/groups/users/${groupId}/`)
+}
+const getGroupPreferencesById = async (groupId: string | number) => {
+  return api.get<GroupRspDTO[]>(`api/groups//${groupId}preferences/`)
 }
 
 const assignGroupToProject = async (data: {
@@ -63,4 +91,9 @@ export {
   assignGroupToProject,
   removeGroupFromProject,
   getAutoCompleteGroups,
+  getGroupByParticipant,
+  createGroup,
+  getGroupPreferencesById,
+  joinGroup,
+  leaveGroup,
 }

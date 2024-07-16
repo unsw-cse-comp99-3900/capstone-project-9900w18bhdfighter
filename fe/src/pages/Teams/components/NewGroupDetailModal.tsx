@@ -1,14 +1,18 @@
-import { Form, Input, Modal } from 'antd'
-import React, { useState } from 'react'
+import { Form, Input, Modal, message } from 'antd'
+import React from 'react'
 import styled from 'styled-components'
-import { GroupCreate } from '../../../types/grp'
+import { GroupReqDTO } from '../../../types/group'
 import api from '../../../api/config'
-import type { RuleObject } from 'antd/es/form'
+import { AxiosError } from 'axios'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
-  handleOk: (_projectCreateDto: GroupCreate) => void
+  handleOk: (_groupCreateDto: GroupReqDTO) => void
   handleCancel: () => void
+}
+
+interface ErrorResponse {
+  error: string
 }
 
 const _Modal = styled(Modal)`
@@ -17,32 +21,43 @@ const _Modal = styled(Modal)`
 
 const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   const [form] = Form.useForm()
-  const [validating, setValidating] = useState(false)
-  const [nameError, setNameError] = useState<string | null>(null)
 
-  const validateGroupName = async (
-    _: RuleObject,
-    value: string
-  ): Promise<void | never> => {
-    if (!value) {
-      return Promise.resolve()
-    }
-
-    setValidating(true)
-    setNameError(null)
-
+  const onSubmit = async () => {
+    console.log('Form submission started')
     try {
-      const response = await api.get(`/groups/check-name?name=${value}`) // Adjust the API endpoint
-      if (!response.data.isUnique) {
-        setNameError('Group name is already taken.')
-        return Promise.reject('Group name is already taken.')
+      const values = await form.validateFields()
+      console.log('Form values:', values)
+
+      const groupData: GroupReqDTO = {
+        GroupName: values.groupName,
+        GroupDescription: values.description,
+        MaxMemberNumber: values.groupMaxMemberNumber,
       }
-      setValidating(false)
-      return Promise.resolve()
+      console.log('Group Data to be sent:', groupData)
+
+      try {
+        const response = await api.post('/group_creation/', groupData)
+        console.log('Response:', response)
+
+        if (response.status === 201) {
+          message.success('Group created successfully!')
+          handleOk(groupData)
+          form.resetFields()
+        } else {
+          message.error('Failed to create group. Please check your input.')
+        }
+      } catch (error: unknown) {
+        const axiosError = error as AxiosError<ErrorResponse>
+        console.error('Error creating group:', axiosError)
+        const errorMessage =
+          axiosError.response?.data?.error ||
+          axiosError.message ||
+          'Failed to create group.'
+        message.error(`Failed to create group. ${errorMessage}`)
+      }
     } catch (error) {
-      setNameError('Error validating group name.')
-      setValidating(false)
-      return Promise.reject('Error validating group name.')
+      console.error('Validation error:', error)
+      message.error('Validation failed.')
     }
   }
 
@@ -50,41 +65,26 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
     <_Modal
       title="Create a New Group"
       open={isModalOpen}
-      onOk={() =>
-        handleOk({
-          GroupName: form.getFieldValue('groupName'),
-          GroupDescription: form.getFieldValue('description'),
-          GroupOwner: form.getFieldValue('email'),
-        })
-      }
+      onOk={form.submit}
       onCancel={handleCancel}
-      styles={{
-        body: {
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      }}
     >
       <Form
         layout="vertical"
         form={form}
-        style={{
-          width: '100%',
-        }}
+        onFinish={onSubmit}
+        style={{ width: '100%' }}
       >
         <Form.Item
           label="Group Name"
           name="groupName"
-          validateFirst
-          rules={[
-            { required: true, message: 'Group name is required' },
-            { validator: validateGroupName },
-          ]}
-          hasFeedback
-          validateStatus={nameError ? 'error' : validating ? 'validating' : ''}
-          help={nameError}
+          rules={[{ required: true, message: 'Group name is required' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          label="Group Max Member Number"
+          name="groupMaxMemberNumber"
+          rules={[{ required: true, message: 'Max Number is required' }]}
         >
           <Input />
         </Form.Item>

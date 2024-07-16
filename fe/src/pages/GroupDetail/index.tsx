@@ -9,14 +9,25 @@ import {
   Select,
   Modal,
   Input,
+  message,
 } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
 import { useParams } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
+// import api from '../../api/config'
+import { AxiosError } from 'axios'
+import { joinGroup } from '../../api/groupAPI' // Import the joinGroup function
+
+interface ErrorResponse {
+  error: string
+}
 
 const { Option } = Select
+const isAxiosError = (error: unknown): error is AxiosError => {
+  return (error as AxiosError).isAxiosError !== undefined
+}
 
 // Mock API function
 const fakeApiAllocateProject = (): Promise<string> => {
@@ -180,7 +191,7 @@ const GroupDetail = () => {
     })
   }
 
-  const handleJoinOrLeaveGroup = () => {
+  const handleJoinOrLeaveGroup = async () => {
     if (isUserMember) {
       // Logic to leave the group
       if (usrInfo) {
@@ -192,9 +203,42 @@ const GroupDetail = () => {
       // Logic to join the group
       if (usrInfo) {
         const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-        setMembers([...members, fullName])
+        const data = {
+          group_id: Number(id), // Convert id to number if necessary
+          student_id: usrInfo.id,
+        }
+        try {
+          console.log('Sending request to join group with data:', data)
+          const response = await joinGroup(data)
+
+          console.log('Response:', response)
+
+          if (response.status === 200) {
+            setMembers([...members, fullName])
+            setIsUserMember(true)
+          }
+        } catch (error: unknown) {
+          if (isAxiosError(error)) {
+            // Server responded with a status other than 200 range
+            console.error('Error response data:', error.response?.data)
+            console.error('Error response status:', error.response?.status)
+            console.error('Error response headers:', error.response?.headers)
+
+            // Display the error message from the response
+            const errorMessage =
+              (error.response?.data as ErrorResponse)?.error ||
+              'An unknown error occurred'
+            message.error(errorMessage)
+          } else if (error instanceof Error) {
+            // Something else caused the error
+            console.error('Error message:', error.message)
+            message.error(error.message)
+          } else {
+            console.error('Unknown error:', error)
+            message.error('An unknown error occurred')
+          }
+        }
       }
-      setIsUserMember(true)
     }
   }
 
@@ -249,33 +293,6 @@ const GroupDetail = () => {
               123
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Possessed Skills">
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
-              </Tag>
               <Tag style={{ margin: '0.1rem' }} color="magenta">
                 magenta
               </Tag>
