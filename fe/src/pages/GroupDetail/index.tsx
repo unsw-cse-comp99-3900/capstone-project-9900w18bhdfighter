@@ -16,17 +16,21 @@ import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
 import { useParams } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
-// import api from '../../api/config'
 import { AxiosError } from 'axios'
-import { joinGroup, leaveGroup } from '../../api/groupAPI' // Import the joinGroup function
-import { GroupLeaveDTO, GroupJoinDTO } from '../../types/group'
+import {
+  joinGroup,
+  leaveGroup,
+  getGroupDetailByGroupId,
+} from '../../api/groupAPI' // Import the joinGroup function
+import {
+  Group,
+  GroupLeaveDTO,
+  GroupJoinDTO,
+  GroupRspDTO,
+} from '../../types/group'
+
 interface ErrorResponse {
   error: string
-}
-
-const { Option } = Select
-const isAxiosError = (error: unknown): error is AxiosError => {
-  return (error as AxiosError).isAxiosError !== undefined
 }
 
 // Mock API function
@@ -41,6 +45,11 @@ const fakeApiAllocateProject = (): Promise<string> => {
       }
     }, 2000)
   })
+}
+
+const { Option } = Select
+const isAxiosError = (error: unknown): error is AxiosError => {
+  return (error as AxiosError).isAxiosError !== undefined
 }
 
 const Wrapper = styled(Flex)`
@@ -89,16 +98,6 @@ const InnerDescriptionsContainer = styled.div`
   max-width: 80%; /* Control the width of the table */
 `
 
-interface Group {
-  name: {
-    first: string
-    last: string
-  }
-  email: string
-  gender: string
-  // Define other fields you expect from the API response
-}
-
 const roleMap: { [key: number]: string } = {
   1: 'student',
   2: 'coordinator',
@@ -119,12 +118,7 @@ const GroupDetail = () => {
   const { usrInfo } = useAuthContext()
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
-  const [members, setMembers] = useState<string[]>([
-    'Member 1',
-    'Member 2',
-    'Member 3',
-    'Member 4',
-  ])
+  const [members, setMembers] = useState<string[]>([])
   const [newMember, setNewMember] = useState<string | undefined>(undefined)
   const [isUserMember, setIsUserMember] = useState<boolean>(false)
   const [projectPreferences, setProjectPreferences] = useState<string[]>([
@@ -141,24 +135,89 @@ const GroupDetail = () => {
   const [allocationError, setAllocationError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Fetch the group details using the id from the URL
-    fetch(
-      `https://randomuser.me/api/?results=1&inc=name,gender,email,nat,picture&noinfo`
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        setGroup(res.results[0] as Group) // Assuming the API response structure
-        setLoading(false)
-      })
-  }, [id])
+    const fetchGroupDetails = async () => {
+      try {
+        const res = await getGroupDetailByGroupId(Number(id))
+        const groupData: GroupRspDTO = res.data
+        console.log('Group Details:', groupData)
 
-  useEffect(() => {
-    // Check if the user is already a member of the group
-    if (usrInfo) {
-      const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-      setIsUserMember(members.includes(fullName))
+        // 确保 GroupMembers 和 Preferences 存在并且是数组
+        const groupMembers = Array.isArray(groupData.GroupMembers)
+          ? groupData.GroupMembers.map((member) => ({
+              id: member.UserID,
+              firstName: member.FirstName,
+              lastName: member.LastName,
+              email: member.EmailAddress,
+              role: member.UserRole,
+            }))
+          : []
+
+        const preferences = Array.isArray(groupData.Preferences)
+          ? groupData.Preferences.map((preference) => ({
+              preferenceId: preference.PreferenceID,
+              preference: {
+                id: preference.Preference.ProjectID,
+                name: preference.Preference.ProjectName,
+                description: preference.Preference.ProjectDescription,
+                owner: preference.Preference.ProjectOwner,
+                maxNumOfGroup: preference.Preference.MaxNumOfGroup,
+                requiredSkills: preference.Preference.RequiredSkills.map(
+                  (skillRecord) => {
+                    const skill = skillRecord.Skill
+                    return {
+                      skillId: skill.SkillID,
+                      skillName: skill.SkillName,
+                      area: {
+                        id: skill.Area.AreaID,
+                        name: skill.Area.AreaName,
+                      },
+                    }
+                  }
+                ),
+                projectOwnerId: preference.Preference.projectOwner_id,
+                createdBy: preference.Preference.CreatedBy,
+              },
+              rank: preference.Rank,
+              lock: preference.Lock,
+              groupId: preference.Group,
+            }))
+          : []
+
+        // Map GroupRspDTO to Group
+        const mappedGroup: Group = {
+          groupId: groupData.GroupID,
+          groupName: groupData.GroupName,
+          groupDescription: groupData.GroupDescription,
+          maxMemberNum: groupData.MaxMemberNum,
+          groupMembers: groupMembers,
+          groupOwner: groupData.GroupOwner,
+          createdBy: groupData.CreatedBy,
+          preferences: preferences,
+        }
+
+        setGroup(mappedGroup)
+        setMembers(
+          mappedGroup.groupMembers.map(
+            (member) => `${member.firstName} ${member.lastName}`
+          )
+        )
+        setLoading(false)
+
+        // Check if the user is already a member of the group
+        if (usrInfo) {
+          const userIsMember = mappedGroup.groupMembers.some(
+            (member) => member.id === usrInfo.id
+          )
+          setIsUserMember(userIsMember)
+        }
+      } catch (e) {
+        console.error('Error fetching group details:', e)
+        message.error('Failed to load group details')
+        setLoading(false)
+      }
     }
-  }, [members, usrInfo])
+    fetchGroupDetails()
+  }, [id, usrInfo])
 
   const handleAddMember = () => {
     if (newMember && !members.includes(newMember)) {
@@ -197,7 +256,7 @@ const GroupDetail = () => {
       if (usrInfo) {
         const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
         const data: GroupLeaveDTO = {
-          group_id: Number(id), // Convert id to number if necessary
+          group_id: Number(id),
           student_id: usrInfo.id,
         }
         try {
@@ -209,22 +268,18 @@ const GroupDetail = () => {
           if (response.status === 201) {
             setMembers(members.filter((member) => member !== fullName))
             setIsUserMember(false)
-            message.success('Leave successfully') // 显示成功消息
+            message.success('Leave successfully')
           }
         } catch (error: unknown) {
           if (isAxiosError(error)) {
-            // Server responded with a status other than 200 range
             console.error('Error response data:', error.response?.data)
             console.error('Error response status:', error.response?.status)
             console.error('Error response headers:', error.response?.headers)
-
-            // Display the error message from the response
             const errorMessage =
               (error.response?.data as ErrorResponse)?.error ||
               'An unknown error occurred'
             message.error(errorMessage)
           } else if (error instanceof Error) {
-            // Something else caused the error
             console.error('Error message:', error.message)
             message.error(error.message)
           } else {
@@ -238,7 +293,7 @@ const GroupDetail = () => {
       if (usrInfo) {
         const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
         const data: GroupJoinDTO = {
-          group_id: Number(id), // Convert id to number if necessary
+          group_id: Number(id),
           student_id: usrInfo.id,
         }
         try {
@@ -250,22 +305,18 @@ const GroupDetail = () => {
           if (response.status === 201) {
             setMembers([...members, fullName])
             setIsUserMember(true)
-            message.success('Join successfully') // 显示成功消息
+            message.success('Join successfully')
           }
         } catch (error: unknown) {
           if (isAxiosError(error)) {
-            // Server responded with a status other than 200 range
             console.error('Error response data:', error.response?.data)
             console.error('Error response status:', error.response?.status)
             console.error('Error response headers:', error.response?.headers)
-
-            // Display the error message from the response
             const errorMessage =
               (error.response?.data as ErrorResponse)?.error ||
               'An unknown error occurred'
             message.error(errorMessage)
           } else if (error instanceof Error) {
-            // Something else caused the error
             console.error('Error message:', error.message)
             message.error(error.message)
           } else {
@@ -313,7 +364,7 @@ const GroupDetail = () => {
         <InnerDescriptionsContainer>
           <Descriptions bordered title="Group Detail">
             <Descriptions.Item span={3} label="Group Name">
-              {group?.name.first} {group?.name.last}
+              {group?.groupName}
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Project Name">
               {selectedProject || 'No project selected'}
@@ -325,11 +376,11 @@ const GroupDetail = () => {
               <Link href="/">TUT</Link>
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Description">
-              123
+              {group?.groupDescription}
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Possessed Skills">
               <Tag style={{ margin: '0.1rem' }} color="magenta">
-                magenta
+                example
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Group Members">
