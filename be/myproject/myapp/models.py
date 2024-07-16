@@ -15,13 +15,15 @@ class Area(models.Model):
 
 
 class User(models.Model):
+    ROLE_CHOICES = [(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')]
+
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
     LastName = models.CharField(max_length=50)
     EmailAddress = models.CharField(max_length=255, unique=True)
     Passwd = models.CharField(max_length=255)
     # 1: student, 2:client, 3:tut  4:cord 5:admin 
-    UserRole = models.IntegerField(choices=[(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')],
+    UserRole = models.IntegerField(choices=ROLE_CHOICES,
                                    default=1, null=True, blank=True)
     UserInformation = models.CharField(max_length=255)
     Areas = models.ManyToManyField(Area, through='StudentArea')
@@ -73,9 +75,11 @@ class Group(models.Model):
 
 class GroupPreference(models.Model):
     PreferenceID = models.AutoField(primary_key=True)
-    Preference=models.ForeignKey(Project, on_delete=models.CASCADE)
-    Group=models.ForeignKey(Group, on_delete=models.CASCADE)
-    Rank=models.IntegerField()
+    Preference = models.ForeignKey(Project, on_delete=models.CASCADE)
+    Group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    Rank = models.IntegerField(choices=[(1, 1), (2, 2), (3, 3)])
+    Lock = models.BooleanField(default=False, null=True, blank=True)
+
     def __str__(self):
         return str(self.PreferenceID)
 
@@ -92,7 +96,7 @@ class GroupProjectsLink(models.Model):
     GroupProjectsLinkID = models.AutoField(primary_key=True)
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return str(self.GroupProjectsLinkID)
 
@@ -104,6 +108,20 @@ class StudentArea(models.Model):
 
     def __str__(self):
         return f'{self.User} - {self.Area}'
+
+
+class GroupSkillEvaluation(models.Model):
+    # （需要新建这个table）：需要一个新的模型来存储每个组员对于特定项目所需技能的评分和理由。
+    id = models.AutoField(primary_key=True)
+    notes = models.CharField(max_length=500)
+    score = models.IntegerField(choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5),
+                                         (6, 6), (7, 7), (8, 8), (9, 9), (10, 10)
+                                         ])
+    groupUser = models.ForeignKey(GroupUsersLink, on_delete=models.CASCADE)
+    skill_project = models.ForeignKey(SkillProject, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.notes
 
 
 class GroupAssignProject(models.Model):
@@ -146,6 +164,7 @@ class NotificationReceiver(models.Model):
     ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
     Notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
     IsRead = models.BooleanField(default=False)
+
     def __str__(self):
         return f'{self.ReceiverUser} - {self.Notification}'
 
@@ -184,3 +203,7 @@ class Contact(models.Model):
 
 
 
+   
+   
+
+        

@@ -83,6 +83,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('PreferenceID', models.AutoField(primary_key=True, serialize=False)),
                 ('Rank', models.IntegerField()),
+                ('lock', models.BooleanField(default=False)),
                 ('Group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.group')),
                 ('Preference', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.project')),
             ],
@@ -162,6 +163,20 @@ class Migration(migrations.Migration):
                 ('GroupUsersLinkID', models.AutoField(primary_key=True, serialize=False)),
                 ('GroupID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.group')),
                 ('UserID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.user')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='GroupSkillEvaluation',
+            fields=[
+                ('id', models.AutoField(primary_key=True, serialize=False)),
+                ('notes', models.CharField(max_length=500)),
+                ('score', models.IntegerField(
+                    choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10)])),
+                ('lock', models.BooleanField(default=False)),
+                (
+                'groupUser', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.groupuserslink')),
+                ('skill_project',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.skillproject')),
             ],
         ),
         migrations.CreateModel(

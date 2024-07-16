@@ -1,11 +1,10 @@
-
 from rest_framework import serializers
-from .models import Contact, GroupMessage, GroupPreference, GroupProjectsLink, Project, SkillProject, User, Area, StudentArea, Message,Skill, Group, \
-    Notification, NotificationReceiver
+from .models import *
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count
-# ?
+
 from rest_framework.exceptions import PermissionDenied
+
 
 class StudentsignupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +21,7 @@ class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
         fields = ['AreaID', 'AreaName']
-    
+
 
 class SkillSerializer(serializers.ModelSerializer):
     Area = AreaSerializer()
@@ -44,7 +43,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
-    
+
     def get_RequiredSkills(self, obj):
         skills = SkillProject.objects.filter(Project=obj)
         return SkillProjectSerializer(skills, many=True).data
@@ -58,15 +57,14 @@ class ProjectSerializer(serializers.ModelSerializer):
                 return None
         return None
 
-    
+
 class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
         fields = ['AreaID', 'AreaName']
-    
+
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = '__all__'
@@ -79,8 +77,10 @@ class UserSlimSerializer(serializers.ModelSerializer):
         fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole']
         extra_kwargs = {'Passwd': {'write_only': True}}
 
+
 class UserWithAreaSerializer(serializers.ModelSerializer):
     Areas = AreaSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
         fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole', 'UserInformation', 'Areas']
@@ -92,7 +92,7 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
-        
+
 class GroupFetchSerializer(serializers.ModelSerializer):
     GroupMembers = UserSlimSerializer(many=True, read_only=True)
     Preferences = serializers.SerializerMethodField()
@@ -103,10 +103,12 @@ class GroupFetchSerializer(serializers.ModelSerializer):
         preferences = GroupPreference.objects.filter(Group=obj)
         return GroupPreferenceSerializer(preferences, many=True).data
 
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     Passwd = serializers.CharField(write_only=True, required=False, default="")
     Areas = serializers.ListField(child=serializers.IntegerField(), required=False)
     UserInformation = serializers.CharField(required=False, allow_blank=True, default="")
+
     def validate(self, data):
         UserID = self.context.get('UserID')
         RequesterID = self.context.get('RequesterID')
@@ -123,28 +125,27 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # if the password is provided, hash it and save it
         if data.get('Passwd'):
             data["Passwd"] = make_password(data["Passwd"])
-        
+
         # check if the areas exist
         areas_data = data.get('Areas', [])
         for area_id in areas_data:
             if not Area.objects.filter(AreaID=area_id).exists():
                 raise serializers.ValidationError(f"Area with ID {area_id} does not exist.")
         data['Areas'] = areas_data
-        
+
         # if not admin
         if requester.UserRole != 5:
             # only alow the user to update their own information
             if UserID != RequesterID:
                 raise serializers.ValidationError("You do not have permission to change another user's information.")
             # do not allow the user to change their role to another
-            if UserID == RequesterID and data.get('UserRole')==requester.UserRole:
+            if UserID == RequesterID and data.get('UserRole') == requester.UserRole:
                 pass
             else:
                 raise serializers.ValidationError("You do not have permission to change your role.")
-            
+
         return data
-    
-    
+
     def update(self, instance, validated_data):
         areas_data = validated_data.pop('Areas', [])
         instance.EmailAddress = validated_data.get('EmailAddress', instance.EmailAddress)
@@ -157,12 +158,13 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         for area_id in areas_data:
             area = Area.objects.get(AreaID=area_id)
             StudentArea.objects.create(User=instance, Area=area)
-            
-        instance.save()    
+
+        instance.save()
         return {
             **instance.__dict__,
             "Areas": areas_data
         }
+
     class Meta:
         model = User
         fields = "__all__"
@@ -186,13 +188,14 @@ class UserUpdatePasswdSerializer(serializers.ModelSerializer):
         model = User
         fields = ["Passwd", "Passwd2"]
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     Areas = serializers.ListField(child=serializers.IntegerField(), required=False)
     Passwd = serializers.CharField(write_only=True, required=True)
     Passwd2 = serializers.CharField(write_only=True, required=True)
     EmailAddress = serializers.EmailField(required=True)
     UserInformation = serializers.CharField(required=False, allow_blank=True, default="")
- 
+
     class Meta:
         model = User
         fields = "__all__"
@@ -204,12 +207,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The passwords entered twice do not match, please re-enter them!")
         data.pop('Passwd2')
         data["Passwd"] = make_password(data["Passwd"])
-        
+
         areas_data = data.get('Areas', [])
         for area_id in areas_data:
             if not Area.objects.filter(AreaID=area_id).exists():
                 raise serializers.ValidationError(f"Area with ID {area_id} does not exist.")
-            
+
         data['Areas'] = areas_data
         return data
 
@@ -219,52 +222,54 @@ class RegisterSerializer(serializers.ModelSerializer):
         for area_id in areas_data:
             area = Area.objects.get(AreaID=area_id)
             StudentArea.objects.create(User=user, Area=area)
-    
+
         return {
             **user.__dict__,
             "Areas": areas_data
         }
 
+
 class MessageSerializer(serializers.Serializer):
-    
     class Meta:
-        model=Message
+        model = Message
         fields = ['message']
 
+
 class ContactSerializer(serializers.ModelSerializer):
-    Contact=UserSlimSerializer(read_only=True)
+    Contact = UserSlimSerializer(read_only=True)
     UnreadMsgsCount = serializers.SerializerMethodField()
+
     class Meta:
         model = Contact
         fields = ['Contact', 'ContactUser', 'IsFixed', 'ContactID', 'UnreadMsgsCount']
-        
-    def get_UnreadMsgsCount (self, obj):
+
+    def get_UnreadMsgsCount(self, obj):
         unread_count = Message.objects.filter(
             Sender=obj.Contact,
             Receiver=obj.ContactUser,
             IsRead=False
         ).count()
         return unread_count
-        
+
+
 from .models import Contact, User
+
 
 class ContactCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
-        fields = ["Contact", "ContactUser", "IsFixed","ContactID"]
+        fields = ["Contact", "ContactUser", "IsFixed", "ContactID"]
 
     def validate(self, data):
         requester_id = self.context.get('requesterId')
         if requester_id != data['ContactUser'].UserID:
             raise PermissionDenied("You do not have permission to create a contact for another user.")
         return data
-  
-        
 
     def create(self, validated_data):
         return Contact.objects.create(**validated_data)
 
-    
+
 class ContactUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
@@ -286,31 +291,35 @@ class ContactUpdateSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class MessageSerializer(serializers.ModelSerializer):
     ChannelId = serializers.SerializerMethodField()
-    
+
     def get_ChannelId(self, obj):
         if obj.Sender.UserID > obj.Receiver.UserID:
             return f"{obj.Receiver.UserID}_{obj.Sender.UserID}"
         return f"{obj.Sender.UserID}_{obj.Receiver.UserID}"
+
     class Meta:
         model = Message
         fields = ['MessageID', 'Content', 'Sender', 'Receiver', 'CreatedAt', 'IsRead', 'ChannelId']
-        
-class GroupMessageSerializer(serializers.ModelSerializer):
 
+
+class GroupMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupMessage
         fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
-        
+
+
 class GroupPreferenceSerializer(serializers.ModelSerializer):
     Preference=ProjectSerializer()
     class Meta:
         model = GroupPreference
-        fields = ['PreferenceID', 'Preference', 'Rank']
+        fields = ['PreferenceID', 'Preference', 'Rank',"Lock"]
         extra_kwargs = {
             'PreferenceID': {'read_only': True}
         }
+
 
 class GroupPreferenceUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -318,12 +327,13 @@ class GroupPreferenceUpdateSerializer(serializers.ModelSerializer):
         fields = ['Preference', 'Rank']
 
 
-
 class GroupWithPreferencesSerializer(serializers.ModelSerializer):
     Preferences = GroupPreferenceSerializer(many=True, read_only=True)
+
     class Meta:
         model = Group
         fields = ['GroupID', 'GroupName', 'GroupDescription', 'CreatedBy', 'Preferences']
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

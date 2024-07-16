@@ -22,9 +22,17 @@ interface GroupLeaveDTO {
   group_id: number
   student_id: number
 }
-interface GroupPreferenceDTO {
+// interface GroupPreferenceDTO {
+
+interface GroupPreferenceRspDTO {
   PreferenceID: number
   Preference: ProjectRespDTO
+  Rank: number
+  Lock: boolean
+  Group: number
+}
+interface GroupPreferenceReqDTO {
+  Preference: number
   Rank: number
 }
 
@@ -32,6 +40,8 @@ interface GroupPreference {
   preferenceId: number
   preference: Project
   rank: number
+  lock: boolean
+  groupId: number
 }
 
 interface GroupRspDTO {
@@ -42,7 +52,7 @@ interface GroupRspDTO {
   GroupMembers: UserProfileSlimDTO[]
   GroupOwner: string
   CreatedBy: number
-  Preferences: GroupPreferenceDTO[]
+  Preferences: GroupPreferenceRspDTO[]
 }
 
 interface Group {
@@ -59,9 +69,11 @@ interface Group {
 export {
   GroupRspDTO,
   Group,
-  GroupPreferenceDTO,
   GroupCreate,
   GroupReqDTO,
   GroupJoinDTO,
   GroupLeaveDTO,
+  GroupPreferenceRspDTO,
+  GroupPreferenceReqDTO,
+  GroupPreference,
 }

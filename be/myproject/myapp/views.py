@@ -636,16 +636,24 @@ class GroupPreferenceAPIView(GenericViewSet):
         return Response({
             "Preferences": current_preferences_serializer.data
         }, status=status.HTTP_200_OK)
-    
+
+
+
+
+
 
 def get_user_friendly_errors(serializer_errors):
  
     errors = {
         'errors': ''
     }
-    for _, value in serializer_errors.items():
-        errors['errors'] += f'{value[0]}\n'
-   
+    if isinstance(serializer_errors, dict):
+        for _, value in serializer_errors.items():
+            errors['errors'] += f'{_}: {value}\n'
+    elif isinstance(serializer_errors, list):
+        for dic in serializer_errors:
+            for _, value in dic.items():
+                errors['errors'] += f'{_}: {value}\n'
     return errors
 
 
@@ -904,6 +912,18 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
         return JsonResponse({
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['put'], url_path=r'mark-as-read/(?P<groupId>\d+)')
+    def mark_as_read(self, request, groupId=None):
+        user_id = self.get_serializer_context().get("requesterId")
+        if groupId:
+            # 获取符合条件的消息
+            messages = self.queryset.filter(ReceiverGroup=groupId)
+            # 将自己加入到readby字段中
+            for message in messages:
+                message.ReadBy.add(user_id)
+            return Response({"message": f"Messages marked as read."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid groupId"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 ############################################################################################
 #                                    Notification                                         #
@@ -1126,3 +1146,21 @@ def get_group_detail(request, id):
     serializer = GroupFetchSerializer(group)
     return JsonResponse(serializer.data, safe=False)
 
+
+@api_view(['GET'])
+def get_groups_by_participant(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    groups = Group.objects.filter(groupuserslink__UserID=user)
+    serializer = GroupFetchSerializer(groups, many=True)
+    return JsonResponse(serializer.data, safe=False)
+@api_view(['GET'])
+def get_group_detail(request, id):
+    try:
+        group = Group.objects.get(pk=id)
+    except Group.DoesNotExist:
+        return JsonResponse({'error': 'Group not found'}, status=404)
+    serializer = GroupFetchSerializer(group)
+    return JsonResponse(serializer.data, safe=False)

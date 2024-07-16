@@ -56,6 +56,13 @@ const getAutoCompleteGroups = async (groupName: string) => {
     },
   })
 }
+const getGroupListByUserId = async (userId: number) => {
+  return api.get<GroupRspDTO[]>(`api/groups/users/${userId}`)
+}
+
+const getGroupDetailByGroupId = async (groupId: number) => {
+  return api.get<GroupRspDTO>(`groups/${groupId}`)
+}
 
 //mapper
 const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
@@ -69,6 +76,8 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
       preferenceId: preference.PreferenceID,
       preference: mapProjectDTOToProject(preference.Preference),
       rank: preference.Rank,
+      lock: preference.Lock,
+      groupId: preference.Group,
     }
   })
 
@@ -96,4 +105,6 @@ export {
   getGroupPreferencesById,
   joinGroup,
   leaveGroup,
+  getGroupListByUserId,
+  getGroupDetailByGroupId,
 }

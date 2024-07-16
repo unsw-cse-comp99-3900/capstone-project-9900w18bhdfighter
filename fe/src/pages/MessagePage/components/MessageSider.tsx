@@ -19,13 +19,13 @@ const ContactCard = styled(Flex)`
 
 type Props = Partial<FlexProps>
 const MessageSider = (props: Props) => {
-  const { contactList } = useMessageContext()
+  const { contactList, groupsList } = useMessageContext()
 
   const navigate = useNavigate()
 
   const items: CollapseProps['items'] = [
     {
-      key: '2',
+      key: '1',
       label: 'Recent',
       children: (
         <List itemLayout="vertical">
@@ -50,6 +50,28 @@ const MessageSider = (props: Props) => {
                 {contact.contact.firstName}
                 {<Tag>{contact.unreadMsgsCount} unread</Tag>}
               </ContactCard>
+            </List.Item>
+          ))}
+        </List>
+      ),
+    },
+    {
+      key: '2',
+      label: 'My Groups',
+      children: (
+        <List itemLayout="vertical">
+          {groupsList?.map((group) => (
+            <List.Item
+              onClick={() => {
+                navigate(`/message/group/${group.groupId}`)
+              }}
+              key={group.groupId}
+              style={{
+                padding: '0.5rem 0',
+                cursor: 'pointer',
+              }}
+            >
+              <ContactCard gap={'0.5rem'}>{group.groupName}</ContactCard>
             </List.Item>
           ))}
         </List>

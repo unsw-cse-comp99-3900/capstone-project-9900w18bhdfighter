@@ -53,32 +53,34 @@ def create_test_users(apps, schema_editor):
     User = apps.get_model('myapp', 'User')
     random.seed(42)
     # Create additional students
+    user_ls = []
     for i in range(100):
         email=f"stu{i}@stu.com"
         password = make_password("stu")
-
-        User.objects.create(
+        user_ls.append(User(
             FirstName=f"stu{i}",
             LastName=f"stu{i}",
             EmailAddress=email,
             Passwd=password,
             UserRole=1,
             UserInformation=f"Information for stu{i}"
-        )
+        ))
+    User.objects.bulk_create(user_ls)
     # Create additional clients
+    user_ls = []
     for i in range(10):
         email=f"cli{i}@cli.com"
         password = make_password("cli")
-
-        User.objects.create(
+        user_ls.append(User(
             FirstName=f"cli{i}",
             LastName=f"cli{i}",
             EmailAddress=email,
             Passwd=password,
             UserRole=2,
             UserInformation=f"Information for cli{i}"
-        )
-   
+        ))
+    User.objects.bulk_create(user_ls)
+
     print("Test users created successfully.")
 
 def add_projects(apps, schema_editor):
