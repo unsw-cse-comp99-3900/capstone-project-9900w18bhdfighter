@@ -252,6 +252,24 @@ class ContactSerializer(serializers.ModelSerializer):
         return unread_count
 
 
+class GroupContactSerializer(GroupFetchSerializer):
+    UnreadMsgsCount = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = GroupFetchSerializer.Meta.fields + ['UnreadMsgsCount'] 
+        
+    def get_UnreadMsgsCount(self, obj):
+        user_id=self.context.get('requesterId')
+        User_obj=User.objects.get(UserID=user_id)
+        unread_count = GroupMessage.objects.filter(
+            ReceiverGroup=obj, 
+        ).exclude(ReadBy=User_obj).count()
+        
+        
+        return unread_count
+
+    
 from .models import Contact, User
 
 
@@ -306,9 +324,12 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class GroupMessageSerializer(serializers.ModelSerializer):
+    ChannelId = serializers.SerializerMethodField()
     class Meta:
         model = GroupMessage
-        fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy']
+        fields = ['GroupMessageID', 'Content', 'Sender', 'ReceiverGroup', 'CreatedAt', 'ReadBy', 'ChannelId']
+    def get_ChannelId(self, obj):
+        return f"group_{obj.ReceiverGroup.GroupID}"
 
 
 class GroupPreferenceSerializer(serializers.ModelSerializer):

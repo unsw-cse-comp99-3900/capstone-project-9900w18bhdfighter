@@ -4,7 +4,7 @@ import { getThemeColor } from '../../../utils/styles'
 import { useState } from 'react'
 
 import { useMessageContext } from '../../../context/MessageContext'
-import { MsgReqDTO } from '../../../types/msg'
+import { WSMsgReqDTO } from '../../../types/msg'
 
 const InputBox = styled(Flex)`
   width: 100%;
@@ -38,7 +38,7 @@ const SendButton = styled(Button)`
 
 const MessageInputArea = () => {
   const [value, setValue] = useState('')
-  const { socketRef, params } = useMessageContext()
+  const { params, conversationType, sendWSMsg } = useMessageContext()
   return (
     <InputBox>
       <InputArea
@@ -49,13 +49,16 @@ const MessageInputArea = () => {
       />
       <SendButton
         onClick={() => {
-          if (!value || !params.receiverId) return
-          const msg: MsgReqDTO = {
-            type: 'user',
-            content: value,
-            receiverId: parseInt(params.receiverId),
+          if (!value || !params.receiverId || !conversationType) return
+          const msg: WSMsgReqDTO = {
+            action: 'NEW_MESSAGE',
+            type: conversationType,
+            payload: {
+              content: value,
+              receiverId: parseInt(params.receiverId),
+            },
           }
-          socketRef.current?.send(JSON.stringify(msg))
+          sendWSMsg(msg)
           setValue('')
         }}
         type="link"

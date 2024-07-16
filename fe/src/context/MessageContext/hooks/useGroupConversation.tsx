@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
-import { MsgGrouped } from '../../../types/msg'
-import { Group } from '../../../types/group'
+import { GroupContact, MsgGrouped } from '../../../types/msg'
 
 interface Props {
-  groupsList: Group[] | null
+  groupsList: GroupContact[] | null
   receiverId: string | number | undefined
   msgMap: MsgGrouped | null
   id: number | undefined

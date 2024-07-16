@@ -15,6 +15,7 @@ const useContactsDiff = ({ contactList, msgMap, id }: Props) => {
     const contactIds = contactList.map((contact) => contact.contact.id).sort()
 
     const channelKeys = Object.keys(msgMap)
+    console.log('channelKeys', channelKeys)
 
     const currChannelKeys = contactIds.map((contact_id) =>
       ids_to_channel_id([id, contact_id])
