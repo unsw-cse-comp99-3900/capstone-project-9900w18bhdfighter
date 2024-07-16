@@ -18,8 +18,8 @@ import { useParams } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 // import api from '../../api/config'
 import { AxiosError } from 'axios'
-import { joinGroup } from '../../api/groupAPI' // Import the joinGroup function
-
+import { joinGroup, leaveGroup } from '../../api/groupAPI' // Import the joinGroup function
+import { GroupLeaveDTO, GroupJoinDTO } from '../../types/group'
 interface ErrorResponse {
   error: string
 }
@@ -196,14 +196,48 @@ const GroupDetail = () => {
       // Logic to leave the group
       if (usrInfo) {
         const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-        setMembers(members.filter((member) => member !== fullName))
+        const data: GroupLeaveDTO = {
+          group_id: Number(id), // Convert id to number if necessary
+          student_id: usrInfo.id,
+        }
+        try {
+          console.log('Sending request to leave group with data:', data)
+          const response = await leaveGroup(data)
+
+          console.log('Response:', response)
+
+          if (response.status === 201) {
+            setMembers(members.filter((member) => member !== fullName))
+            setIsUserMember(false)
+            message.success('Leave successfully') // 显示成功消息
+          }
+        } catch (error: unknown) {
+          if (isAxiosError(error)) {
+            // Server responded with a status other than 200 range
+            console.error('Error response data:', error.response?.data)
+            console.error('Error response status:', error.response?.status)
+            console.error('Error response headers:', error.response?.headers)
+
+            // Display the error message from the response
+            const errorMessage =
+              (error.response?.data as ErrorResponse)?.error ||
+              'An unknown error occurred'
+            message.error(errorMessage)
+          } else if (error instanceof Error) {
+            // Something else caused the error
+            console.error('Error message:', error.message)
+            message.error(error.message)
+          } else {
+            console.error('Unknown error:', error)
+            message.error('An unknown error occurred')
+          }
+        }
       }
-      setIsUserMember(false)
     } else {
       // Logic to join the group
       if (usrInfo) {
         const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-        const data = {
+        const data: GroupJoinDTO = {
           group_id: Number(id), // Convert id to number if necessary
           student_id: usrInfo.id,
         }
@@ -213,9 +247,10 @@ const GroupDetail = () => {
 
           console.log('Response:', response)
 
-          if (response.status === 200) {
+          if (response.status === 201) {
             setMembers([...members, fullName])
             setIsUserMember(true)
+            message.success('Join successfully') // 显示成功消息
           }
         } catch (error: unknown) {
           if (isAxiosError(error)) {

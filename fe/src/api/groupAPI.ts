@@ -32,7 +32,7 @@ const getGroupByProjectId = async (projectId: number | string) => {
 }
 
 const getGroupByParticipant = async (groupId: string | number) => {
-  return api.get<GroupRspDTO[]>(`api/groups/users/${groupId}/`)
+  return api.get<GroupRspDTO[]>(`api/groups/users/${groupId}`)
 }
 const getGroupPreferencesById = async (groupId: string | number) => {
   return api.get<GroupRspDTO[]>(`api/groups//${groupId}preferences/`)
