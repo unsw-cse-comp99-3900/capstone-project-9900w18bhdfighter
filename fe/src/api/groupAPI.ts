@@ -33,7 +33,7 @@ const getGroupListByUserId = async (userId: number) => {
 }
 
 const getGroupDetailByGroupId = async (groupId: number) => {
-  return api.get<GroupRspDTO>(`api/groups/${groupId}`)
+  return api.get<GroupRspDTO>(`groups/${groupId}`)
 }
 
 //mapper
