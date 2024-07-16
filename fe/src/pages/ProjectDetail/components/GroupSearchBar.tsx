@@ -17,7 +17,11 @@ interface GroupValue {
   label: ReactNode
   value: number
 }
-const GroupSearchBar = () => {
+const GroupSearchBar = (
+  { style }: { style: React.CSSProperties } = {
+    style: {},
+  }
+) => {
   const [fetching, setFetching] = useState(false)
   const [value, setValue] = useState<number | null>()
   const [options, setOptions] = useState<GroupValue[]>([])
@@ -66,6 +70,7 @@ const GroupSearchBar = () => {
       value={value}
       onSelect={handleSelect}
       notFoundContent={fetching ? <Spin size="small" /> : 'No data'}
+      style={style}
     ></SearchBar>
   )
 }

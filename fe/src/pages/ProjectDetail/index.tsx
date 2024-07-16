@@ -73,7 +73,7 @@ const _ProjectDetail = () => {
   const isCreator = () => {
     return project?.createdBy === usrInfo?.id
   }
-  const shouldDisplayEdit = () => {
+  const shouldDisplayEditAndSearch = () => {
     return isAdmin() || isOwner() || isCreator()
   }
   const shouldDisplayRemove = () => {
@@ -90,7 +90,7 @@ const _ProjectDetail = () => {
       />
       <EditWrapper
         style={{
-          display: shouldDisplayEdit() ? 'flex' : 'none',
+          display: shouldDisplayEditAndSearch() ? 'flex' : 'none',
         }}
       >
         <EditButton type="primary" onClick={() => setIsOpened(true)}>
@@ -144,7 +144,11 @@ const _ProjectDetail = () => {
           )}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Participating Groups">
-          <GroupSearchBar />
+          <GroupSearchBar
+            style={{
+              display: shouldDisplayEditAndSearch() ? 'block' : 'none',
+            }}
+          />
           <List
             bordered
             style={{
