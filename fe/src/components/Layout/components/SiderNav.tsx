@@ -24,8 +24,12 @@ const SiderNav = () => {
   useEffect(() => {
     setSelectedKey(location.pathname)
   }, [location.pathname])
+
+  const projectAccess = () => {
+    return _role === role.ADMIN || _role === role.CORD || _role === role.CLIENT
+  }
   return (
-    <_Sider style={{}} collapsible defaultCollapsed>
+    <_Sider collapsible defaultCollapsed>
       <Menu
         defaultSelectedKeys={[route.DASHBOARD]}
         selectedKeys={[selectedKey]}
@@ -43,7 +47,7 @@ const SiderNav = () => {
             icon: <AiFillProject />,
             label: 'Projects',
             style: {
-              display: _role !== role.STUDENT ? 'block' : 'none',
+              display: projectAccess() ? 'block' : 'none',
             },
           },
           {

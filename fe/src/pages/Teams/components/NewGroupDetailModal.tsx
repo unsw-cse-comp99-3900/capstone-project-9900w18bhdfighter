@@ -30,7 +30,7 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
 
       const groupData: GroupReqDTO = {
         GroupName: values.groupName,
-        GroupDescription: values.description,
+        GroupDescription: values.description || '',
         MaxMemberNumber: values.groupMaxMemberNumber,
       }
       console.log('Group Data to be sent:', groupData)
@@ -71,6 +71,7 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
       <Form
         layout="vertical"
         form={form}
+        initialValues={{ groupMaxMemberNumber: 1 }}
         onFinish={onSubmit}
         style={{ width: '100%' }}
       >
@@ -92,7 +93,7 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
             },
           ]}
         >
-          <InputNumber defaultValue={1} style={{ width: '100%' }} min={1} />
+          <InputNumber style={{ width: '100%' }} min={1} />
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea />

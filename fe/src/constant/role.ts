@@ -12,6 +12,7 @@ const role: Role = {
   STUDENT: 1,
   CORD: 4,
 }
+type RoleNumber = 1 | 2 | 3 | 4 | 5
 const roleNamesEnum = {
   ADMIN: 'Admin',
   CLIENT: 'Client',
@@ -27,4 +28,4 @@ const roleNames = {
   [role.STUDENT]: 'Student',
   [role.CORD]: 'Coordinator',
 }
-export { role, roleNames, Role, roleNamesEnum }
+export { role, roleNames, Role, roleNamesEnum, RoleNumber }
