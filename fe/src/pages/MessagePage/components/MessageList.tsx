@@ -6,6 +6,8 @@ import { useAuthContext } from '../../../context/AuthContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Avatar from '../../../components/Avatar'
 import { Flex, Typography } from 'antd'
+import { useNavigate } from 'react-router-dom'
+import route from '../../../constant/route'
 
 const Wrapper = styled.div`
   width: 100%;
@@ -120,6 +122,7 @@ const MessageList = () => {
     }
     return getAvatarInfo()
   }
+  const navigate = useNavigate()
   return (
     <Wrapper ref={scrollContainerRef}>
       {msgList.map((msg) => (
@@ -132,6 +135,9 @@ const MessageList = () => {
           <Flex align="start">
             <Flex>
               <Avatar
+                onClick={() => {
+                  navigate(`${route.PROFILE}/${msg.senderId}`)
+                }}
                 size={35}
                 style={{
                   display: msg.senderId === usrInfo?.id ? 'none' : 'flex',
