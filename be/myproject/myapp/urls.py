@@ -26,13 +26,14 @@ urlpatterns = [
     path("groups/<int:id>/", views.get_groups_list_by_project, name="get_group_detail"),
     path("groups/", views.groups_list_del, name="groups_list_del"),
     path('api/notifications', views.create_notification, name='create_notification'),
-    path('api/notifications/<int:user_id>/', views.fetch_notifications, name='fetch_notifications'),
-    path('api/notifications/<int:notificationReceiverId>/status', views.update_notification_status,name='update_notification_status'),
+    path('api/notifications/', views.fetch_notifications, name='fetch_notifications'),
+    path('api/notifications/<int:notificationId>/status', views.update_notification_status,name='update_notification_status'),
     path('api/notifications/<int:notificationReceiverId>/delete', views.delete_notification,name='delete_notification'),
     path('api/group-projects/<int:projectID>/<int:groupID>/', views.GroupProjectsLinkAPIView.as_view({'delete': 'destroy'})),
     path("api/projects/users/<int:id>/", views.get_projects_by_participant,name="get_projects_by_participant"),
     path("api/groups/users/<int:id>/", views.get_groups_by_participant,name="get_groups_by_participant"),
     path("api/groups/autocomplete-name", groups_views.GroupsAPIView.as_view({'get': 'autocomplete_groups'}), name="autocomplete_groups"),
+    path("api/projects/autocomplete-name", views.autocomplete_projects, name="autocomplete_projects"),
 ]
 
 

@@ -141,32 +141,26 @@ class GroupAssignProject(models.Model):
 
 class Notification(models.Model):
     NotificationID = models.AutoField(primary_key=True)
-    #1:personal 2:group
-    sender_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE,default=1)
-    sender_object_id = models.PositiveIntegerField(default=1)
-    # so the sender can be any model(group, user, etc.)
-    # it would be stored like this:
-    # sender_content_type = User, sender_object_id = 1
-    # or sender_content_type = Group, sender_object_id = 1
-    Sender = GenericForeignKey('sender_content_type', 'sender_object_id')
-    # 1: msg_personal,2: msg_group
-    Type = models.CharField(max_length=255)
+    # 1: personal, 2: group
+    Type = models.CharField(max_length=255, choices=[('personal', 'personal'), ('group', 'group')])
     Message = models.TextField()
     AdditionalData = models.JSONField(null=True, blank=True)
     CreatedAt = models.DateTimeField(default=timezone.now)
-
+    FromGroup = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
+    FromUser = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications_sent')
+    Receivers = models.ManyToManyField(User, through='NotificationReceiver', related_name='notifications_received')
+    ReadBy = models.ManyToManyField(User, related_name='read_notifications')
     def __str__(self):
-        return f'{self.Sender}'
-
+        return f'{self.Type} - {self.Message}'
 
 class NotificationReceiver(models.Model):
     NotificationReceiverID = models.AutoField(primary_key=True)
-    ReceiverUser = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE)
     Notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    Receiver = models.ForeignKey(User, on_delete=models.CASCADE)
     IsRead = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.ReceiverUser} - {self.Notification}'
+        return f'{self.Notification} - {self.Receiver}'
 
 class Message(models.Model):
     MessageID = models.AutoField(primary_key=True)

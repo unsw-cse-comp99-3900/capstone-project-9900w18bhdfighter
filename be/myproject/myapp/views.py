@@ -21,7 +21,7 @@ from .models import User,Message
 from .models import Project
 from .permission import OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
-    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, \
+    GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, NotificationFetchSerializer, NotificationReceiverSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
@@ -51,20 +51,6 @@ def decode_jwt(token):
         # Token is invalid
         return {'status': 'error', 'error_message': 'Invalid token.'}
 
-
-# Usage example
-def some_view_function(request):
-    token = request.headers.get('Authorization').split()[1]  # Assuming token is sent as "Bearer <token>"
-    result = decode_jwt(token)
-
-    if result['status'] == 'success':
-        # Perform actions based on the decoded data
-        user_data = result['data']
-        # Here you can access user_data and perform further actions or queries
-        return JsonResponse({'message': 'Authenticated successfully.', 'user': user_data}, status=200)
-    else:
-        # Handle error scenario
-        return JsonResponse({'error': result['error_message']}, status=401)
 
 
 ############################################################################################
@@ -169,7 +155,7 @@ def student_login(request):
                     if not User.objects.filter(EmailAddress=email).exists():
                         return JsonResponse({'error': 'E-mail not found.'}, status=404)
                     else:
-                        return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=401)
+                        return JsonResponse({'error': 'Incorrect password. Please try again.'}, status=400)
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Email not found.'}, status=404)
         except json.JSONDecodeError:
@@ -505,6 +491,7 @@ def del_group(request, id):
             return JsonResponse({'error': 'Group not found'}, status=404)
         group.delete()
         return JsonResponse({'message': 'Group deleted successfully!'}, status=200)
+
 ############################################################################################
 #                                     Get project list                                     #
 ############################################################################################
@@ -636,10 +623,6 @@ class GroupPreferenceAPIView(GenericViewSet):
         return Response({
             "Preferences": current_preferences_serializer.data
         }, status=status.HTTP_200_OK)
-
-
-
-
 
 
 def get_user_friendly_errors(serializer_errors):
@@ -957,120 +940,59 @@ class GroupMessageAPIView( mixins.CreateModelMixin, GenericViewSet):
 #                                    Notification                                         #
 ############################################################################################
 @api_view(['POST'])
+@permission_classes([OnlyForAdmin])
 def create_notification(request):
     """
     创建新的通知，发送给指定的用户或群组
     """
-    receivers = request.data.get('receivers', [])
-    receiver_type = request.data.get('receiver_type')
-    notification_type = request.data.get('type')
-    message = request.data.get('message')
-    additional_data = request.data.get('additionalData', {})
-
-    if not receivers or not receiver_type or not notification_type or not message:
-        return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # 获取 ContentType
-    contentType = ContentType.objects.get(model=receiver_type, app_label="myapp")
-    sender_content_type_id = contentType.id
-
-    try:
-        if receiver_type == "user":
-            # 检查所有用户是否存在
-            users = User.objects.filter(UserID__in=receivers)
-            if users.count() != len(receivers):
-                return Response({"error": "One or more users do not exist"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 为每个接收者创建通知
-            for receiver in receivers:
-                notification = Notification.objects.create(
-                    sender_content_type_id=sender_content_type_id,
-                    sender_object_id=receiver,
-                    Type=notification_type,
-                    Message=message,
-                    AdditionalData=additional_data
-                )
-                NotificationReceiver.objects.create(
-                    Notification_id=notification.NotificationID,
-                    ReceiverUser_id=receiver,
-                    IsRead=False
-                )
-
-        elif receiver_type == "group":
-            # 检查所有群组是否存在
-            groups = GroupUsersLink.objects.filter(GroupID__in=receivers).values('GroupID').distinct()
-            if groups.count() != len(receivers):
-                return Response({"error": "One or more groups do not exist"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 为每个群组创建通知，并为群组中的每个用户创建通知接收记录
-            for receiver in receivers:
-                notification = Notification.objects.create(
-                    sender_content_type_id=sender_content_type_id,
-                    sender_object_id=receiver,
-                    Type=notification_type,
-                    Message=message,
-                    AdditionalData=additional_data
-                )
-                groupUsersLinks = GroupUsersLink.objects.filter(GroupID=receiver)
-                for group_user in groupUsersLinks:
-                    NotificationReceiver.objects.create(
-                        Notification_id=notification.NotificationID,
-                        ReceiverUser_id=group_user.UserID_id,
-                        IsRead=False
-                    )
-
-        else:
-            return Response({"error": "Invalid receiver type"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({"success": "Notifications created"}, status=status.HTTP_201_CREATED)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    serializer=NotificationSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 @api_view(['GET'])
-def fetch_notifications(request, user_id):
+@permission_classes([ForValidToken])
+def fetch_notifications(request):
     """
     获取指定用户的所有通知。
     """
-    try:
-        user = get_object_or_404(User, UserID=user_id)
-    except User.DoesNotExist:
-        return Response({"error": "user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    user_id = request.user_id
+    # 获取所有未读通知
+    unread_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=False).distinct()
 
-    # 获取用户的所有通知接收者
-    notification_receivers = NotificationReceiver.objects.filter(ReceiverUser_id=user.UserID)
+    # 获取最近十条已读通知
+    read_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=True).order_by('-CreatedAt')[:10]
 
-    # 准备一个列表来存储序列化后的通知
-    notifications_data = []
+    # 合并查询集
+    notifications = list(unread_notifications) + list(read_notifications)
 
-    # 遍历每个通知接收者，并获取对应的通知
-    for notification_receiver in notification_receivers:
-        notification_id = notification_receiver.Notification_id
-        notification = get_object_or_404(Notification, NotificationID=notification_id)
-        serializer = NotificationSerializer(notification)
-        notification_data = serializer.data
-        notification_data['IsRead'] = notification_receiver.IsRead  # 添加已读/未读状态字段
-        notification_data['NotificationReceiverID'] = notification_receiver.NotificationReceiverID  # 添加已读/未读状态字段
-        notifications_data.append(notification_data)
-
-    return Response(notifications_data, status=status.HTTP_200_OK)
-
+    # 序列化通知
+    serializer = NotificationFetchSerializer(notifications, many=True, context={'user_id': user_id})
+    return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
-def update_notification_status(request, notificationReceiverId):
+@permission_classes([ForValidToken])
+def update_notification_status(request, notificationId):
     """
     更新通知状态（例如，标记为已读）
     """
+    user_id=request.user_id
+    #找出notificationid=notificationId receiver=user_id的通知
+
     try:
-        notificationReceiver = NotificationReceiver.objects.get(NotificationReceiverID=notificationReceiverId)
+        notification=Notification.objects.get(pk=notificationId)
+        notificationReceiver = NotificationReceiver.objects.get(Notification=notification, Receiver=user_id)
     except NotificationReceiver.DoesNotExist:
-        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+    notificationReceiver.IsRead = True
+    notificationReceiver.save()
+    return JsonResponse({'message': 'Notification status updated successfully!'}, status=status.HTTP_200_OK)
 
-    new_status = request.data.get('status')
-    if new_status is not None:
-        notificationReceiver.IsRead = new_status
-        notificationReceiver.save()
 
-    return Response({"success": "Notification updated successfully"}, status=status.HTTP_200_OK)
+
+    
 
 
 @api_view(['DELETE'])
@@ -1134,6 +1056,14 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
             'data': serializer.data,
         }, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def autocomplete_projects(request):
+    project_name = request.query_params.get('name_substring', None)
+    if project_name:
+        queryset = Project.objects.filter(ProjectName__icontains=project_name)[:10]
+        serializer = ProjectSerializer(queryset, many=True)
+        return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+    return JsonResponse({'error': 'Project name not provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def get_projects_by_participant(request, id):
