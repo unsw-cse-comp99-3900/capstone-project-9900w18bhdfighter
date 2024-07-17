@@ -196,15 +196,17 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found.'}, status=404)
             
-            if user_data['role'] in [2, 4, 5]:
-                try:
-                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                    project_owner_email = project_owner.EmailAddress
-                except User.DoesNotExist:
-                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
-            else:
+            if user_data['role'] not in [2, 4, 5]:
                 return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
-                
+            try:
+                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                project_owner_email = project_owner.EmailAddress
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Project owner not found.'}, status=404)
+            
+            if project_owner.UserRole not in [2, 4]:  
+                return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
+    
             data['ProjectOwner'] = project_owner_email  
 
             serializer = ProjectSerializer(data=data)
@@ -273,7 +275,11 @@ def project_update(request, id):
                     project_owner_email = project_owner.EmailAddress
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Project owner not found.'}, status=404)
+                
+                if project_owner.UserRole not in [2, 4]:  
+                    return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
                 data['ProjectOwner'] = project_owner_email  
+
             elif user_data['role'] == 2:
                 if data['ProjectOwner'] != user_data['email']:
                     return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
