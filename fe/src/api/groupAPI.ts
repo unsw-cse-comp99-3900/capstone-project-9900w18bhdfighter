@@ -35,7 +35,7 @@ const getGroupByParticipant = async (groupId: string | number) => {
   return api.get<GroupRspDTO[]>(`api/groups/users/${groupId}`)
 }
 const getGroupPreferencesById = async (groupId: string | number) => {
-  return api.get<GroupRspDTO[]>(`api/groups//${groupId}preferences/`)
+  return api.get<GroupRspDTO[]>(`api/groups/${groupId}/preferences/`)
 }
 
 const assignGroupToProject = async (data: {

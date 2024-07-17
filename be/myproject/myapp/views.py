@@ -1155,14 +1155,7 @@ def get_groups_by_participant(request, id):
     groups = Group.objects.filter(groupuserslink__UserID=user)
     serializer = GroupFetchSerializer(groups, many=True)
     return JsonResponse(serializer.data, safe=False)
-@api_view(['GET'])
-def get_group_detail(request, id):
-    try:
-        group = Group.objects.get(pk=id)
-    except Group.DoesNotExist:
-        return JsonResponse({'error': 'Group not found'}, status=404)
-    serializer = GroupFetchSerializer(group)
-    return JsonResponse(serializer.data, safe=False)
+
 
 
 @api_view(['GET'])

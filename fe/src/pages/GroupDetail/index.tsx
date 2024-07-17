@@ -1,15 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Button,
   Descriptions,
   Flex,
   List,
-  Tag,
   Spin,
-  Select,
   Modal,
   Input,
-  message,
   Form,
 } from 'antd'
 import styled from 'styled-components'
@@ -17,32 +14,24 @@ import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
 import { useParams } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
-import { AxiosError } from 'axios'
 import {
   joinGroup,
   leaveGroup,
   getGroupDetailByGroupId,
+  mapGroupDTOToGroup,
 } from '../../api/groupAPI' // Import the joinGroup function
-import {
-  Group,
-  GroupLeaveDTO,
-  GroupJoinDTO,
-  GroupRspDTO,
-} from '../../types/group'
+import { Group } from '../../types/group'
 import { roleNames } from '../../constant/role'
-import GroupDetailModal from '../Teams/components/GroupDetailModal'
-import ModalGroupForm from './components/GroupEditModal'
 import Paragraph from 'antd/es/typography/Paragraph'
 import api from '../../api/config'
+import CandidateSearchBar from './components/CandidateSearchBar'
+import { UserProfileSlim } from '../../types/user'
+import { errHandler } from '../../utils/parse'
+import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
+import { getUserById } from '../../api/userAPI'
+import route from '../../constant/route'
 
-interface ErrorResponse {
-  error: string
-}
-export type GroupDetailModalType =
-  | 'detail'
-  | 'metaEdit'
-  | 'allocation'
-  | 'confirm'
+export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
 // Mock API function
 const fakeApiAllocateProject = (): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -55,11 +44,6 @@ const fakeApiAllocateProject = (): Promise<string> => {
       }
     }, 2000)
   })
-}
-
-const { Option } = Select
-const isAxiosError = (error: unknown): error is AxiosError => {
-  return (error as AxiosError).isAxiosError !== undefined
 }
 
 const Wrapper = styled(Flex)`
@@ -76,10 +60,6 @@ const FlexContainer = styled(Flex)`
 
 const StyledButton = styled(Button)`
   height: 32px; /* Adjust height to match input/select */
-`
-
-const StyledSelect = styled(Select)`
-  height: 32px; /* Adjust height to match button */
 `
 
 const StyledInput = styled(Input)`
@@ -113,28 +93,25 @@ const EditWrapper = styled(Flex)`
 `
 const roleMap = roleNames
 
-const potentialMembers = [
-  'Potential Member 1',
-  'Potential Member 2',
-  'Potential Member 3',
-  'Potential Member 4',
-]
-
 const GroupDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { usrInfo } = useAuthContext()
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
-  const [members, setMembers] = useState<string[]>([])
-  const [newMember, setNewMember] = useState<string | undefined>(undefined)
-  const [isUserMember, setIsUserMember] = useState<boolean>(false)
-  const [projectPreferences, setProjectPreferences] = useState<string[]>([
-    'Project Preference 1',
-    'Project Preference 2',
-    'Project Preference 3',
-  ])
+  const [creatorProfile, setCreatorProfile] = useState<{
+    id: number
+    fullName: string
+  } | null>()
+  const { msg } = useGlobalComponentsContext()
+  const members = useMemo(() => group?.groupMembers || [], [group])
+  const isUserMember = useMemo(() => {
+    if (!usrInfo) return false
+    const userId = usrInfo.id
+    return members.some((member) => member.id === userId)
+  }, [members, usrInfo])
+
   const [newProjectPreference, setNewProjectPreference] = useState<string>('')
-  const [selectedProject, setSelectedProject] = useState<string>('')
+
   const [allocationResults, setAllocationResults] = useState<string | null>(
     null
   )
@@ -150,203 +127,71 @@ const GroupDetail = () => {
   const hasProjectPreferencesAccess =
     userRole && ['coordinator', 'admin', 'tutor'].includes(userRole)
 
+  const fetchGroupDetails = async () => {
+    if (!id) return
+    try {
+      console.log('Fetching group details for group ID:', id)
+
+      const res = await getGroupDetailByGroupId(Number(id))
+      const res1 = await getUserById(res.data.CreatedBy)
+      const groupData = res.data
+      setCreatorProfile({
+        id: res1.data.data.UserID,
+        fullName: res1.data.data.FirstName + ' ' + res1.data.data.LastName,
+      })
+      setGroup(mapGroupDTOToGroup(groupData))
+    } catch (e) {
+      console.error('Error fetching group details:', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    const fetchGroupDetails = async () => {
-      try {
-        const res = await getGroupDetailByGroupId(Number(id))
-        const groupData: GroupRspDTO = res.data
-        console.log('Group Details:', groupData)
-
-        // 确保 GroupMembers 和 Preferences 存在并且是数组
-        const groupMembers = Array.isArray(groupData.GroupMembers)
-          ? groupData.GroupMembers.map((member) => ({
-              id: member.UserID,
-              firstName: member.FirstName,
-              lastName: member.LastName,
-              email: member.EmailAddress,
-              role: member.UserRole,
-            }))
-          : []
-
-        const preferences = Array.isArray(groupData.Preferences)
-          ? groupData.Preferences.map((preference) => ({
-              preferenceId: preference.PreferenceID,
-              preference: {
-                id: preference.Preference.ProjectID,
-                name: preference.Preference.ProjectName,
-                description: preference.Preference.ProjectDescription,
-                owner: preference.Preference.ProjectOwner,
-                maxNumOfGroup: preference.Preference.MaxNumOfGroup,
-                requiredSkills: preference.Preference.RequiredSkills.map(
-                  (skillRecord) => {
-                    const skill = skillRecord.Skill
-                    return {
-                      skillId: skill.SkillID,
-                      skillName: skill.SkillName,
-                      area: {
-                        id: skill.Area.AreaID,
-                        name: skill.Area.AreaName,
-                      },
-                    }
-                  }
-                ),
-                projectOwnerId: preference.Preference.projectOwner_id,
-                createdBy: preference.Preference.CreatedBy,
-              },
-              rank: preference.Rank,
-              lock: preference.Lock,
-              groupId: preference.Group,
-            }))
-          : []
-
-        // Map GroupRspDTO to Group
-        const mappedGroup: Group = {
-          groupId: groupData.GroupID,
-          groupName: groupData.GroupName,
-          groupDescription: groupData.GroupDescription,
-          maxMemberNum: groupData.MaxMemberNum,
-          groupMembers: groupMembers,
-          groupOwner: groupData.GroupOwner,
-          createdBy: groupData.CreatedBy,
-          preferences: preferences,
-        }
-
-        setGroup(mappedGroup)
-        setMembers(
-          mappedGroup.groupMembers.map(
-            (member) => `${member.firstName} ${member.lastName}`
-          )
-        )
-        setLoading(false)
-
-        // Check if the user is already a member of the group
-        if (usrInfo) {
-          const userIsMember = mappedGroup.groupMembers.some(
-            (member) => member.id === usrInfo.id
-          )
-          setIsUserMember(userIsMember)
-        }
-      } catch (e) {
-        console.error('Error fetching group details:', e)
-        message.error('Failed to load group details')
-        setLoading(false)
-      }
-    }
     fetchGroupDetails()
-  }, [id, usrInfo])
+  }, [id])
 
-  const handleAddMember = () => {
-    if (newMember && !members.includes(newMember)) {
-      setMembers([...members, newMember])
-      setNewMember(undefined)
-    }
+  const handleAddMember = async (memberId: number) => {
+    //todo: call add api
+    console.log(memberId)
+
+    await fetchGroupDetails()
   }
 
-  const handleRemoveMember = (member: string) => {
-    setMembers(members.filter((m) => m !== member))
+  const handleRemoveMember = async (memberId: number) => {
+    //todo: call remove api
+    console.log(memberId)
+    await fetchGroupDetails()
   }
 
-  const handleAddProjectPreference = () => {
-    if (
-      newProjectPreference &&
-      !projectPreferences.includes(newProjectPreference)
-    ) {
-      setProjectPreferences([...projectPreferences, newProjectPreference])
-      setNewProjectPreference('')
-    }
-  }
+  const handleAddProjectPreference = async () => {
+    //todo: call preference add api
 
-  const handleApproveProject = (project: string) => {
-    Modal.confirm({
-      title: 'Confirm Approval',
-      content: `Are you sure you want to approve "${project}" as the project?`,
-      onOk: () => {
-        setSelectedProject(project)
-      },
-    })
+    await fetchGroupDetails()
   }
 
   const handleJoinOrLeaveGroup = async () => {
-    if (isUserMember) {
-      // Logic to leave the group
-      if (usrInfo) {
-        const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-        const data: GroupLeaveDTO = {
-          group_id: Number(id),
-          student_id: usrInfo.id,
-        }
-        try {
-          console.log('Sending request to leave group with data:', data)
-          const response = await leaveGroup(data)
-
-          console.log('Response:', response)
-
-          if (response.status === 201) {
-            setMembers(members.filter((member) => member !== fullName))
-            setIsUserMember(false)
-            message.success('Leave successfully')
-          }
-        } catch (error: unknown) {
-          if (isAxiosError(error)) {
-            console.error('Error response data:', error.response?.data)
-            console.error('Error response status:', error.response?.status)
-            console.error('Error response headers:', error.response?.headers)
-            const errorMessage =
-              (error.response?.data as ErrorResponse)?.error ||
-              'An unknown error occurred'
-            message.error(errorMessage)
-          } else if (error instanceof Error) {
-            console.error('Error message:', error.message)
-            message.error(error.message)
-          } else {
-            console.error('Unknown error:', error)
-            message.error('An unknown error occurred')
-          }
-        }
-      }
-    } else {
-      // Logic to join the group
-      if (usrInfo) {
-        const fullName = `${usrInfo.firstName} ${usrInfo.lastName}`
-        const data: GroupJoinDTO = {
-          group_id: Number(id),
-          student_id: usrInfo.id,
-        }
-        try {
-          console.log('Sending request to join group with data:', data)
-          const response = await joinGroup(data)
-
-          console.log('Response:', response)
-
-          if (response.status === 201) {
-            setMembers([...members, fullName])
-            setIsUserMember(true)
-            message.success('Join successfully')
-          }
-        } catch (error: unknown) {
-          if (isAxiosError(error)) {
-            console.error('Error response data:', error.response?.data)
-            console.error('Error response status:', error.response?.status)
-            console.error('Error response headers:', error.response?.headers)
-            const errorMessage =
-              (error.response?.data as ErrorResponse)?.error ||
-              'An unknown error occurred'
-            message.error(errorMessage)
-          } else if (error instanceof Error) {
-            console.error('Error message:', error.message)
-            message.error(error.message)
-          } else {
-            console.error('Unknown error:', error)
-            message.error('An unknown error occurred')
-          }
-        }
-      }
+    if (!usrInfo) return
+    const data = {
+      group_id: Number(id),
+      student_id: usrInfo.id,
+    }
+    // Logic to leave the group
+    try {
+      await (isUserMember ? leaveGroup(data) : joinGroup(data))
+      await fetchGroupDetails()
+      msg.success('Leave successfully')
+    } catch (error: unknown) {
+      errHandler(
+        error,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
 
   const handleModalClose = (type: GroupDetailModalType) => {
     const dict = {
-      detail: () => setOpen({ ...open, detail: false }),
       metaEdit: () => setOpen({ ...open, metaEdit: false }),
       allocation: () => {
         setOpen({ ...open, allocation: false })
@@ -359,7 +204,6 @@ const GroupDetail = () => {
   }
   const handleModalOpen = (type: GroupDetailModalType) => {
     const dict = {
-      detail: () => setOpen({ ...open, detail: true }),
       metaEdit: () => setOpen({ ...open, metaEdit: true }),
       allocation: () => setOpen({ ...open, allocation: true }),
       confirm: () => setOpen({ ...open, confirm: true }),
@@ -383,10 +227,10 @@ const GroupDetail = () => {
       const values = await form.validateFields()
       // Send the form data to the backend
       await api.post('/api/savePreferences', values)
-      message.success('Preferences saved successfully')
+      msg.success('Preferences saved successfully')
       handleModalClose('metaEdit')
     } catch (error) {
-      message.error('Failed to save preferences')
+      msg.err('Failed to save preferences')
     }
   }
 
@@ -410,24 +254,7 @@ const GroupDetail = () => {
           submitted, they cannot be changed.
         </Paragraph>
       </Modal>
-      <GroupDetailModal
-        form={form}
-        isVisible={open.detail}
-        handleMultipleModalClose={handleModalClose}
-        handleMultipleModalOpen={handleModalOpen}
-        group={group}
-      ></GroupDetailModal>
-      <ModalGroupForm
-        title="Edit Group Meta Data"
-        initialData={group || undefined}
-        isModalOpen={open.metaEdit}
-        handleOk={() => handleModalClose('metaEdit')}
-        handleCancel={() => handleModalClose('metaEdit')}
-      ></ModalGroupForm>
       <EditWrapper gap={10}>
-        <Button type="primary" onClick={() => handleModalOpen('detail')}>
-          Manage Preference
-        </Button>
         {/* 
         todo: 只给admin展示
         */}
@@ -438,47 +265,21 @@ const GroupDetail = () => {
       <DescriptionsContainer>
         <InnerDescriptionsContainer>
           <Descriptions bordered title="Group Detail">
-            <Descriptions.Item span={3} label="Group Name">
+            <Descriptions.Item span={1} label="Group Name">
               {group?.groupName}
             </Descriptions.Item>
-            <Descriptions.Item span={3} label="Project Name">
-              {selectedProject || 'No project selected'}
-            </Descriptions.Item>
-            <Descriptions.Item span={2} label="Owner">
-              <Link href="/">Client</Link>
-            </Descriptions.Item>
             <Descriptions.Item span={2} label="Creator">
-              <Link href="/">TUT</Link>
+              <Link href={`${route.PROFILE}/${creatorProfile?.id}`}>
+                {creatorProfile?.fullName}
+              </Link>
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Description">
               {group?.groupDescription}
             </Descriptions.Item>
-            <Descriptions.Item span={3} label="Possessed Skills">
-              <Tag style={{ margin: '0.1rem' }} color="magenta">
-                example
-              </Tag>
-            </Descriptions.Item>
             <Descriptions.Item span={3} label="Group Members">
               <FlexContainer>
-                <StyledSelect
-                  value={newMember}
-                  onChange={(value) => setNewMember(value as string)}
-                  placeholder="Select new member"
-                  style={{ width: 200, marginRight: 10 }}
-                >
-                  {potentialMembers.map((member) => (
-                    <Option key={member} value={member}>
-                      {member}
-                    </Option>
-                  ))}
-                </StyledSelect>
-                <StyledButton
-                  size="small"
-                  type="primary"
-                  onClick={handleAddMember}
-                >
-                  Add Member
-                </StyledButton>
+                {/* todo: */}
+                <CandidateSearchBar handleSelect={handleAddMember} />
               </FlexContainer>
               <List
                 bordered
@@ -488,20 +289,25 @@ const GroupDetail = () => {
                   marginTop: '1rem',
                 }}
                 dataSource={members}
-                renderItem={(member: string) => (
+                renderItem={(member: UserProfileSlim) => (
                   <List.Item
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
                     actions={[
                       <StyledButton
                         key="1"
                         size="small"
-                        type="primary"
-                        onClick={() => handleRemoveMember(member)}
+                        type="text"
+                        danger
+                        onClick={() => handleRemoveMember(member.id)}
                       >
                         Remove
                       </StyledButton>,
                     ]}
                   >
-                    {member}
+                    {member.firstName} {member.lastName}
                   </List.Item>
                 )}
               />
@@ -529,31 +335,6 @@ const GroupDetail = () => {
                       Add Project Preference
                     </StyledButton>
                   </FlexContainer>
-                  <List
-                    bordered
-                    style={{
-                      maxHeight: '15rem',
-                      overflow: 'auto',
-                      marginTop: '1rem',
-                    }}
-                    dataSource={projectPreferences}
-                    renderItem={(project: string) => (
-                      <List.Item
-                        actions={[
-                          <StyledButton
-                            key="1"
-                            size="small"
-                            type="primary"
-                            onClick={() => handleApproveProject(project)}
-                          >
-                            Approve
-                          </StyledButton>,
-                        ]}
-                      >
-                        {project}
-                      </List.Item>
-                    )}
-                  />
                 </Descriptions.Item>
                 <Descriptions.Item span={3} label="Actions">
                   <StyledButton type="primary" onClick={handleAllocateProject}>

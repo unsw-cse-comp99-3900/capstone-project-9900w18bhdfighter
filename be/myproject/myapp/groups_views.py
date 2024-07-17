@@ -122,3 +122,9 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             serializer = GroupFetchSerializer(queryset, many=True)
             return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
         return JsonResponse({'error': 'Group substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializers=GroupFetchSerializer(instance)
+        return JsonResponse(serializers.data, status=status.HTTP_200_OK)
+    

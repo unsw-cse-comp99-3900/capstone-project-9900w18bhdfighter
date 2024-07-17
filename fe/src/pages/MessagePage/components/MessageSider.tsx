@@ -2,9 +2,10 @@ import styled from 'styled-components'
 import { Collapse, Flex, List, Tag } from 'antd'
 import type { CollapseProps, FlexProps } from 'antd'
 import Avatar from '../../../components/Avatar'
-import ContactSearchBar from './ContactSearchBar'
+
 import { useMessageContext } from '../../../context/MessageContext'
 import { useNavigate } from 'react-router-dom'
+import ContactSearchBar from './ContactSearchBar'
 
 const RecentContactList = styled(Flex)`
   flex-direction: column;
