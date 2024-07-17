@@ -71,7 +71,7 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
       <Form
         layout="vertical"
         form={form}
-        initialValues={{ groupMaxMemberNumber: 1 }}
+        initialValues={{ groupMaxMemberNumber: 5 }}
         onFinish={onSubmit}
         style={{ width: '100%' }}
       >
@@ -88,12 +88,12 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
           rules={[
             {
               required: true,
-              min: 1,
+              min: 5,
               type: 'number',
             },
           ]}
         >
-          <InputNumber style={{ width: '100%' }} min={1} />
+          <InputNumber style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea />

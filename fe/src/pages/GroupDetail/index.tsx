@@ -30,6 +30,7 @@ import { errHandler } from '../../utils/parse'
 import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
 import { getUserById } from '../../api/userAPI'
 import route from '../../constant/route'
+import ModalGroupForm from './components/GroupEditModal'
 
 export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
 // Mock API function
@@ -241,6 +242,8 @@ const GroupDetail = () => {
       </Wrapper>
     )
   }
+  console.log(group)
+
   return (
     <Wrapper>
       <Modal
@@ -254,6 +257,13 @@ const GroupDetail = () => {
           submitted, they cannot be changed.
         </Paragraph>
       </Modal>
+      <ModalGroupForm
+        title="Edit Group Meta Data"
+        isModalOpen={open.metaEdit}
+        handleOk={handleSave}
+        handleCancel={() => handleModalClose('metaEdit')}
+        initialData={group || undefined}
+      />
       <EditWrapper gap={10}>
         {/* 
         todo: 只给admin展示

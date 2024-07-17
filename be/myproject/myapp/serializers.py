@@ -90,6 +90,7 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
 
 class GroupSerializer(serializers.ModelSerializer):
     GroupDescription = serializers.CharField(allow_blank=True)
+    MaxMemberNumber = serializers.IntegerField(min_value=5)
     class Meta:
         model=Group
         fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']

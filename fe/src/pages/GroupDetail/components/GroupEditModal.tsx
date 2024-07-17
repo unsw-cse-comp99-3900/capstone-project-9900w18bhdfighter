@@ -2,12 +2,11 @@ import { Form, Input, InputNumber, Modal } from 'antd'
 import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
-import { ProjectReqDTO } from '../../../types/proj'
-import { Group } from '../../../types/group'
+import { Group, GroupReqDTO } from '../../../types/group'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
-  handleOk: (_projectCreateDto: ProjectReqDTO) => void
+  handleOk: (_groupReqDTO: GroupReqDTO) => void
   handleCancel: () => void
   initialData?: Group | undefined
   title: string
@@ -32,25 +31,13 @@ type FormValues = {
   description: string
   skills: Skill[]
   email: string
-  maxGroupNumber: number
+  groupMaxMemberNumber: number
 }
 
-const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
-  return {
-    ProjectName: values.projectName,
-    ProjectDescription: values.description,
-    ProjectOwner: values.email,
-    requiredSkills: values.skills.map((s: Skill) => ({
-      area_id: s.area,
-      skill: s.skill,
-    })),
-    MaxNumOfGroup: values.maxGroupNumber,
-  }
-}
 const ModalGroupForm = ({
   title,
   isModalOpen,
-  handleOk,
+
   handleCancel,
   initialData,
 }: Props) => {
@@ -60,7 +47,8 @@ const ModalGroupForm = ({
     try {
       await form.validateFields()
       const values = form.getFieldsValue()
-      handleOk(mapFormValuesToProjectReqDTO(values))
+      console.log(values)
+      //handleOk(values)
     } catch (e) {
       console.log(e)
     }
@@ -80,7 +68,7 @@ const ModalGroupForm = ({
         initialValues={{
           projectName: initialData?.groupName,
           description: initialData?.groupDescription,
-          maxGroupNumber: initialData?.maxMemberNum,
+          groupMaxMemberNumber: initialData?.maxMemberNum,
         }}
         form={form}
         style={{ width: '100%' }}
@@ -96,17 +84,17 @@ const ModalGroupForm = ({
           <Input.TextArea />
         </Form.Item>
         <Form.Item
+          label="Group Max Member Number"
+          name="groupMaxMemberNumber"
           rules={[
             {
               required: true,
-              message: 'Missing Max Group Number',
+              min: 1,
               type: 'number',
             },
           ]}
-          label="Max Group Number"
-          name="maxGroupNumber"
         >
-          <InputNumber style={{ width: '100%' }} min={1} />
+          <InputNumber style={{ width: '100%' }} />
         </Form.Item>
       </Form>
     </_Modal>

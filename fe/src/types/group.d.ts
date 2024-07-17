@@ -48,7 +48,7 @@ interface GroupRspDTO {
   GroupID: number
   GroupName: string
   GroupDescription: string
-  MaxMemberNum: number
+  MaxMemberNumber: number
   GroupMembers: UserProfileSlimDTO[]
   GroupOwner: string
   CreatedBy: number

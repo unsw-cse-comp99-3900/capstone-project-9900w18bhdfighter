@@ -84,7 +84,7 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
   return {
     groupName: groupRspDTO.GroupName,
     groupDescription: groupRspDTO.GroupDescription,
-    maxMemberNum: groupRspDTO.MaxMemberNum,
+    maxMemberNum: groupRspDTO.MaxMemberNumber,
     groupMembers: groupMembers,
     groupOwner: groupRspDTO.GroupOwner,
     createdBy: groupRspDTO.CreatedBy,

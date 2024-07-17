@@ -130,7 +130,7 @@ def add_groups(apps, schema_editor):
             GroupName=f"Group {i+4}",
             GroupDescription=f"Description for Group {i+4}",
             CreatedBy=random_user,
-            MaxMemberNumber=random.randint(4, 8)
+            MaxMemberNumber=random.randint(5,7 )
         )
         group.save()
     
