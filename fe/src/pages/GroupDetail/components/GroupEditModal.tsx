@@ -89,7 +89,7 @@ const ModalGroupForm = ({
           rules={[
             {
               required: true,
-              min: 1,
+              min: 5,
               type: 'number',
             },
           ]}
