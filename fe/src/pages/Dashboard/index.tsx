@@ -27,6 +27,11 @@ const items: TabsProps['items'] = [
     label: 'Groups',
     children: <_GroupsList />,
   },
+  {
+    key: 'allocation',
+    label: 'Allocation',
+    children: <_GroupsList />,
+  },
 ]
 const Dashboard = () => {
   const theme = useTheme()
