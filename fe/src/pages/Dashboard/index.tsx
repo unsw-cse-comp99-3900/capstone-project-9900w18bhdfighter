@@ -4,6 +4,7 @@ import styled, { useTheme } from 'styled-components'
 import ProjectsList from './components/ProjectsList'
 import { getThemeToken } from '../../utils/styles'
 import GroupsList from './components/GroupsList'
+import AllocationList from './components/AllocationList'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -16,6 +17,7 @@ const _Tabs = styled(Tabs)`
 `
 const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
+const _AllocationList = styled(AllocationList)``
 const items: TabsProps['items'] = [
   {
     key: 'projectList',
@@ -30,7 +32,7 @@ const items: TabsProps['items'] = [
   {
     key: 'allocation',
     label: 'Allocation',
-    children: <_GroupsList />,
+    children: <_AllocationList />,
   },
 ]
 const Dashboard = () => {

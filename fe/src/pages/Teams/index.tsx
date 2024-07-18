@@ -15,8 +15,8 @@ import { Group, GroupCreate, GroupRspDTO } from '../../types/group'
 import { UserProfileSlim } from '../../types/user'
 import GroupContextProvider from '../../context/GroupContext'
 import api from '../../api/config'
-import { getAllGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
-import { useAuthContext } from '../../context/AuthContext' // 确保路径正确
+import { mapGroupDTOToGroup } from '../../api/groupAPI'
+import { useAuthContext } from '../../context/AuthContext'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
 import route from '../../constant/route'
@@ -47,15 +47,14 @@ const _Teams = () => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await getAllGroups()
-        const allGroups = response.data.map(mapGroupDTOToGroup)
-        // 过滤当前用户参与的小组
-        const userGroups = allGroups.filter((group: Group) =>
-          group.groupMembers.some(
-            (member: UserProfileSlim) => member.id === currentUserId
-          )
+        const response = await api.get(`groups`)
+        console.log(response)
+        console.log(currentUserId)
+        const allGroups = response.data
+        const userCreatedGroups = allGroups.filter(
+          (group: GroupRspDTO) => group.CreatedBy === currentUserId
         )
-        setGroups(userGroups)
+        setGroups(userCreatedGroups.map(mapGroupDTOToGroup))
       } catch (error) {
         message.error('Failed to fetch groups.')
       }
@@ -69,7 +68,6 @@ const _Teams = () => {
   const handleOk = async (groupCreateDto: GroupCreate) => {
     console.log('handleOk started with:', groupCreateDto)
     setIsModalOpen(false)
-    // 获取最新组数据的逻辑
     const response = await api.get<GroupRspDTO[]>('/groups')
     const allGroups = response.data.map(mapGroupDTOToGroup)
     const userGroups = allGroups.filter((group: Group) =>

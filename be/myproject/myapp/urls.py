@@ -38,4 +38,3 @@ urlpatterns = [
 
 
 urlpatterns += url.urls
-
