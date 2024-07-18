@@ -12,10 +12,12 @@ const MsgContainer = styled(Flex)`
   flex-direction: column;
   align-items: center;
 `
-export const MessageMain = () => (
-  <MsgContainer>
-    <MessageHeader />
-    <MessageList />
-    <MessageInputArea />
-  </MsgContainer>
-)
+export const MessageMain = () => {
+  return (
+    <MsgContainer>
+      <MessageHeader />
+      <MessageList />
+      <MessageInputArea />
+    </MsgContainer>
+  )
+}

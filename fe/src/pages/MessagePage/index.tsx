@@ -2,7 +2,7 @@ import { Flex } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import _MessageSider from './components/MessageSider'
-import MessageContextProvider from '../../context/MessageContext'
+
 import { Outlet } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
@@ -38,11 +38,7 @@ const _MessagePage = () => {
 }
 
 const MessagePage = () => {
-  return (
-    <MessageContextProvider>
-      <_MessagePage />
-    </MessageContextProvider>
-  )
+  return <_MessagePage />
 }
 
 export default MessagePage

@@ -16,9 +16,7 @@ def is_user_at_window(window_id,user_id,room_map):
     if user_room==window_id:
         return True
     return False
-def is_both_on_same_window(user1_id, user2_id,window_id,room_map):
-    if is_user_at_window(window_id,user1_id,room_map) and is_user_at_window(window_id,user2_id,room_map):
-        return True
+
 def who_is_at_this_window(window_id,room_map):
     res=[]
     for user_id,room_id in room_map.items():
@@ -26,7 +24,15 @@ def who_is_at_this_window(window_id,room_map):
             res.append(user_id)
     return res
 
+def is_sender_receiver_in_same_window(sender,receiver,room_map):
 
+    sender_key=f"user_{sender}"
+    receiver_at=room_map.get(receiver,"")
+    print(f"receiver_at: {receiver_at}")
+    print(f"sender: {sender}")
+    if receiver_at==sender_key:
+        return True
+    return False
 class WSMsgRspDTO:
     def __init__(self,status_code,message,data=None,type=None):
         self.status_code=status_code

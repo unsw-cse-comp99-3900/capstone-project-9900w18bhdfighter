@@ -1,6 +1,6 @@
 interface NotificationRspDTO {
   NotificationID: number
-  Type: 'personal' | 'group'
+  Type: 'personal' | 'group' | 'project'
   Message: string
   AdditionalData: Record<string, unknown>
   CreatedAt: string
@@ -10,7 +10,7 @@ interface NotificationRspDTO {
 }
 
 interface NotificationReqDTO {
-  Type: 'personal' | 'group'
+  Type: 'personal' | 'group' | 'project'
   Message: string
   AdditionalData: Record<string, unknown>
   FromGroup: number | null
@@ -20,9 +20,10 @@ interface NotificationReqDTO {
 interface NotificationStatus {
   IsRead: boolean
 }
+
 interface Notification {
   notificationId: number
-  type: 'personal' | 'group'
+  type: 'personal' | 'group' | 'project'
   message: string
   additionalData: Record<string, unknown>
   createdAt: string

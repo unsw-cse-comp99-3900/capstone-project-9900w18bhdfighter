@@ -1,5 +1,5 @@
 
-from .utils import WSMsgRspDTO, is_both_on_same_window, is_user_at_window
+from .utils import WSMsgRspDTO, is_sender_receiver_in_same_window, is_user_at_window
 from ..serializers import GroupMessageSerializer, MessageSerializer
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -86,6 +86,15 @@ class Consumer(AsyncWebsocketConsumer):
                         res=WSMsgRspDTO(4020,f'Error: {str(e)}').to_json()
                         await self.send(text_data=res)
             return
+        
+        if action=="LEAVE":
+            removed_user = curr_window.pop(int(self.user_id), None)
+            if removed_user is not None:
+                print(f"Removed user {self.user_id} from curr_window")
+            else:
+                print(f"User {self.user_id} was not found in curr_window")
+            return
+    
     # 如果收到来自其他用户的消息，发送给当前用户
     async def receive_from_others(self, event):
         resp = event['message']
@@ -151,7 +160,8 @@ class Consumer(AsyncWebsocketConsumer):
         if receiver_channel_name in self.channel_layer.groups:
             print("用户在线")
             print(curr_window)
-            if is_both_on_same_window(sender_id, receiver_id,curr_window[int(self.user_id)], curr_window):
+ 
+            if is_sender_receiver_in_same_window(sender_id, receiver_id,curr_window):
                 print("用户在同一个房间")
                 res=await self.save_user_message(data,isRead=True)
             else:

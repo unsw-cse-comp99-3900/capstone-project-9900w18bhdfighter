@@ -1,4 +1,4 @@
-import { Menu } from 'antd'
+import { Badge, Menu } from 'antd'
 import Sider from 'antd/es/layout/Sider'
 import { useEffect, useState } from 'react'
 import { AiFillHome, AiFillProject } from 'react-icons/ai'
@@ -12,6 +12,7 @@ import { FaUserGroup } from 'react-icons/fa6'
 import { IoSettings } from 'react-icons/io5'
 import { useAuthContext } from '../../../context/AuthContext'
 import { role } from '../../../constant/role'
+import { useMessageContext } from '../../../context/MessageContext'
 const _Sider = styled(Sider)`
   padding-top: ${getThemeToken('paddingMD', 'px')};
 `
@@ -21,6 +22,7 @@ const SiderNav = () => {
   const navigate = useNavigate()
   const [selectedKey, setSelectedKey] = useState(route.DASHBOARD)
   const { role: _role } = useAuthContext()
+  const { unreadMsgs } = useMessageContext()
   useEffect(() => {
     setSelectedKey(location.pathname)
   }, [location.pathname])
@@ -57,7 +59,20 @@ const SiderNav = () => {
           },
           {
             key: route.MESSAGE,
-            icon: <MdChat />,
+            icon: (
+              <Badge
+                style={{
+                  maxWidth: 28,
+                  minWidth: 14,
+                }}
+                offset={[5, 0]}
+                count={unreadMsgs}
+                size="small"
+                overflowCount={10}
+              >
+                <MdChat />
+              </Badge>
+            ),
             label: 'Chat',
           },
           {

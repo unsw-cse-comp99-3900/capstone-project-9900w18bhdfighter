@@ -24,10 +24,7 @@ const _ProjectsList = styled(List)`
 
   overflow-y: auto;
 `
-// const ActionGroup = styled(Flex)`
-//   padding: ${getThemeToken('paddingSM', 'px')};
-//   justify-content: flex-end;
-// `
+
 const ProjectsList = ({ className = '' }: Props) => {
   const [list, setList] = useState<Project[]>([])
   const [filteredLists, setFilteredLists] = useState<Project[]>([])
@@ -46,9 +43,6 @@ const ProjectsList = ({ className = '' }: Props) => {
   }, [])
   return (
     <Wrapper className={className}>
-      {/* <ActionGroup>
-        <Button type="primary">Start a allocation process</Button>
-      </ActionGroup> */}
       <_ProjectsList
         bordered
         header={

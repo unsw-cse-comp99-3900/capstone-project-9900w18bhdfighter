@@ -89,8 +89,8 @@ interface GroupMsg {
 }
 
 interface WSMsgReqDTO {
-  action: 'CHANGE_WINDOW' | 'NEW_MESSAGE'
-  type: 'user' | 'group'
+  action: 'CHANGE_WINDOW' | 'NEW_MESSAGE' | 'LEAVE'
+  type?: 'user' | 'group'
   currWindow?: number
   payload?: MsgReqDTO
 }
