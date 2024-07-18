@@ -1,12 +1,12 @@
 import { Flex, List, Space, Switch, Typography } from 'antd'
 
-import { Notification } from '../../../types/notification'
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 
 import styled, { useTheme } from 'styled-components'
 import { useState } from 'react'
 import NotificationListItem from './NotificationListItem'
 import { getThemeColor } from '../../../utils/styles'
+import { useNotificationContext } from '../../../context/NotificationContext'
 
 const Wrapper = styled(Flex)`
   width: 20rem;
@@ -34,15 +34,14 @@ const SwitchWrapper = styled(Space)`
   align-items: center;
 `
 
-type Props = {
-  notifications: Notification[] | null
-}
-const NotificationList = ({ notifications }: Props) => {
+const NotificationList = () => {
   const theme = useTheme()
   const [onlyUnread, setOnlyUnread] = useState(false)
+  const { notifications, markAllAsRead } = useNotificationContext()
   const filteredNotifications =
     notifications?.filter((n) => !onlyUnread || n.isRead === false) || []
-
+  const unreadCount =
+    notifications?.filter((n) => n.isRead === false).length || 0
   return (
     <Wrapper vertical>
       <ListHeader>
@@ -72,15 +71,20 @@ const NotificationList = ({ notifications }: Props) => {
           }}
           type="secondary"
         >
-          {filteredNotifications?.length} notifications
+          {notifications?.length} notifications in the last 30 days
         </Typography.Text>
-        <Typography.Link
-          style={{
-            fontSize: '0.75rem',
-          }}
-        >
-          Mark all as read
-        </Typography.Link>
+        {unreadCount ? (
+          <Typography.Link
+            onClick={() => {
+              markAllAsRead()
+            }}
+            style={{
+              fontSize: '0.75rem',
+            }}
+          >
+            Mark all as read
+          </Typography.Link>
+        ) : null}
       </ListSubHeader>
       <List
         dataSource={filteredNotifications}

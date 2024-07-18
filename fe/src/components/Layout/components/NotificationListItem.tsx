@@ -5,6 +5,7 @@ import styled, { useTheme } from 'styled-components'
 import { format } from 'timeago.js'
 import { Notification } from '../../../types/notification'
 import { getThemeColor, getThemeToken } from '../../../utils/styles'
+import { useNotificationContext } from '../../../context/NotificationContext'
 const NotificationCard = styled(Flex)`
   width: 100%;
   display: flex;
@@ -29,7 +30,7 @@ type Props = {
 const NotificationListItem = ({ notification }: Props) => {
   const [borderColor, setBorderColor] = useState('transparent')
   const theme = useTheme()
-
+  const { markAs } = useNotificationContext()
   return (
     <Item
       onMouseEnter={() => {
@@ -45,6 +46,11 @@ const NotificationListItem = ({ notification }: Props) => {
           title={notification.isRead ? 'Mark as unread' : 'Mark as read'}
         >
           <ActionButton
+            onClick={() => {
+              markAs(notification.notificationId, {
+                IsRead: !notification.isRead,
+              })
+            }}
             style={{
               borderColor: borderColor,
             }}

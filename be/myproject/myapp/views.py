@@ -31,7 +31,8 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-import logging
+from django.utils import timezone
+from datetime import timedelta
 # from .utils import generate_auth_token 
 
 
@@ -959,14 +960,16 @@ def fetch_notifications(request):
     获取指定用户的所有通知。
     """
     user_id = request.user_id
-    # 获取所有未读通知
-    unread_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=False).distinct()
+    #  # read_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=True).order_by('-CreatedAt')[:10]
 
-    # 获取最近十条已读通知
-    read_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=True).order_by('-CreatedAt')[:10]
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    # 获取最近三十天通知
+    notifications=Notification.objects.filter(notificationreceiver__Receiver_id=user_id, CreatedAt__gte=thirty_days_ago)
+    
+    
+   
 
-    # 合并查询集
-    notifications = list(unread_notifications) + list(read_notifications)
+
 
     # 序列化通知
     serializer = NotificationFetchSerializer(notifications, many=True, context={'user_id': user_id})
@@ -986,8 +989,13 @@ def update_notification_status(request, notificationId):
         notificationReceiver = NotificationReceiver.objects.get(Notification=notification, Receiver=user_id)
     except NotificationReceiver.DoesNotExist:
         return JsonResponse({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
-    notificationReceiver.IsRead = True
-    notificationReceiver.save()
+    try:
+        isRead=request.data.get('IsRead')
+        notificationReceiver.IsRead = isRead
+        notificationReceiver.save()
+    except:
+        return JsonResponse({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+
     return JsonResponse({'message': 'Notification status updated successfully!'}, status=status.HTTP_200_OK)
 
 
@@ -1013,17 +1021,17 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
     serializer_class = GroupProjectLinkSerializer
     
     def create(self, request, *args, **kwargs):
-        #如果存在则返回错误
         try:    
             project_id = request.data.get('ProjectID')
             group_id = request.data.get('GroupID')
             if GroupProjectsLink.objects.filter(ProjectID=project_id, GroupID=group_id).exists():
-                return JsonResponse({'error': 'Group project link already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': 'Group already exists in this Project.'}, status=status.HTTP_400_BAD_REQUEST)
         except:
             return JsonResponse({'error': 'Invalid data.'}, status=status.HTTP_400_BAD_REQUEST)
         
         serializer = GroupProjectLinkSerializer(data=request.data)
         if serializer.is_valid():
+            #通知组内成员
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1045,9 +1053,6 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
             return JsonResponse({'message': 'Group project link deleted successfully!'}, status=status.HTTP_200_OK)
         except GroupProjectsLink.DoesNotExist:
             return JsonResponse({'error': 'Group project link not found.'}, status=status.HTTP_404_NOT_FOUND)
-    
-        
-        
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

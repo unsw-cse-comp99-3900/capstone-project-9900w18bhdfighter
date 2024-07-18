@@ -1,43 +1,17 @@
 import { Badge, Button, Popover } from 'antd'
 
-import React, { useEffect, useState } from 'react'
 import NotificationList from './NotificationList'
-import { errHandler } from '../../../utils/parse'
-import {
-  getMyNotifications,
-  mapNotificationDTOToNotification,
-} from '../../../api/notificationAPI'
-import { Notification } from '../../../types/notification'
+
 import { IoIosNotifications } from 'react-icons/io'
 import { useGlobalTheme } from '../../../context/GlobalThemeContext'
+import NotificationContextProvider, {
+  useNotificationContext,
+} from '../../../context/NotificationContext'
 
-const NotificationPopover = () => {
-  const [notifications, setNotifications] = useState<Notification[] | null>(
-    null
-  )
+const _NotificationPopover = () => {
+  const { unreadNotifications } = useNotificationContext()
   const { onWidth } = useGlobalTheme()
-  const fetchNotification = async () => {
-    const res = await getMyNotifications()
-    const _notifications = res.data.map(mapNotificationDTOToNotification)
-    //sort by created time
-    _notifications.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
-    setNotifications(_notifications)
-  }
-  useEffect(() => {
-    try {
-      fetchNotification()
-    } catch (e) {
-      errHandler(
-        e,
-        (str) => console.log(str),
-        (str) => console.log(str)
-      )
-    }
-  }, [])
 
-  const unreadNotifications = notifications?.filter((n) => !n.isRead) || []
   return (
     <Popover
       autoAdjustOverflow
@@ -50,7 +24,7 @@ const NotificationPopover = () => {
         overflowY: 'auto',
         paddingTop: 0,
       }}
-      content={<NotificationList notifications={notifications} />}
+      content={<NotificationList />}
       trigger="click"
     >
       <Button
@@ -67,5 +41,11 @@ const NotificationPopover = () => {
     </Popover>
   )
 }
+
+const NotificationPopover = () => (
+  <NotificationContextProvider>
+    <_NotificationPopover />
+  </NotificationContextProvider>
+)
 
 export default NotificationPopover

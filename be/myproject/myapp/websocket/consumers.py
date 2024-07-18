@@ -219,7 +219,6 @@ class Consumer(AsyncWebsocketConsumer):
         
         res=await self.save_group_message(data,readBy)
 
-        print(res)
         for member in members:
             # 如果用户在线，直接发送消息
             receiver_channel_name = f"user_{member}"
