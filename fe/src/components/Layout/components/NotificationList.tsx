@@ -40,9 +40,8 @@ type Props = {
 const NotificationList = ({ notifications }: Props) => {
   const theme = useTheme()
   const [onlyUnread, setOnlyUnread] = useState(false)
-  const filteredNotifications = notifications?.filter(
-    (n) => !onlyUnread || n.isRead === false
-  )
+  const filteredNotifications =
+    notifications?.filter((n) => !onlyUnread || n.isRead === false) || []
 
   return (
     <Wrapper vertical>
@@ -83,14 +82,15 @@ const NotificationList = ({ notifications }: Props) => {
           Mark all as read
         </Typography.Link>
       </ListSubHeader>
-      <List>
-        {filteredNotifications?.map((notification) => (
+      <List
+        dataSource={filteredNotifications}
+        renderItem={(notification) => (
           <NotificationListItem
             key={notification.notificationId}
             notification={notification}
           />
-        ))}
-      </List>
+        )}
+      ></List>
     </Wrapper>
   )
 }

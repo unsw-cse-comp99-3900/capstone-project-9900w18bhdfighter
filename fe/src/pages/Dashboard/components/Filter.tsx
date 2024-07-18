@@ -7,6 +7,8 @@ import {
   getProjectByParticipant,
   mapProjectDTOToProject,
 } from '../../../api/projectAPI'
+import { errHandler } from '../../../utils/parse'
+import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 
 const Select = styled(_Select)`
   width: 10rem;
@@ -22,10 +24,19 @@ type Props = {
 const Filter = ({ list, setFilteredLists }: Props) => {
   const { usrInfo } = useAuthContext()
   const [participated, setParticipated] = useState<Project[] | null>(null)
-
+  const { msg } = useGlobalComponentsContext()
   const fetchParticipated = async (id: number) => {
-    const res = await getProjectByParticipant(id)
-    return res.data.map(mapProjectDTOToProject)
+    try {
+      const res = await getProjectByParticipant(id)
+      setParticipated(res.data.map(mapProjectDTOToProject))
+      setFilteredLists(res.data.map(mapProjectDTOToProject))
+    } catch (e) {
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
   }
 
   return (
@@ -48,9 +59,7 @@ const Filter = ({ list, setFilteredLists }: Props) => {
           case 2:
             if (!usrInfo) return
             if (!participated) {
-              const res = await fetchParticipated(usrInfo.id)
-              setParticipated(res)
-              setFilteredLists(res)
+              fetchParticipated(usrInfo.id)
             } else {
               setFilteredLists(participated)
             }
