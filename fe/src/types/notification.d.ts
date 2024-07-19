@@ -1,8 +1,9 @@
+type JsonString = string
 interface NotificationRspDTO {
   NotificationID: number
   Type: 'personal' | 'group' | 'project'
   Message: string
-  AdditionalData: Record<string, unknown>
+  AdditionalData: JsonString | null
   CreatedAt: string
   FromGroup: number | null
   FromUser: number | null
@@ -12,7 +13,9 @@ interface NotificationRspDTO {
 interface NotificationReqDTO {
   Type: 'personal' | 'group' | 'project'
   Message: string
-  AdditionalData: Record<string, unknown>
+  AdditionalData?: {
+    ObjectID: number
+  } | null
   FromGroup: number | null
   FromUser: number | null
   Receivers: number[]
@@ -25,7 +28,9 @@ interface Notification {
   notificationId: number
   type: 'personal' | 'group' | 'project'
   message: string
-  additionalData: Record<string, unknown>
+  additionalData: {
+    objectId: number
+  } | null
   createdAt: string
   fromGroup: number | null
   fromUser: number | null

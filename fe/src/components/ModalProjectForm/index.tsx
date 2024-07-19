@@ -1,8 +1,18 @@
-import { Button, Flex, Form, Input, InputNumber, Modal, Select } from 'antd'
+import {
+  Button,
+  DatePicker,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+} from 'antd'
 import React, { CSSProperties, useMemo } from 'react'
 import styled from 'styled-components'
 import { ProjectReqDTO } from '../../types/proj'
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
+import dayjs from 'dayjs'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -40,6 +50,7 @@ type FormValues = {
   skills: Skill[]
   email: string
   maxGroupNumber: number
+  dueTime: dayjs.Dayjs
 }
 type Option = {
   label: string
@@ -51,6 +62,7 @@ const initialValues = {
   skills: [{ area: 1, skill: '' }],
   email: '',
   maxGroupNumber: 1,
+  dueTime: dayjs(new Date()),
 }
 const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
   return {
@@ -62,6 +74,7 @@ const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
       skill: s.skill,
     })),
     MaxNumOfGroup: values.maxGroupNumber,
+    DueTime: values.dueTime.toISOString(),
   }
 }
 const ModalProjectForm = ({
@@ -169,6 +182,9 @@ const ModalProjectForm = ({
           name="maxGroupNumber"
         >
           <InputNumber style={{ width: '100%' }} min={1} />
+        </Form.Item>
+        <Form.Item label="Due Time" name="dueTime">
+          <DatePicker style={{ width: '100%' }} showTime />
         </Form.Item>
       </Form>
     </_Modal>

@@ -1,6 +1,7 @@
 
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
+from myapp.notification.notification import GroupNotification, ProjectNotification, save_notification
 from rest_framework import status
 from rest_framework import  status, mixins
 from rest_framework.authtoken.models import Token
@@ -19,7 +20,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
-from .permission import OnlyForAdmin,ForValidToken
+from .permission import ForPartialRole, OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, NotificationFetchSerializer, NotificationReceiverSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
@@ -298,10 +299,21 @@ def project_update(request, id):
                 for skill_object in skill_objects:
                     SkillProject.objects.create(Skill=skill_object, Project=project)
                     
-                  
-                    
                         
-                    
+        
+                # send notification to all group members
+                project_name=project.ProjectName
+                msg=f'Your participating project {project_name} has been updated'
+                sender_id=user_data['user_id']
+                groups=project.Groups.all()
+                receivers_id_list=[]
+                for group in groups:
+                    receivers=group.GroupMembers.all()
+                    for receiver in receivers:
+                        receivers_id_list.append(receiver.UserID)
+                project_id=project.ProjectID
+                noti=ProjectNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,project_id=project_id)
+                noti.save()
 
                     
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
@@ -402,6 +414,20 @@ def group_join(request):
             if user_data['role'] == 1:
                 if user == add_user:
                     GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                    
+                    # send notification to all group members except the user
+                    group_members=group.GroupMembers.all()
+                    group_name=group.GroupName
+                    receivers_id_list=[]
+                    for member in group_members:
+                        if member.UserID!=user:
+                            receivers_id_list.append(member.UserID)
+                    msg=f'{user.FirstName} {user.LastName} has joined your group {group_name}'
+                    sender_id=user.UserID
+                    group_id=group.GroupID
+                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                    noti.save()
+                    
                     return JsonResponse({'message': 'Joined group successfully!'}, status=201)
                 else:
                     return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
@@ -453,6 +479,21 @@ def group_leave(request):
             if current_group_number > 1:
                 if user == leave_user:
                     GroupUsersLink.objects.filter(GroupID=group, UserID=user).delete()
+                    
+                    # send notification to all group members except the user
+                    group_members=group.GroupMembers.all()
+                    group_name=group.GroupName
+                    receivers_id_list=[]
+                    for member in group_members:
+                        if member.UserID!=user:
+                            receivers_id_list.append(member.UserID)
+                    msg=f'{user.FirstName} {user.LastName} has left your group {group_name}'
+                    sender_id=user.UserID
+                    group_id=group.GroupID
+                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                    noti.save()
+                    
+                    
                     return JsonResponse({'message': 'Left group successfully!'}, status=201)
                 else:
                     return JsonResponse({'error': 'You cannot remove other students from the group'}, status=403)
@@ -1019,7 +1060,13 @@ def delete_notification(request, notificationReceiverId):
 class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = GroupProjectsLink.objects.all()
     serializer_class = GroupProjectLinkSerializer
-    
+
+    def get_permissions(self):
+        if self.action in ['create', 'destroy']:
+            return [ForValidToken(),ForPartialRole([3, 4, 5])]
+        else:
+            return []
+        
     def create(self, request, *args, **kwargs):
         try:    
             project_id = request.data.get('ProjectID')
@@ -1031,18 +1078,18 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
         
         serializer = GroupProjectLinkSerializer(data=request.data)
         if serializer.is_valid():
-            #通知组内成员
             serializer.save()
+            project_name=Project.objects.get(ProjectID=project_id).ProjectName
+            #通知组内成员
+            msg=f'Your group has been added to the project {project_name}'
+            sender_id=self.request.user_id
+            receivers_id_list=Group.objects.get(GroupID=group_id).groupuserslink_set.values_list('UserID',flat=True)
+            group_id=group_id
+            noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+            noti.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = GroupProjectLinkSerializer(instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
-        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, request, *args, **kwargs):
         project_id = kwargs.get('projectID')
@@ -1050,6 +1097,14 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
         try:
             instance = GroupProjectsLink.objects.get(ProjectID=project_id, GroupID=group_id)
             instance.delete()
+            group_name = Group.objects.get(GroupID=group_id).GroupName
+            project_name=Project.objects.get(ProjectID=project_id).ProjectName
+            msg=f"Your group {group_name} has been removed from the project {project_name}"
+            sender_id=self.request.user_id
+            receivers_id_list=Group.objects.get(GroupID=group_id).groupuserslink_set.values_list('UserID',flat=True)
+            group_id=group_id
+            noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+            noti.save()
             return JsonResponse({'message': 'Group project link deleted successfully!'}, status=status.HTTP_200_OK)
         except GroupProjectsLink.DoesNotExist:
             return JsonResponse({'error': 'Group project link not found.'}, status=status.HTTP_404_NOT_FOUND)

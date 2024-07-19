@@ -6,6 +6,9 @@ import { format } from 'timeago.js'
 import { Notification } from '../../../types/notification'
 import { getThemeColor, getThemeToken } from '../../../utils/styles'
 import { useNotificationContext } from '../../../context/NotificationContext'
+import route from '../../../constant/route'
+import { Link } from 'react-router-dom'
+import { usePopoverContext } from './NotificationPopover'
 const NotificationCard = styled(Flex)`
   width: 100%;
   display: flex;
@@ -17,9 +20,14 @@ const NotificationCard = styled(Flex)`
 const ActionButton = styled(Button)`
   border-color: transparent;
 `
+const LinkParagraph = styled(Typography.Paragraph)`
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  &:hover {
+    text-decoration: underline;
+  }
+`
 const Item = styled(List.Item)`
-  cursor: pointer;
-
   &:hover {
     background-color: ${getThemeColor('grayscalePalette', 2)};
   }
@@ -31,6 +39,22 @@ const NotificationListItem = ({ notification }: Props) => {
   const [borderColor, setBorderColor] = useState('transparent')
   const theme = useTheme()
   const { markAs } = useNotificationContext()
+  const { handleOpenChange } = usePopoverContext()
+
+  const notificationTypeDict = {
+    group: {
+      title: 'Group Activity',
+      link: `${route.GROUPS}/${notification.additionalData?.objectId}`,
+    },
+    project: {
+      title: 'Project Activity',
+      link: `${route.PROJECTS}/${notification.additionalData?.objectId}`,
+    },
+    personal: {
+      title: 'Personal Activity',
+      link: `${route.PROFILE}`,
+    },
+  }
   return (
     <Item
       onMouseEnter={() => {
@@ -78,22 +102,23 @@ const NotificationListItem = ({ notification }: Props) => {
           }}
           strong
         >
-          {notification.type === 'group'
-            ? 'Group Activity'
-            : 'Personal Activity'}
+          {notificationTypeDict[notification.type].title}
         </Typography.Text>
-        <Typography.Paragraph
-          style={{
-            marginBottom: '0',
-            fontSize: '0.85rem',
+        <Link
+          onClick={() => {
+            handleOpenChange(false)
           }}
-          ellipsis={{
-            rows: 2,
-            expandable: true,
-          }}
+          to={notificationTypeDict[notification.type].link}
         >
-          {notification.message}
-        </Typography.Paragraph>
+          <LinkParagraph
+            ellipsis={{
+              rows: 2,
+              expandable: true,
+            }}
+          >
+            {notification.message}
+          </LinkParagraph>
+        </Link>
         <Typography.Text
           style={{
             fontSize: '0.75rem',

@@ -242,7 +242,6 @@ const GroupDetail = () => {
       </Wrapper>
     )
   }
-  console.log(group)
 
   return (
     <Wrapper>

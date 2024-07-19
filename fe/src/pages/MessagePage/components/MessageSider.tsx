@@ -1,11 +1,12 @@
 import styled from 'styled-components'
-import { Collapse, Flex, List, Tag } from 'antd'
+import { Badge, Collapse, Flex, List, Tooltip, Typography } from 'antd'
 import type { CollapseProps, FlexProps } from 'antd'
 import Avatar from '../../../components/Avatar'
 
 import { useMessageContext } from '../../../context/MessageContext'
 import { useNavigate } from 'react-router-dom'
 import ContactSearchBar from './ContactSearchBar'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 
 const RecentContactList = styled(Flex)`
   flex-direction: column;
@@ -17,7 +18,24 @@ const ContactCard = styled(Flex)`
   width: 100%;
   align-items: center;
 `
+const ToolTipText = ({ children }: { children: ReactNode }) => {
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [isEllipsis, setIsEllipsis] = useState(false)
 
+  useEffect(() => {
+    if (!textRef.current) return
+    const element = textRef.current
+    if (element) {
+      setIsEllipsis(element.scrollWidth > element.clientWidth)
+    }
+  }, [textRef.current])
+
+  return (
+    <Typography.Text ref={textRef} ellipsis>
+      {isEllipsis ? <Tooltip title={children}>{children}</Tooltip> : children}
+    </Typography.Text>
+  )
+}
 type Props = Partial<FlexProps>
 const MessageSider = (props: Props) => {
   const { contactList, groupContactList } = useMessageContext()
@@ -42,14 +60,17 @@ const MessageSider = (props: Props) => {
               }}
             >
               <ContactCard gap={'0.5rem'}>
-                <Avatar
-                  firstName={contact.contact.firstName}
-                  lastName={contact.contact.lastName}
-                  emailForHashToColor={contact.contact.email}
-                  size={35}
-                ></Avatar>
-                {contact.contact.firstName}
-                {<Tag>{contact.unreadMsgsCount} unread</Tag>}
+                <Badge count={contact.unreadMsgsCount} overflowCount={99}>
+                  <Avatar
+                    firstName={contact.contact.firstName}
+                    lastName={contact.contact.lastName}
+                    emailForHashToColor={contact.contact.email}
+                    size={35}
+                  ></Avatar>
+                </Badge>
+                <ToolTipText>
+                  {contact.contact.firstName} {contact.contact.lastName}
+                </ToolTipText>
               </ContactCard>
             </List.Item>
           ))}
@@ -59,6 +80,7 @@ const MessageSider = (props: Props) => {
     {
       key: '2',
       label: 'My Groups',
+
       children: (
         <List itemLayout="vertical">
           {groupContactList?.map((group) => (
@@ -73,14 +95,15 @@ const MessageSider = (props: Props) => {
               }}
             >
               <ContactCard gap={'0.5rem'}>
-                <Avatar
-                  firstName={group.groupName}
-                  lastName={''}
-                  emailForHashToColor={group.groupName}
-                  size={35}
-                ></Avatar>
-                {group.groupName}
-                {<Tag>{group.unreadMsgsCount} unread</Tag>}
+                <Badge count={group.unreadMsgsCount}>
+                  <Avatar
+                    firstName={group.groupName}
+                    lastName={''}
+                    emailForHashToColor={group.groupName}
+                    size={35}
+                  ></Avatar>
+                </Badge>
+                <ToolTipText>{group.groupName}</ToolTipText>
               </ContactCard>
             </List.Item>
           ))}
