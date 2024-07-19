@@ -136,13 +136,13 @@ const _Profile = () => {
         ></_Avatar>
       </Header>
       <Descriptions bordered>
-        <Descriptions.Item span={1} label="Full Name">
+        <Descriptions.Item span={3} label="Full Name">
           {`${firstName} ${lastName}`}
         </Descriptions.Item>
-        <Descriptions.Item span={1} label="Email">
+        <Descriptions.Item span={2} label="Email">
           {email}
         </Descriptions.Item>
-        <Descriptions.Item span={1} label="Role">
+        <Descriptions.Item span={2} label="Role">
           {roleNames[role]}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">

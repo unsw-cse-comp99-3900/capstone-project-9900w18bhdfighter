@@ -6,7 +6,7 @@ import type {
   TableColumnsType,
   TableColumnType,
 } from 'antd'
-import { Flex, Modal, Table } from 'antd'
+import { Flex, Modal, Table, Tooltip } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
 import { role, roleNames } from '../../constant/role'
@@ -22,6 +22,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import ProfileLink from '../../components/ProfileLink'
 import { useGlobalTheme } from '../../context/GlobalThemeContext'
 import breakPoint from '../../constant/breakPoint'
+import { getThemeToken } from '../../utils/styles'
 
 interface DataType {
   key: number
@@ -34,7 +35,7 @@ type DataIndex = keyof DataType
 
 const Wrapper = styled(Flex)`
   box-sizing: border-box;
-  padding: 20px;
+  padding: ${getThemeToken('paddingMD', 'px')};
   width: 100%;
   height: 100%;
 `
@@ -137,11 +138,17 @@ const _AdminManagement = () => {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
+      ellipsis: {
+        showTitle: false,
+      },
       render: (text, record) => (
-        <ProfileLink usrId={record.key}>{text}</ProfileLink>
+        <Tooltip title={text} placement="topLeft">
+          <ProfileLink usrId={record.key}>{text}</ProfileLink>
+        </Tooltip>
       ),
       ...getColumnSearchProps('name'),
     },
+
     {
       title: 'Role',
       dataIndex: 'role',
@@ -154,13 +161,28 @@ const _AdminManagement = () => {
         { text: roleNames[role.CLIENT], value: roleNames[role.CLIENT] },
         { text: roleNames[role.STUDENT], value: roleNames[role.STUDENT] },
       ],
+      ellipsis: {
+        showTitle: false,
+      },
       onFilter: (value, record) => record.role === value,
+      render: (_role) => (
+        <Tooltip title={_role} placement="topLeft">
+          {_role}
+        </Tooltip>
+      ),
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (email) => (
+        <Tooltip title={email} placement="topLeft">
+          {email}
+        </Tooltip>
+      ),
       ...getColumnSearchProps('email'),
     },
     {
@@ -216,7 +238,7 @@ const _AdminManagement = () => {
           height: '100%',
         }}
         size={onWidth({
-          sm: 'small',
+          xs: 'middle',
           defaultValue: 'large',
         })}
         expandable={
@@ -224,20 +246,28 @@ const _AdminManagement = () => {
             ? {}
             : {
                 expandedRowRender: (record) => (
-                  <ActionGroup
-                    handleDelete={() => {
-                      currUsrIdOnRowRef.current = record.key
-                      setIsDeleteModalOpen(true)
+                  <Flex
+                    vertical
+                    style={{
+                      justifyContent: 'center',
+                      alignItems: 'center',
                     }}
-                    handleManage={() => {
-                      currUsrIdOnRowRef.current = record.key
-                      const usr = accountList.find(
-                        (_usr: UserInfo) => _usr.id === record.key
-                      )
-                      setCurrProfileViewing(usr || null)
-                      setIsModalOpen(true)
-                    }}
-                  />
+                  >
+                    <ActionGroup
+                      handleDelete={() => {
+                        currUsrIdOnRowRef.current = record.key
+                        setIsDeleteModalOpen(true)
+                      }}
+                      handleManage={() => {
+                        currUsrIdOnRowRef.current = record.key
+                        const usr = accountList.find(
+                          (_usr: UserInfo) => _usr.id === record.key
+                        )
+                        setCurrProfileViewing(usr || null)
+                        setIsModalOpen(true)
+                      }}
+                    />
+                  </Flex>
                 ),
               }
         }

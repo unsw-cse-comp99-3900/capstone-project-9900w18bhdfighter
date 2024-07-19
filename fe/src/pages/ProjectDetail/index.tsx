@@ -24,11 +24,19 @@ const Wrapper = styled(Flex)`
   align-items: center;
   padding: ${getThemeToken('paddingLG', 'px')};
 `
-const EditWrapper = styled(Flex)`
+const Title = styled(Typography.Text)`
+  font-size: 1.2rem;
+`
+const Header = styled(Flex)`
   width: 100%;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: end;
+  padding: ${getThemeToken('paddingMD', 'px')};
 `
 const EditButton = styled(Button)``
+const Description = styled(Descriptions)`
+  box-shadow: ${getThemeToken('boxShadow')};
+`
 const _ProjectDetail = () => {
   const {
     project,
@@ -90,7 +98,7 @@ const _ProjectDetail = () => {
       children: project?.name,
     },
     {
-      span: 1,
+      span: 2,
       label: 'Due',
       children: (
         <Space>
@@ -112,7 +120,7 @@ const _ProjectDetail = () => {
       ),
     },
     {
-      span: 1,
+      span: 2,
       label: 'Creator',
       children: (
         <Link
@@ -126,6 +134,7 @@ const _ProjectDetail = () => {
     },
     {
       span: 3,
+
       label: 'Description',
       children: project?.description ? (
         <Typography.Text>{project?.description}</Typography.Text>
@@ -165,6 +174,10 @@ const _ProjectDetail = () => {
 
           <List
             bordered
+            itemLayout={onWidth({
+              sm: 'vertical',
+              defaultValue: 'horizontal',
+            })}
             size={onWidth({
               sm: 'small',
               defaultValue: 'default',
@@ -176,25 +189,27 @@ const _ProjectDetail = () => {
             }}
           >
             {groupsList?.map((group) => (
-              <List.Item
-                key={group.groupId}
-                actions={[
-                  <Button
-                    onClick={() => removeGroup(group.groupId)}
-                    key={group.groupId}
-                    type="text"
-                    style={{
-                      display: shouldDisplaySearchAndRemove()
-                        ? 'block'
-                        : 'none',
-                    }}
-                    danger
-                  >
-                    Remove
-                  </Button>,
-                ]}
-              >
-                {group.groupName}
+              <List.Item key={group.groupId}>
+                <Typography.Text strong>{group.groupName}</Typography.Text>
+                <Button
+                  size={onWidth({
+                    sm: 'small',
+                    defaultValue: 'default',
+                  })}
+                  onClick={() => removeGroup(group.groupId)}
+                  key={group.groupId}
+                  type="text"
+                  style={{
+                    display: shouldDisplaySearchAndRemove() ? 'block' : 'none',
+                    width: onWidth({
+                      sm: '100%',
+                      defaultValue: 'unset',
+                    }),
+                  }}
+                  danger
+                >
+                  Remove
+                </Button>
               </List.Item>
             ))}
           </List>
@@ -212,30 +227,34 @@ const _ProjectDetail = () => {
         handleOk={handleOk}
         handleCancel={handleCancel}
       />
-      <EditWrapper
-        style={{
-          display: shouldDisplayEdit() ? 'flex' : 'none',
-        }}
-      >
-        <EditButton type="primary" onClick={() => setIsOpened(true)}>
+      <Header>
+        <Title strong>Project Detail</Title>
+
+        <EditButton
+          style={{
+            display: shouldDisplayEdit() ? 'flex' : 'none',
+          }}
+          type="primary"
+          onClick={() => setIsOpened(true)}
+        >
           Edit
         </EditButton>
-      </EditWrapper>
-      <Descriptions
+      </Header>
+
+      <Description
         style={{
           width: onWidth({
-            sm: 'unset',
+            xs: 'unset',
             defaultValue: '100%',
           }),
         }}
         size={onWidth({
-          sm: 'small',
+          xs: 'small',
           defaultValue: 'default',
         })}
         bordered
-        title="Project Detail"
         items={items}
-      ></Descriptions>
+      ></Description>
     </Wrapper>
   )
 }

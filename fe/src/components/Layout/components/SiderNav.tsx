@@ -1,21 +1,14 @@
-import { Badge, Menu } from 'antd'
 import Sider from 'antd/es/layout/Sider'
-import { Fragment, useEffect, useState } from 'react'
-import { AiFillHome, AiFillProject } from 'react-icons/ai'
-import { useLocation, useNavigate } from 'react-router-dom'
-import route from '../../../constant/route'
+import { Fragment, useState } from 'react'
 import styled, { useTheme } from 'styled-components'
 import { getThemeToken } from '../../../utils/styles'
-import { MdChat } from 'react-icons/md'
-import { FaUserGroup } from 'react-icons/fa6'
-
-import { IoSettings } from 'react-icons/io5'
-import { useAuthContext } from '../../../context/AuthContext'
-import { role } from '../../../constant/role'
-import { useMessageContext } from '../../../context/MessageContext'
 import { useGlobalTheme } from '../../../context/GlobalThemeContext'
+import SiderMenu from './SiderMenu'
+
 const _Sider = styled(Sider)`
   padding-top: ${getThemeToken('paddingMD', 'px')};
+  height: 100%;
+  z-index: 2;
 `
 
 const Mask = styled.div<{ visible: boolean }>`
@@ -30,21 +23,29 @@ const Mask = styled.div<{ visible: boolean }>`
 `
 
 const SiderNav = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [selectedKey, setSelectedKey] = useState(route.DASHBOARD)
-  const { role: _role } = useAuthContext()
-  const { unreadMsgs } = useMessageContext()
   const { onWidth } = useGlobalTheme()
   const [collapsed, setCollapsed] = useState(true)
   const theme = useTheme()
-
-  useEffect(() => {
-    setSelectedKey(location.pathname)
-  }, [location.pathname])
-
-  const projectAccess = () => {
-    return _role === role.ADMIN || _role === role.CORD || _role === role.CLIENT
+  const siderWidth = onWidth({
+    sm: '70%',
+    defaultValue: undefined,
+  })
+  const collapsedWidth = onWidth({
+    sm: 0,
+    defaultValue: undefined,
+  })
+  const zeroWidthTriggerStyle = {
+    height: 25,
+    width: 25,
+    marginRight: 15,
+    top: '10%',
+    backgroundColor: theme.themeColor.highlight,
+  }
+  const siderStyle = {
+    position: onWidth({
+      sm: 'fixed',
+      defaultValue: 'unset',
+    }),
   }
   return (
     <Fragment>
@@ -59,88 +60,15 @@ const SiderNav = () => {
         collapsible
         defaultCollapsed
         collapsed={collapsed}
-        width={onWidth({
-          sm: '70%',
-          defaultValue: undefined,
-        })}
-        collapsedWidth={onWidth({
-          sm: 0,
-          defaultValue: undefined,
-        })}
-        zeroWidthTriggerStyle={{
-          height: 25,
-          width: 25,
-          marginRight: 15,
-          top: '10%',
-          backgroundColor: theme.themeColor.highlight,
-        }}
+        width={siderWidth}
+        collapsedWidth={collapsedWidth}
+        zeroWidthTriggerStyle={zeroWidthTriggerStyle}
         onCollapse={() => {
           setCollapsed(!collapsed)
         }}
-        style={{
-          position: onWidth({
-            sm: 'fixed',
-            defaultValue: 'unset',
-          }),
-          zIndex: 2,
-          height: '100%',
-        }}
+        style={siderStyle}
       >
-        <Menu
-          defaultSelectedKeys={[route.DASHBOARD]}
-          selectedKeys={[selectedKey]}
-          onClick={(e) => {
-            navigate(e.key)
-            setCollapsed(true)
-          }}
-          items={[
-            {
-              key: route.DASHBOARD,
-              icon: <AiFillHome />,
-              label: 'Dashboard',
-            },
-            {
-              key: route.PROJECTS,
-              icon: <AiFillProject />,
-              label: 'Projects',
-              style: {
-                display: projectAccess() ? 'block' : 'none',
-              },
-            },
-            {
-              key: route.TEAMS,
-              icon: <FaUserGroup />,
-              label: 'Teams',
-            },
-
-            {
-              key: route.MESSAGE,
-              icon: (
-                <Badge
-                  style={{
-                    maxWidth: 28,
-                    minWidth: 14,
-                  }}
-                  offset={[5, 0]}
-                  count={unreadMsgs}
-                  size="small"
-                  overflowCount={10}
-                >
-                  <MdChat />
-                </Badge>
-              ),
-              label: 'Chat',
-            },
-            {
-              key: route.ADMIN,
-              icon: <IoSettings />,
-              label: 'Management',
-              style: {
-                display: _role === role.ADMIN ? 'block' : 'none',
-              },
-            },
-          ]}
-        />
+        <SiderMenu setCollapsed={setCollapsed} />
       </_Sider>
     </Fragment>
   )
