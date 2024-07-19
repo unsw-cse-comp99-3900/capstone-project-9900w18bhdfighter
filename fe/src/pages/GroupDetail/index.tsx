@@ -1,14 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {
-  Button,
-  Descriptions,
-  Flex,
-  List,
-  Spin,
-  Modal,
-  Input,
-  Form,
-} from 'antd'
+import { Button, Descriptions, Flex, List, Spin, Modal, Form } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
@@ -19,13 +10,15 @@ import {
   leaveGroup,
   getGroupDetailByGroupId,
   mapGroupDTOToGroup,
-} from '../../api/groupAPI' // Import the joinGroup function
-import { Group } from '../../types/group'
+} from '../../api/groupAPI'
+import { Group, GroupPreferenceSlim } from '../../types/group'
 import { roleNames } from '../../constant/role'
 import Paragraph from 'antd/es/typography/Paragraph'
 import api from '../../api/config'
 import CandidateSearchBar from './components/CandidateSearchBar'
+import AllocateProjectSearchBar from './components/AllocateProjectSearchBar'
 import { UserProfileSlim } from '../../types/user'
+import { ProjectProfileSlim } from '../../types/proj'
 import { errHandler } from '../../utils/parse'
 import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
 import { getUserById } from '../../api/userAPI'
@@ -33,19 +26,6 @@ import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
 
 export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
-// Mock API function
-const fakeApiAllocateProject = (): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.5
-      if (isSuccess) {
-        resolve('Project XYZ')
-      } else {
-        reject(new Error('Allocation failed'))
-      }
-    }, 2000)
-  })
-}
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -61,10 +41,6 @@ const FlexContainer = styled(Flex)`
 
 const StyledButton = styled(Button)`
   height: 32px; /* Adjust height to match input/select */
-`
-
-const StyledInput = styled(Input)`
-  height: 32px; /* Adjust height to match button */
 `
 
 const StyledModalContent = styled.div`
@@ -88,6 +64,7 @@ const DescriptionsContainer = styled.div`
 const InnerDescriptionsContainer = styled.div`
   width: 100%;
 `
+
 const EditWrapper = styled(Flex)`
   width: 100%;
   justify-content: flex-end;
@@ -103,6 +80,9 @@ const GroupDetail = () => {
     id: number
     fullName: string
   } | null>()
+  const [selectedUser, setSelectedUser] = useState<UserProfileSlim | null>(null)
+  const [selectedProject, setSelectedProject] =
+    useState<ProjectProfileSlim | null>(null)
   const { msg } = useGlobalComponentsContext()
   const members = useMemo(() => group?.groupMembers || [], [group])
   const isUserMember = useMemo(() => {
@@ -110,8 +90,6 @@ const GroupDetail = () => {
     const userId = usrInfo.id
     return members.some((member) => member.id === userId)
   }, [members, usrInfo])
-
-  const [newProjectPreference, setNewProjectPreference] = useState<string>('')
 
   const [allocationResults, setAllocationResults] = useState<string | null>(
     null
@@ -125,8 +103,6 @@ const GroupDetail = () => {
   })
   const [form] = Form.useForm()
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
-  const hasProjectPreferencesAccess =
-    userRole && ['coordinator', 'admin', 'tutor'].includes(userRole)
 
   const fetchGroupDetails = async () => {
     if (!id) return
@@ -153,22 +129,68 @@ const GroupDetail = () => {
   }, [id])
 
   const handleAddMember = async (memberId: number) => {
-    //todo: call add api
-    console.log(memberId)
+    const data = {
+      group_id: Number(id),
+      student_id: memberId,
+    }
+    try {
+      console.log('Adding member with id:', memberId)
+      console.log('Sending data:', data)
+      const res = await api.post('/group_join/', data)
+      console.log('Response from group_join:', res.data)
+      msg.success('Member added successfully')
+      await fetchGroupDetails()
+    } catch (error) {
+      console.error('Error adding member:', error)
+      msg.err('Failed to add member')
+    }
+  }
 
-    await fetchGroupDetails()
+  const handleAddProject = async (projectId: number) => {
+    const data = {
+      ProjectID: projectId,
+    }
+    try {
+      console.log('Adding project with id:', projectId)
+      console.log('Sending data:', data)
+      const res = await api.post('/preferences/', data)
+      console.log('Response from project_join:', res.data)
+      msg.success('Project added successfully')
+      await fetchGroupDetails()
+    } catch (error) {
+      console.error('Error adding project:', error)
+      msg.err('Failed to add project')
+    }
   }
 
   const handleRemoveMember = async (memberId: number) => {
-    //todo: call remove api
-    console.log(memberId)
+    const data = {
+      group_id: Number(id),
+      student_id: memberId,
+    }
+    try {
+      console.log('成员id', memberId)
+      console.log('删除', data)
+      await leaveGroup(data)
+      await fetchGroupDetails()
+      msg.success('Member removed successfully')
+    } catch (error) {
+      console.error('Error removing member:', error)
+      msg.err('Failed to remove member')
+    }
+  }
+
+  const handleRemovePreference = async (preferenceId: number) => {
+    //todo: call preference add api
+    console.log(preferenceId)
     await fetchGroupDetails()
   }
 
   const handleAddProjectPreference = async () => {
-    //todo: call preference add api
-
-    await fetchGroupDetails()
+    console.log('Selected Project:', selectedProject)
+    if (selectedProject) {
+      await handleAddProject(selectedProject.id)
+    }
   }
 
   const handleJoinOrLeaveGroup = async () => {
@@ -211,22 +233,10 @@ const GroupDetail = () => {
     }
     dict[type]()
   }
-  const handleAllocateProject = async () => {
-    handleModalOpen('allocation')
-    setAllocationResults(null)
-    setAllocationError(null)
-    try {
-      const result = await fakeApiAllocateProject()
-      setAllocationResults(`Project allocated: ${result}`)
-    } catch (error) {
-      setAllocationError('Project allocation failed. Please try again.')
-    }
-  }
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields()
-      // Send the form data to the backend
       await api.post('/api/savePreferences', values)
       msg.success('Preferences saved successfully')
       handleModalClose('metaEdit')
@@ -242,7 +252,7 @@ const GroupDetail = () => {
       </Wrapper>
     )
   }
-  console.log(group)
+  console.log('Group detail:', group)
 
   return (
     <Wrapper>
@@ -265,9 +275,6 @@ const GroupDetail = () => {
         initialData={group || undefined}
       />
       <EditWrapper gap={10}>
-        {/* 
-        todo: 只给admin展示
-        */}
         <Button type="primary" onClick={() => handleModalOpen('metaEdit')}>
           Edit Group Meta Data
         </Button>
@@ -287,9 +294,26 @@ const GroupDetail = () => {
               {group?.groupDescription}
             </Descriptions.Item>
             <Descriptions.Item span={3} label="Group Members">
+              {userRole == 'Student' && (
+                <StyledButton type="primary" onClick={handleJoinOrLeaveGroup}>
+                  {isUserMember ? 'Leave Group' : 'Join Group'}
+                </StyledButton>
+              )}
               <FlexContainer>
-                {/* todo: */}
-                <CandidateSearchBar handleSelect={handleAddMember} />
+                <CandidateSearchBar
+                  handleSelect={handleAddMember}
+                  setSelectedUser={setSelectedUser}
+                />
+                <StyledButton
+                  size="small"
+                  type="primary"
+                  onClick={() => {
+                    console.log('Selected User:', selectedUser)
+                    handleAddMember(selectedUser?.id || 0)
+                  }}
+                >
+                  Add New Member
+                </StyledButton>
               </FlexContainer>
               <List
                 bordered
@@ -321,38 +345,60 @@ const GroupDetail = () => {
                   </List.Item>
                 )}
               />
-              {usrInfo && userRole === 'student' && (
+              {userRole == 'Student' && (
                 <StyledButton type="primary" onClick={handleJoinOrLeaveGroup}>
                   {isUserMember ? 'Leave Group' : 'Join Group'}
                 </StyledButton>
               )}
             </Descriptions.Item>
-            {hasProjectPreferencesAccess && (
-              <React.Fragment>
-                <Descriptions.Item span={3} label="Project Preferences">
-                  <FlexContainer>
-                    <StyledInput
-                      value={newProjectPreference}
-                      onChange={(e) => setNewProjectPreference(e.target.value)}
-                      placeholder="Add new project preference"
-                      style={{ width: 200, marginRight: 10 }}
-                    />
-                    <StyledButton
-                      size="small"
-                      type="primary"
-                      onClick={handleAddProjectPreference}
-                    >
-                      Add Project Preference
-                    </StyledButton>
-                  </FlexContainer>
-                </Descriptions.Item>
-                <Descriptions.Item span={3} label="Actions">
-                  <StyledButton type="primary" onClick={handleAllocateProject}>
-                    Allocate Project
-                  </StyledButton>
-                </Descriptions.Item>
-              </React.Fragment>
-            )}
+
+            <Descriptions.Item span={3} label="Project Preferences">
+              <FlexContainer>
+                <AllocateProjectSearchBar
+                  handleSelect={handleAddProject}
+                  setSelectedProject={setSelectedProject}
+                />
+                <StyledButton
+                  size="small"
+                  type="primary"
+                  onClick={handleAddProjectPreference}
+                >
+                  Add Project Preference
+                </StyledButton>
+              </FlexContainer>
+              <List
+                bordered
+                style={{
+                  maxHeight: '15rem',
+                  overflow: 'auto',
+                  marginTop: '1rem',
+                }}
+                dataSource={group?.preferences || []}
+                renderItem={(member: GroupPreferenceSlim) => (
+                  <List.Item
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    actions={[
+                      <StyledButton
+                        key="1"
+                        size="small"
+                        type="text"
+                        danger
+                        onClick={() =>
+                          handleRemovePreference(member.preferenceId)
+                        }
+                      >
+                        Remove
+                      </StyledButton>,
+                    ]}
+                  >
+                    {member.preference.name}
+                  </List.Item>
+                )}
+              />
+            </Descriptions.Item>
           </Descriptions>
         </InnerDescriptionsContainer>
       </DescriptionsContainer>

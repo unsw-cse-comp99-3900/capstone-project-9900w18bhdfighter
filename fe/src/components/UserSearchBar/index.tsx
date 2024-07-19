@@ -25,6 +25,7 @@ type Props = {
   >
   autoCompUserWithoutSelf: UserProfileSlim[]
 } & Partial<SelectProps>
+
 const UserSearchBar = ({
   handleChange,
   getAutoCompleteUsers,
@@ -44,8 +45,20 @@ const UserSearchBar = ({
       setFetching(false)
     }
     return debounce(loadOptions, 500)
-  }, [])
+  }, [getAutoCompleteUsers, setCurrAutoCompleteUser])
 
+  const options = autoCompUserWithoutSelf.map((contact) => ({
+    label: (
+      <Text strong>
+        {contact.firstName} {contact.lastName}
+      </Text>
+    ),
+    value: contact.id,
+    email: contact.email,
+    role: roleNames[contact.role],
+  }))
+
+  console.log('Options to be rendered:', options)
   return (
     <SearchBar
       labelInValue
@@ -61,20 +74,11 @@ const UserSearchBar = ({
           </Flex>
         )
       }}
-      options={autoCompUserWithoutSelf.map((contact) => ({
-        label: (
-          <Text strong>
-            {contact.firstName} {contact.lastName}
-          </Text>
-        ),
-        value: contact.id,
-        email: contact.email,
-        role: roleNames[contact.role],
-      }))}
+      options={options}
       notFoundContent={fetching ? <Spin size="small" /> : 'No users found'}
       onChange={async (val) => {
         await handleChange(val as { value: number })
-        setValue(null)
+        setValue(val as UserValue)
       }}
       placeholder="Type email to search"
       loading={fetching}

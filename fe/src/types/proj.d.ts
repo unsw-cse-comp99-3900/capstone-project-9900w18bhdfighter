@@ -10,6 +10,10 @@ interface Project {
   projectOwnerId: number
   createdBy: number
 }
+interface ProjectInfo {
+  id: number
+  name: string
+}
 
 type ProjectCreate = {
   ProjectName: string
@@ -53,6 +57,9 @@ interface ProjectRespDTO {
   MaxNumOfGroup: number
   projectOwner_id: number
 }
+
+type ProjectProfileSlim = Pick<Project, 'id' | 'name' | 'owner'>
+type ProjectProfileSlimDTO = Pick<Project, 'id' | 'name' | 'owner'>
 export {
   Project,
   ProjectCreate,
@@ -60,4 +67,7 @@ export {
   ProjectReqDTO,
   ProjectRespDTO,
   SkillRspDTO,
+  ProjectProfileSlim,
+  ProjectProfileSlimDTO,
+  ProjectInfo,
 }

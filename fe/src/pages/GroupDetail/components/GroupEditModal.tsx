@@ -22,10 +22,12 @@ const modalBodyStyle: CSSProperties = {
   justifyContent: 'center',
   alignItems: 'center',
 }
+
 type Skill = {
   area: number
   skill: string
 }
+
 type FormValues = {
   projectName: string
   description: string
@@ -37,7 +39,7 @@ type FormValues = {
 const ModalGroupForm = ({
   title,
   isModalOpen,
-
+  handleOk,
   handleCancel,
   initialData,
 }: Props) => {
@@ -47,12 +49,26 @@ const ModalGroupForm = ({
     try {
       await form.validateFields()
       const values = form.getFieldsValue()
-      console.log(values)
-      //handleOk(values)
+      const mappedValues: GroupReqDTO = {
+        GroupName: values.projectName,
+        GroupDescription: values.description,
+        MaxMemberNumber: values.groupMaxMemberNumber,
+      }
+
+      Modal.confirm({
+        title: 'Confirm Save',
+        content: 'Are you sure you want to submit your changes?',
+        onOk() {
+          console.log(mappedValues)
+          handleOk(mappedValues)
+          handleCancel() // Close the modal
+        },
+      })
     } catch (e) {
       console.log(e)
     }
   }
+
   return (
     <_Modal
       title={title}

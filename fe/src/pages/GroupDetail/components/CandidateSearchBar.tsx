@@ -8,9 +8,10 @@ import { useAuthContext } from '../../../context/AuthContext'
 
 type Props = {
   handleSelect: (_id: number) => Promise<void>
+  setSelectedUser: React.Dispatch<React.SetStateAction<UserProfileSlim | null>>
 }
 
-const CandidateSearchBar = ({ handleSelect }: Props) => {
+const CandidateSearchBar = ({ handleSelect, setSelectedUser }: Props) => {
   const [potentialMembers, setPotentialMembers] = useState<UserProfileSlim[]>(
     []
   )
@@ -18,14 +19,17 @@ const CandidateSearchBar = ({ handleSelect }: Props) => {
   const autoCompUserWithoutSelf = potentialMembers.filter(
     (user) => user.email !== usrInfo?.email
   )
-
   const { msg } = useGlobalComponentsContext()
   return (
     <UserSearchBar
       handleChange={async (option) => {
-        //this will get the user id of the selected user
-        console.log(option.value)
         handleSelect(option.value)
+        const selectedOption = potentialMembers.find(
+          (user) => user.id === option.value
+        )
+        if (selectedOption) {
+          setSelectedUser(selectedOption)
+        }
       }}
       getAutoCompleteUsers={async (val) => {
         try {
@@ -39,7 +43,7 @@ const CandidateSearchBar = ({ handleSelect }: Props) => {
       }}
       setCurrAutoCompleteUser={setPotentialMembers}
       autoCompUserWithoutSelf={autoCompUserWithoutSelf}
-    ></UserSearchBar>
+    />
   )
 }
 

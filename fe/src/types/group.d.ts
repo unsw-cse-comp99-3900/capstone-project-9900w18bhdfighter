@@ -66,6 +66,11 @@ interface Group {
   preferences: GroupPreference[]
 }
 
+type GroupPreferenceSlim = Pick<
+  GroupPreference,
+  'preferenceId' | 'preference' | 'groupId'
+>
+
 export {
   GroupRspDTO,
   Group,
@@ -76,4 +81,5 @@ export {
   GroupPreferenceRspDTO,
   GroupPreferenceReqDTO,
   GroupPreference,
+  GroupPreferenceSlim,
 }

@@ -9,6 +9,7 @@ const route = {
   ADMIN: '/admin',
   GROUPS: '/groups',
   MESSAGE: '/message',
+  ALLOCATION: '/allocation',
 }
 
 export default route

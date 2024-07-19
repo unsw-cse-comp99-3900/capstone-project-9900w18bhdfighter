@@ -48,6 +48,8 @@ const _Teams = () => {
     const fetchGroups = async () => {
       try {
         const response = await api.get(`groups`)
+        const user_response = await api.get(`api/users/${currentUserId}`)
+        console.log('user', user_response)
         console.log(response)
         console.log(currentUserId)
         const allGroups = response.data

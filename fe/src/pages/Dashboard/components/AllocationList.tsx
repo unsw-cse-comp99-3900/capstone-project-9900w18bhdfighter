@@ -5,8 +5,10 @@ import AllocationListItem from './AllocationListItem'
 import { getThemeToken } from '../../../utils/styles'
 import { Allocation } from '../../../types/proj_grp'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import LinkButton from '../../../components/LinkButton'
+import route from '../../../constant/route'
+import { Project } from '../../../types/proj'
 
-// Mock data
 const mockData: Allocation[] = [
   {
     allocationId: 1,
@@ -51,11 +53,11 @@ const AllocationList = ({ className = '' }: Props) => {
     toFetch()
   }, [msg])
 
-  const handleApprove = (allocationId: number) => {
-    // Handle approve button click
-    console.log(`Approved allocation with ID: ${allocationId}`)
-    msg.success(`Approved allocation with ID: ${allocationId}`)
-  }
+  // const handleEdit = (allocationId: number) => {
+  //   // Handle approve button click
+  //   console.log(`Edit allocation with ID: ${allocationId}`)
+  //   // msg.success(` allocation with ID: ${allocationId}`)
+  // }
   const handleAutoAllocate = () => {
     // Handle auto allocate button click
     console.log('Auto Allocate button clicked')
@@ -78,13 +80,13 @@ const AllocationList = ({ className = '' }: Props) => {
         renderItem={(item) => (
           <List.Item
             actions={[
-              <Button
+              <LinkButton
                 size="small"
-                onClick={() => handleApprove((item as Allocation).allocationId)}
-                key={(item as Allocation).allocationId}
+                to={`${route.ALLOCATION}/${(item as Project).id}`}
+                key={(item as Project).id}
               >
-                Approve
-              </Button>,
+                Edit
+              </LinkButton>,
             ]}
           >
             <AllocationListItem item={item as Allocation} />
