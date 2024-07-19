@@ -204,7 +204,7 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Project owner not found.'}, status=404)
             
-            if project_owner.UserRole not in [2, 4]:  
+            if project_owner.UserRole not in [2, 4, 5]:  
                 return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
     
             data['ProjectOwner'] = project_owner_email  
@@ -320,6 +320,42 @@ def project_update(request, id):
             return JsonResponse(serializer.errors, status=400)
         else:
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+############################################################################################
+#                                    Delete Project                                        #
+############################################################################################
+
+@csrf_exempt
+def project_delete(request, id):
+    try:
+        project = Project.objects.get(pk=id)
+    except Project.DoesNotExist:
+        return JsonResponse({'error': 'Project not found'}, status=404)
+
+    if request.method == 'DELETE':  
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+            
+            response_message = {'user_id': user_data['user_id'], 'role': user_data['role'], 'project_created_by': project.CreatedBy.pk}
+            if user_data['role'] in [1, 3]:
+                return JsonResponse({'error': 'Permission denied. Cannot delete projects.'}, status=403)
+            elif user_data['role'] == 2:
+                if project.CreatedBy.pk != user.pk:
+                    return JsonResponse({'error': 'Permission denied. Clients can only delete projects they created.'}, status=403)
+            elif user_data['role'] in [4, 5]:
+                Project.objects.filter(ProjectID=id).delete()
+            else:
+                return JsonResponse({'error': 'Permission denied.'}, status=403)
+            return JsonResponse({'message': 'Project deleted successfully!'}, status=200)
+
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 ############################################################################################
