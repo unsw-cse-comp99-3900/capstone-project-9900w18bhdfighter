@@ -184,17 +184,19 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found.'}, status=404)
             
-            if user_data['role'] in [2, 4, 5]:
-                try:
-                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                    project_owner_email = project_owner.EmailAddress
-                except User.DoesNotExist:
-                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
-            else:
+            if user_data['role'] not in [2, 4, 5]:
                 return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
-                
+            try:
+                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                project_owner_email = project_owner.EmailAddress
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Project owner not found.'}, status=404)
+            
+            if project_owner.UserRole not in [2, 4, 5]:  
+                return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
+    
             data['ProjectOwner'] = project_owner_email  
-            data["CreatedBy"]=user_data['user_id']
+
             serializer = ProjectSerializer(data=data)
             if serializer.is_valid():
                 project = serializer.save(CreatedBy=user)
@@ -261,7 +263,11 @@ def project_update(request, id):
                     project_owner_email = project_owner.EmailAddress
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Project owner not found.'}, status=404)
+                
+                if project_owner.UserRole not in [2, 4]:  
+                    return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
                 data['ProjectOwner'] = project_owner_email  
+
             elif user_data['role'] == 2:
                 if data['ProjectOwner'] != user_data['email']:
                     return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
@@ -271,7 +277,6 @@ def project_update(request, id):
             serializer = ProjectSerializer(project, data=data, partial=True)
             skill_objects=[]
             if serializer.is_valid():
-
                 serializer.save(CreatedBy=user)
                 required_skills = data.get('requiredSkills', [])
 
@@ -290,7 +295,9 @@ def project_update(request, id):
       
                     if not skill:
                         skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
+                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
                     else:
+                        skill_object=skill
                         skill_object=skill
                     skill_objects.append(skill_object)
       
@@ -321,7 +328,37 @@ def project_update(request, id):
         else:
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+@csrf_exempt
+def project_delete(request, id):
+    try:
+        project = Project.objects.get(pk=id)
+    except Project.DoesNotExist:
+        return JsonResponse({'error': 'Project not found'}, status=404)
 
+    if request.method == 'DELETE':  
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+            
+            response_message = {'user_id': user_data['user_id'], 'role': user_data['role'], 'project_created_by': project.CreatedBy.pk}
+            if user_data['role'] in [1, 3]:
+                return JsonResponse({'error': 'Permission denied. Cannot delete projects.'}, status=403)
+            elif user_data['role'] == 2:
+                if project.CreatedBy.pk != user.pk:
+                    return JsonResponse({'error': 'Permission denied. Clients can only delete projects they created.'}, status=403)
+            elif user_data['role'] in [4, 5]:
+                Project.objects.filter(ProjectID=id).delete()
+            else:
+                return JsonResponse({'error': 'Permission denied.'}, status=403)
+            return JsonResponse({'message': 'Project deleted successfully!'}, status=200)
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 ############################################################################################
 #                                     Group Creation                                       #
@@ -400,7 +437,7 @@ def group_join(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if GroupUsersLink.objects.filter(UserID=user).exists():
+        if GroupUsersLink.objects.filter(UserID=user, GroupID=group).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
@@ -471,10 +508,12 @@ def group_leave(request):
 
         if user.UserRole in [3, 4, 5]:
             if current_group_number > 0:
-                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                if GroupUsersLink.objects.filter(UserID=leave_user).exists():
+                    GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                    return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                return JsonResponse({'error': 'Student is not in this group'}, status=400)
             return JsonResponse({'error': 'Group is empty'}, status=400)
-    
+        
         if user_data['role'] == 1:
             if current_group_number > 1:
                 if user == leave_user:
