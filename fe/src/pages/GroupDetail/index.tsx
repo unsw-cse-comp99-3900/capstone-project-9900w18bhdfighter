@@ -242,10 +242,11 @@ const _GroupDetail = () => {
                       display: 'flex',
                       alignItems: 'center',
                     }}
+                    // todo : skill evaluation modal
                     actions={[
-                      isUserInGroup && (
-                        <StyledButton key="1" size="small" type="text" danger>
-                          Remove
+                      isUserInThisGroup && (
+                        <StyledButton key="1" size="small" type="link">
+                          Skill Evaluation
                         </StyledButton>
                       ),
                     ]}
@@ -254,7 +255,6 @@ const _GroupDetail = () => {
                   </List.Item>
                 )}
               />
-              {/* <StyledButton onClick={handleConfirmSubmit}>Submit</StyledButton> */}
             </Descriptions.Item>
           </Descriptions>
         </InnerDescriptionsContainer>
