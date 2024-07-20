@@ -1,4 +1,4 @@
-import { Card, Col, Flex, Row, Tooltip, Typography } from 'antd'
+import { Card, Col, Flex, Row, Spin, Tooltip, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 
 import styled from 'styled-components'
@@ -11,9 +11,18 @@ const ProjectList = () => {
 
   if (!projectList) {
     return (
+      <Flex justify="center">
+        <Spin />
+      </Flex>
+    )
+  }
+
+  if (projectList?.length === 0) {
+    return (
       <NoDataView>You do not have any projects to view or manage.</NoDataView>
     )
   }
+
   return (
     <Row gutter={[16, 8]}>
       {projectList.map((project) => (

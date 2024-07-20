@@ -27,17 +27,17 @@ const GroupsList = ({ className = '' }: Props) => {
   const [list, setList] = useState<Group[]>([])
   const [filteredLists, setFilteredLists] = useState<Group[]>([])
   const { msg } = useGlobalComponentsContext()
-  useEffect(() => {
-    const toFetch = async () => {
-      try {
-        const res = await getAllGroups()
-        const groups = res.data.map(mapGroupDTOToGroup)
-        setList(groups)
-        setFilteredLists(groups)
-      } catch (e) {
-        msg.err('Network error')
-      }
+  const toFetch = async () => {
+    try {
+      const res = await getAllGroups()
+      const groups = res.data.map(mapGroupDTOToGroup)
+      setList(groups)
+      setFilteredLists(groups)
+    } catch (e) {
+      msg.err('Network error')
     }
+  }
+  useEffect(() => {
     toFetch()
   }, [msg])
   return (

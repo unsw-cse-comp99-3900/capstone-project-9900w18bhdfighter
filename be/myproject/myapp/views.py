@@ -196,7 +196,7 @@ def project_creation(request):
                 return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
     
             data['ProjectOwner'] = project_owner_email  
-
+    
             serializer = ProjectSerializer(data=data)
             if serializer.is_valid():
                 project = serializer.save(CreatedBy=user)
@@ -798,14 +798,30 @@ class UserAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.Upda
         }, status=status.HTTP_200_OK)
     
     
-    @action(detail=False, methods=['get'], url_path='autocomplete-email', url_name='autocomplete-email')
-    def autocomplete_email(self, request):
+    # @action(detail=False, methods=['get'], url_path='autocomplete-email', url_name='autocomplete-email')
+    # def autocomplete_email(self, request):
+    #     email_substring = request.query_params.get('email_substring', None)
+    #     if email_substring:
+    #         queryset = self.get_queryset().filter(EmailAddress__icontains=email_substring)[:10]
+    #         serializer = UserSlimSerializer(queryset, many=True)
+    #         return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+    #     return JsonResponse({'error': 'Email substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'], url_path='autocomplete', url_name='autocomplete')
+    def autocomplete(self, request, *args, **kwargs):
+        role=request.query_params.get('role', None)
         email_substring = request.query_params.get('email_substring', None)
+        name_substring = request.query_params.get('name_substring', None)
+        queryset = self.get_queryset()
+        if role:
+            queryset=queryset.filter(UserRole=role)
         if email_substring:
-            queryset = self.get_queryset().filter(EmailAddress__icontains=email_substring)[:10]
-            serializer = UserSlimSerializer(queryset, many=True)
-            return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
-        return JsonResponse({'error': 'Email substring not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+            queryset = queryset.filter(EmailAddress__icontains=email_substring)
+        if name_substring:
+            queryset = queryset.filter(FirstName__icontains=name_substring) | queryset.filter(LastName__icontains=name_substring)
+        queryset=queryset[:10]
+        serializer = UserSlimSerializer(queryset, many=True)
+        return JsonResponse({'data': serializer.data}, status=status.HTTP_200_OK)
+
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -1112,8 +1128,13 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
             group_id = request.data.get('GroupID')
             if GroupProjectsLink.objects.filter(ProjectID=project_id, GroupID=group_id).exists():
                 return JsonResponse({'error': 'Group already exists in this Project.'}, status=status.HTTP_400_BAD_REQUEST)
+            #如果这个组已经有了项目，返回错误
+            if GroupProjectsLink.objects.filter(GroupID=group_id).exists():
+                return JsonResponse({'error': 'Group already has a project.'}, status=status.HTTP_400_BAD_REQUEST)
+            
         except:
             return JsonResponse({'error': 'Invalid data.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         
         serializer = GroupProjectLinkSerializer(data=request.data)
         if serializer.is_valid():
@@ -1123,8 +1144,8 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
             msg=f'Your group has been added to the project {project_name}'
             sender_id=self.request.user_id
             receivers_id_list=Group.objects.get(GroupID=group_id).groupuserslink_set.values_list('UserID',flat=True)
-            group_id=group_id
-            noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+            project_id=project_id
+            noti=ProjectNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,project_id=project_id)
             noti.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1204,3 +1225,14 @@ def get_group_detail(request, id):
         return JsonResponse({'error': 'Group not found'}, status=404)
     serializer = GroupFetchSerializer(group)
     return JsonResponse(serializer.data, safe=False)
+
+@api_view(['GET'])
+def get_group_members(request, id):
+    try:
+        group = Group.objects.get(pk=id)
+    except Group.DoesNotExist:
+        return JsonResponse({'error': 'Group not found'}, status=404)
+    members = group.GroupMembers.all()
+    serializer = UserSlimSerializer(members, many=True)
+    return JsonResponse(serializer.data, safe=False)
+

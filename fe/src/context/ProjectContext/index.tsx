@@ -18,9 +18,9 @@ import { useAuthContext } from '../AuthContext'
 interface ProjectContextType {
   createProject: (_project: ProjectCreate) => Promise<void>
   updateProject: () => void
-  deleteProject: () => void
+
   getProjectsList: (_email: string) => Promise<void>
-  projectList: Project[]
+  projectList: Project[] | null
 }
 
 const ProjectContext = createContext({} as ProjectContextType)
@@ -29,15 +29,13 @@ export const useProjectContext = () =>
 
 const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
   const { msg } = useGlobalComponentsContext()
-  const [projectList, setProjectList] = useState<Project[]>([])
+  const [projectList, setProjectList] = useState<Project[] | null>(null)
   const { usrInfo } = useAuthContext()
 
   const updateProject = () => {
     //todo: implement update project
   }
-  const deleteProject = () => {
-    //todo: implement delete project
-  }
+
   const getProjectsList = async (email: string) => {
     try {
       const res = await getProjectsByCreator(email)
@@ -73,7 +71,7 @@ const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
   const ctx = {
     createProject,
     updateProject,
-    deleteProject,
+
     getProjectsList,
     projectList,
   }

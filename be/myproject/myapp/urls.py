@@ -35,6 +35,7 @@ urlpatterns = [
     path("api/groups/users/<int:id>/", views.get_groups_by_participant,name="get_groups_by_participant"),
     path("api/groups/autocomplete-name", groups_views.GroupsAPIView.as_view({'get': 'autocomplete_groups'}), name="autocomplete_groups"),
     path("api/projects/autocomplete-name", views.autocomplete_projects, name="autocomplete_projects"),
+
 ]
 
 

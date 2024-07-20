@@ -100,6 +100,9 @@ class GroupProjectsLink(models.Model):
     GroupID = models.ForeignKey(Group, on_delete=models.CASCADE)
     ProjectID = models.ForeignKey(Project, on_delete=models.CASCADE)
 
+    #groupID 和 projectID 一起是唯一的
+    class Meta:
+        unique_together = ('GroupID', 'ProjectID')
     def __str__(self):
         return str(self.GroupProjectsLinkID)
 

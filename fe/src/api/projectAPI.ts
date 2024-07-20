@@ -47,6 +47,9 @@ const getAutoCompleteProjectsByName = async (projectName: string) => {
     },
   })
 }
+const killOneProject = async (projectId: number | string) => {
+  return api.delete(`project_delete/${projectId}/`)
+}
 //mapper
 const mapProjectDTOToProject: (_projectRespDTO: ProjectRespDTO) => Project = (
   projectRespDTO: ProjectRespDTO
@@ -87,6 +90,7 @@ export {
   createProject,
   updateProject,
   getProjectsByCreator,
+  killOneProject,
   getProjectsByOwner,
   getProjectsByOwnerAndCreator,
   getProjectById,

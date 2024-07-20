@@ -16,13 +16,12 @@ const Container = styled(Flex)`
   box-shadow: ${getThemeToken('boxShadow')};
   width: 100%;
   height: 100%;
+  position: relative;
 `
 
 const MsgSider = styled(_MessageSider)`
-  padding: ${getThemeToken('paddingSM', 'px')};
-  width: 18rem;
-  overflow: auto;
-  border-right: 1px solid ${getThemeColor('grayscalePalette', 5)};
+  border: 1px solid ${getThemeColor('grayscalePalette', 2)};
+
   height: 100%;
   flex-direction: column;
   align-items: center;

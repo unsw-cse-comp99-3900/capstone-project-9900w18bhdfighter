@@ -43,7 +43,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id","DueTime"]
-
+        read_only_fields = ['CreatedBy']
     def get_RequiredSkills(self, obj):
         skills = SkillProject.objects.filter(Project=obj)
         return SkillProjectSerializer(skills, many=True).data

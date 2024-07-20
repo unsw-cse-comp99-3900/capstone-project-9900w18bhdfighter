@@ -4,6 +4,7 @@ import styled, { useTheme } from 'styled-components'
 import ProjectsList from './components/ProjectsList'
 import { getThemeToken } from '../../utils/styles'
 import GroupsList from './components/GroupsList'
+import SubmissionTab from './components/SubmissionTab'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -30,6 +31,16 @@ const items: TabsProps['items'] = [
   {
     key: 'allocation',
     label: 'Allocation',
+    children: <_GroupsList />,
+  },
+  {
+    key: 'submission',
+    label: 'Submission',
+    children: <SubmissionTab />,
+  },
+  {
+    key: 'assessment',
+    label: 'Assessment',
     children: <_GroupsList />,
   },
 ]
