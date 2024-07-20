@@ -435,24 +435,24 @@ def group_join(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if GroupUsersLink.objects.filter(UserID=user, GroupID=group).exists():
+        if GroupUsersLink.objects.filter(UserID=add_user, GroupID=group).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
-        if current_group_number >= group.MaxMemberNumber:
-            if user.UserRole in [3, 4, 5]:
-                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-                return JsonResponse({'message': 'Added student to full group successfully!'}, status=201)
-            return JsonResponse({'error': 'Group is full'}, status=400)
+    
+        if user.UserRole in [3, 4, 5]:
+            GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
+            return JsonResponse({'message': 'Added student to the group successfully!'}, status=201)
         else:
             if user_data['role'] == 1:
-                if user == add_user:
-                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
-                    return JsonResponse({'message': 'Joined group successfully!'}, status=201)
-                else:
-                    return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
-            return JsonResponse({'error': 'You cannot join a group'}, status=403)
+                if current_group_number >= group.MaxMemberNumber:
+                    if user == add_user:
+                        GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                        return JsonResponse({'message': 'Joined group successfully!'}, status=201)
+                    else:
+                        return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
+                return JsonResponse({'error': 'Group is full'}, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 # Leave Group
@@ -485,7 +485,7 @@ def group_leave(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if not GroupUsersLink.objects.filter(UserID=user).exists():
+        if not GroupUsersLink.objects.filter(UserID=leave_user).exists():
             return JsonResponse({'error': 'Student is not in this group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
