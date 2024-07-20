@@ -262,8 +262,8 @@ const GroupDetail = () => {
 
     try {
       console.log('Adding projects:', data)
-      const res = await api.put(`/api/groups/${id}/preferences/submit`, data)
-      console.log('Response from project preferences submit:', res.data)
+      const res = await api.put(`/api/groups/${id}/preferences`, data)
+      console.log('Response from project preferences submit:', res)
       msg.success('Projects added successfully')
       await fetchGroupDetails()
       setSelectedProjects([]) // Clear the selected projects after submission
@@ -271,6 +271,36 @@ const GroupDetail = () => {
       console.error('Error adding projects:', error)
       msg.err('Failed to add projects')
     }
+  }
+
+  const handleSubmitPreferenceClick = async () => {
+    console.log('Button clicked')
+
+    try {
+      console.log('Submitting project preferences:')
+      const res = await api.put(
+        `/api/groups/${id}/preferences/submit`,
+        group?.groupId
+      )
+      console.log('Response from project preferences submit:', res.data)
+      msg.success('Projects submitted successfully')
+      await fetchGroupDetails()
+      // setSelectedProjects([]) // Clear the selected projects after submission
+    } catch (error) {
+      console.error('Error submitting projects:', error)
+      msg.err('Failed to submit projects')
+    }
+  }
+
+  const handleConfirmSubmit = () => {
+    Modal.confirm({
+      title: 'Confirm Submission',
+      content: 'Are you sure you want to submit your project preferences?',
+      onOk: handleSubmitPreferenceClick,
+      onCancel() {
+        console.log('Submission cancelled')
+      },
+    })
   }
 
   const handleRemoveMember = async (memberId: number) => {
@@ -558,6 +588,10 @@ const GroupDetail = () => {
                       </List.Item>
                     )}
                   />
+                  <StyledButton onClick={handleConfirmSubmit}>
+                    Submit
+                  </StyledButton>
+                  {/* <StyledButton onClick={handleTest}>test</StyledButton> */}
                 </Descriptions.Item>
               )}
 
