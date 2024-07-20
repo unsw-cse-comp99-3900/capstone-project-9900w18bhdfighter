@@ -414,7 +414,7 @@ def group_join(request):
         data = JSONParser().parse(request)
         token = request.headers.get('Authorization').split()[1]
         result = decode_jwt(token)
-
+        
         if result['status'] != 'success':
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
         user_data = result['data']
@@ -437,6 +437,7 @@ def group_join(request):
             if user.UserID!=add_user.UserID:
                 return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
             
+            
         try:
             group = Group.objects.get(GroupID=data['group_id'])
         except Group.DoesNotExist:
@@ -449,19 +450,30 @@ def group_join(request):
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
         if current_group_number < group.MaxMemberNumber:
-                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-                    # send notification to all group members except the user
+             
+                # send notification to all other group members
                 group_members=group.GroupMembers.all()
                 group_name=group.GroupName
                 receivers_id_list=[]
                 for member in group_members:
-                        if member.UserID!=user:
-                            receivers_id_list.append(member.UserID)
+                        receivers_id_list.append(member.UserID)  
+                
                 msg=f'{user.FirstName} {user.LastName} has joined your group {group_name}'
                 sender_id=user.UserID
                 group_id=group.GroupID
-                noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
-                noti.save()
+                if receivers_id_list:
+                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                    noti.save()
+                if not user_data["role"] in [1]:
+                        #如果不是学生自己加入的，msg通知当事人
+                        msg=f'You were added to group {group_name}'
+                        receivers_id_list=[user.UserID]
+                        GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id).save()
+                        
+                        
+                    
+                
+                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
                 return JsonResponse({'message': 'Join group successfully!'}, status=201)
         return JsonResponse({'error': 'Group is full'}, status=400)
 
@@ -508,19 +520,24 @@ def group_leave(request):
             return JsonResponse({'error': 'Student is not in this group'}, status=400)
 
         GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-        # send notification to all group members except the user
+        # send notification to all left group members
         group_members=group.GroupMembers.all()
         group_name=group.GroupName
         receivers_id_list=[]
         for member in group_members:
-            if member.UserID!=user:
-                        receivers_id_list.append(member.UserID)
+                receivers_id_list.append(member.UserID)
         msg=f'{user.FirstName} {user.LastName} has left your group {group_name}'
         sender_id=user.UserID
         group_id=group.GroupID
         if receivers_id_list:
             noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
             noti.save()
+        if not user_data["role"] in [1]:
+                #如果不是学生自己退出的，msg通知当事人
+                msg=f'You were removed from group {group_name}'
+                receivers_id_list=[user.UserID]
+                GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id).save()
+            
         return JsonResponse({'message': 'Leave group successfully!'}, status=200)
 
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
