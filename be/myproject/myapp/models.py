@@ -86,6 +86,8 @@ class GroupUsersLink(models.Model):
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.GroupUsersLinkID)
+    class Meta:
+        unique_together = ('UserID', 'GroupID')
 
 
 class GroupProjectsLink(models.Model):

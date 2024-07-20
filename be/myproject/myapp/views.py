@@ -435,7 +435,7 @@ def group_join(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if GroupUsersLink.objects.filter(UserID=user).exists():
+        if GroupUsersLink.objects.filter(UserID=user, GroupID=group).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
@@ -492,10 +492,12 @@ def group_leave(request):
 
         if user.UserRole in [3, 4, 5]:
             if current_group_number > 0:
-                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                if GroupUsersLink.objects.filter(UserID=leave_user).exists():
+                    GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                    return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                return JsonResponse({'error': 'Student is not in this group'}, status=400)
             return JsonResponse({'error': 'Group is empty'}, status=400)
-    
+        
         if user_data['role'] == 1:
             if current_group_number > 1:
                 if user == leave_user:
