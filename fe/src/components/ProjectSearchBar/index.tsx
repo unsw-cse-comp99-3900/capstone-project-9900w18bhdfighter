@@ -10,18 +10,19 @@ const SearchBar = styled(Select)`
 `
 const Text = styled(Typography.Text)``
 
-interface ProjectValue {
+export interface ProjectSearchBarOptionValue {
   label: ReactNode
   value: number
-  projName: string
+  title: string
 }
 
 type Props = {
   getAutoCompleteProjects: (_val: string) => Promise<void>
-  handleChange: (_val: { value: number }) => Promise<void>
+  handleChange: (_val: ProjectSearchBarOptionValue) => Promise<void>
   setCurrAutoCompleteProjects: React.Dispatch<
     React.SetStateAction<ProjectProfileSlim[]>
   >
+  initialValue?: ProjectSearchBarOptionValue | undefined
   autoCompProjectsWithoutSelf: ProjectProfileSlim[] // Adjust the prop name here
 } & Partial<SelectProps>
 
@@ -30,11 +31,18 @@ const ProjectSearchBar = ({
   getAutoCompleteProjects,
   setCurrAutoCompleteProjects,
   autoCompProjectsWithoutSelf,
+  initialValue,
   ...props
 }: Props) => {
   const [fetching, setFetching] = useState(false)
-  const [value, setValue] = useState<ProjectValue | null>()
-
+  const [value, setValue] = useState<ProjectSearchBarOptionValue | null>(
+    initialValue
+      ? {
+          ...initialValue,
+          label: <Text strong>{initialValue.title}</Text>,
+        }
+      : null
+  )
   const debounceFetcher = useMemo(() => {
     const loadOptions = async (val: string) => {
       setCurrAutoCompleteProjects([])
@@ -52,24 +60,20 @@ const ProjectSearchBar = ({
 
   return (
     <SearchBar
-      labelInValue
       value={value}
+      labelInValue
       showSearch
       filterOption={false}
       onSearch={debounceFetcher}
       options={autoCompProjectsWithoutSelf.map((project) => ({
-        label: (
-          <Text strong>
-            {project.id} {project.name}
-          </Text>
-        ),
+        label: <Text strong>{project.name}</Text>,
         value: project.id,
-        projName: project.name,
+        title: project.name,
       }))}
       notFoundContent={fetching ? <Spin size="small" /> : 'No projects found'}
       onChange={async (val) => {
-        await handleChange(val as { value: number })
-        setValue(val as ProjectValue)
+        await handleChange(val as ProjectSearchBarOptionValue)
+        setValue(val as ProjectSearchBarOptionValue)
       }}
       placeholder="Type project name to search"
       loading={fetching}

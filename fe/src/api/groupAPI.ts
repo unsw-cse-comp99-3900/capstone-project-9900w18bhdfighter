@@ -68,14 +68,15 @@ const getGroupDetailByGroupId = async (groupId: number) => {
   return api.get<GroupRspDTO>(`api/groups/${groupId}`)
 }
 
+const updateGroupMeta = async (groupId: number, groupReqDTO: GroupReqDTO) => {
+  return api.put<GroupRspDTO>(`api/groups/${groupId}`, groupReqDTO)
+}
 //mapper
-const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
-  groupRspDTO: GroupRspDTO
+
+const mapGroupPreferenceDTOToGroupPreference = (
+  groupPreference: GroupRspDTO
 ) => {
-  const groupMembers = groupRspDTO.GroupMembers.map(
-    mapUserSlimProfileDTOUserProfileSlim
-  )
-  const groupPreference = groupRspDTO.Preferences.map((preference) => {
+  return groupPreference.Preferences.map((preference) => {
     return {
       preferenceId: preference.PreferenceID,
       preference: mapProjectDTOToProject(preference.Preference),
@@ -84,6 +85,14 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
       groupId: preference.Group,
     }
   })
+}
+const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
+  groupRspDTO: GroupRspDTO
+) => {
+  const groupMembers = groupRspDTO.GroupMembers.map(
+    mapUserSlimProfileDTOUserProfileSlim
+  )
+  const groupPreference = mapGroupPreferenceDTOToGroupPreference(groupRspDTO)
 
   return {
     groupName: groupRspDTO.GroupName,
@@ -111,4 +120,6 @@ export {
   leaveGroup,
   getGroupListByUserId,
   getGroupDetailByGroupId,
+  updateGroupMeta,
+  mapGroupPreferenceDTOToGroupPreference,
 }

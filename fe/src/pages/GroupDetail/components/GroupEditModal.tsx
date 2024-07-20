@@ -2,13 +2,13 @@ import { Form, Input, InputNumber, Modal } from 'antd'
 import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
-import { Group, GroupReqDTO } from '../../../types/group'
+import { GroupReqDTO } from '../../../types/group'
+import { useGroupDetailContext } from '../../../context/GroupDetailContext'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
-  handleOk: (_groupReqDTO: GroupReqDTO) => void
   handleCancel: () => void
-  initialData?: Group | undefined
+
   title: string
 }
 
@@ -36,15 +36,9 @@ type FormValues = {
   groupMaxMemberNumber: number
 }
 
-const ModalGroupForm = ({
-  title,
-  isModalOpen,
-  handleOk,
-  handleCancel,
-  initialData,
-}: Props) => {
+const ModalGroupForm = ({ title, isModalOpen, handleCancel }: Props) => {
   const [form] = Form.useForm<FormValues>()
-
+  const { updateGroupMetaData, group } = useGroupDetailContext()
   const handleFinish = async () => {
     try {
       await form.validateFields()
@@ -55,15 +49,8 @@ const ModalGroupForm = ({
         MaxMemberNumber: values.groupMaxMemberNumber,
       }
 
-      Modal.confirm({
-        title: 'Confirm Save',
-        content: 'Are you sure you want to submit your changes?',
-        onOk() {
-          console.log(mappedValues)
-          handleOk(mappedValues)
-          handleCancel() // Close the modal
-        },
-      })
+      await updateGroupMetaData(mappedValues)
+      handleCancel() // Close the modal
     } catch (e) {
       console.log(e)
     }
@@ -74,7 +61,9 @@ const ModalGroupForm = ({
       title={title}
       open={isModalOpen}
       onOk={handleFinish}
-      onCancel={handleCancel}
+      onCancel={() => {
+        handleCancel()
+      }}
       styles={{
         body: modalBodyStyle,
       }}
@@ -82,9 +71,9 @@ const ModalGroupForm = ({
       <Form
         layout="vertical"
         initialValues={{
-          projectName: initialData?.groupName,
-          description: initialData?.groupDescription,
-          groupMaxMemberNumber: initialData?.maxMemberNum,
+          projectName: group?.groupName,
+          description: group?.groupDescription,
+          groupMaxMemberNumber: group?.maxMemberNum,
         }}
         form={form}
         style={{ width: '100%' }}

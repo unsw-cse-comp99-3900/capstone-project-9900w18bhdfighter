@@ -1,17 +1,19 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import UserSearchBar from '../../../components/UserSearchBar'
 import { UserProfileSlim } from '../../../types/user'
-import { getAutoCompleteContacts } from '../../../api/contactAPI'
-import { mapUserSlimProfileDTOUserProfileSlim } from '../../../api/userAPI'
+import {
+  getAutoCompleteByParams,
+  mapUserSlimProfileDTOUserProfileSlim,
+} from '../../../api/userAPI'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import { useAuthContext } from '../../../context/AuthContext'
+import { role } from '../../../constant/role'
 
 type Props = {
   handleSelect: (_id: number) => Promise<void>
-  setSelectedUser: React.Dispatch<React.SetStateAction<UserProfileSlim | null>>
 }
 
-const CandidateSearchBar = ({ handleSelect, setSelectedUser }: Props) => {
+const CandidateSearchBar = ({ handleSelect }: Props) => {
   const [potentialMembers, setPotentialMembers] = useState<UserProfileSlim[]>(
     []
   )
@@ -24,25 +26,26 @@ const CandidateSearchBar = ({ handleSelect, setSelectedUser }: Props) => {
     <UserSearchBar
       handleChange={async (option) => {
         handleSelect(option.value)
-        const selectedOption = potentialMembers.find(
-          (user) => user.id === option.value
-        )
-        if (selectedOption) {
-          setSelectedUser(selectedOption)
-        }
       }}
       getAutoCompleteUsers={async (val) => {
         try {
-          const res = await getAutoCompleteContacts(val)
+          const res = await getAutoCompleteByParams(
+            null,
+            role.STUDENT,
+            val,
+            true
+          )
           setPotentialMembers(
             res.data.data.map(mapUserSlimProfileDTOUserProfileSlim)
           )
+          //清空搜索框
         } catch (e) {
           msg.err('Failed to fetch contacts')
         }
       }}
       setCurrAutoCompleteUser={setPotentialMembers}
       autoCompUserWithoutSelf={autoCompUserWithoutSelf}
+      placeholder="Type name to add a member"
     />
   )
 }

@@ -58,7 +58,6 @@ const UserSearchBar = ({
     role: roleNames[contact.role],
   }))
 
-  console.log('Options to be rendered:', options)
   return (
     <SearchBar
       labelInValue
@@ -74,20 +73,15 @@ const UserSearchBar = ({
           </Flex>
         )
       }}
-      options={autoCompUserWithoutSelf.map((contact) => ({
-        label: (
-          <Text strong>
-            {contact.firstName} {contact.lastName}
-          </Text>
-        ),
-        value: contact.id,
-        title: contact.email,
-        role: roleNames[contact.role],
-      }))}
+      options={options}
       notFoundContent={fetching ? <Spin size="small" /> : 'No users found'}
-      onChange={async (val) => {
+      onChange={async (_val) => {
+        const val = _val as UserValue
         await handleChange(val as UserValue)
         setValue(null)
+        setCurrAutoCompleteUser((prev) =>
+          prev.filter((user) => user.id !== val.value)
+        )
       }}
       placeholder="Type email to add a user"
       loading={fetching}

@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
-import ProjectSearchBar from '../../../components/ProjectSearchBar'
+import { useState } from 'react'
+import ProjectSearchBar, {
+  ProjectSearchBarOptionValue,
+} from '../../../components/ProjectSearchBar'
 import { ProjectProfileSlim } from '../../../types/proj'
 import {
   getAutoCompleteProjectsByName,
@@ -9,16 +11,11 @@ import { useGlobalComponentsContext } from '../../../context/GlobalComponentsCon
 import { useProjectContext } from '../../../context/ProjectContext'
 
 type Props = {
-  handleSelect: (_project: ProjectProfileSlim) => void
-  setSelectedProject: React.Dispatch<
-    React.SetStateAction<ProjectProfileSlim | null>
-  >
+  handleSelect: (_option: ProjectSearchBarOptionValue) => void
+  initialValue?: ProjectSearchBarOptionValue
 }
 
-const AllocateProjectSearchBar = ({
-  handleSelect,
-  setSelectedProject,
-}: Props) => {
+const AllocateProjectSearchBar = ({ handleSelect, initialValue }: Props) => {
   const [potentialProjects, setPotentialProjects] = useState<
     ProjectProfileSlim[]
   >([])
@@ -52,18 +49,15 @@ const AllocateProjectSearchBar = ({
 
   return (
     <ProjectSearchBar
+      initialValue={initialValue}
       handleChange={async (option) => {
-        const selectedOption = potentialProjects.find(
-          (project) => project.id === option.value
-        )
-        if (selectedOption) {
-          handleSelect(selectedOption)
-          setSelectedProject(selectedOption)
-        }
+        console.log('Selected Project:', option)
+
+        handleSelect(option)
       }}
       getAutoCompleteProjects={handleGetAutoCompleteProjects}
       setCurrAutoCompleteProjects={setPotentialProjects}
-      autoCompProjectsWithoutSelf={autoCompProjectsWithoutSelf} // Pass the filtered projects here
+      autoCompProjectsWithoutSelf={autoCompProjectsWithoutSelf} // Pass the filtered projects in
     />
   )
 }

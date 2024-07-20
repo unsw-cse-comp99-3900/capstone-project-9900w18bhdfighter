@@ -13,7 +13,8 @@ const getUserById = async (id: number) => {
 const getAutoCompleteByParams = async (
   emailSubstring: string | null = null,
   role: RoleNumber | null = null,
-  nameSubstring: string | null = null
+  nameSubstring: string | null = null,
+  notInGroup: boolean | null = null
 ) => {
   return api.get<{
     data: UserProfileSlimDTO[]
@@ -22,6 +23,7 @@ const getAutoCompleteByParams = async (
       email_substring: emailSubstring,
       role: role,
       nameSubstring: nameSubstring,
+      not_in_group: notInGroup,
     },
   })
 }
