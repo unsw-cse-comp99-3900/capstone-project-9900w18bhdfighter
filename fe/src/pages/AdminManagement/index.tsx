@@ -10,7 +10,6 @@ import { Flex, Modal, Table, Tooltip } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
 import { role, roleNames } from '../../constant/role'
-
 import ModalProfileEdit from '../../components/ModalProfileEdit'
 import TextFilter from './components/TextFilter'
 import ActionGroup from './components/ActionGroup'
@@ -45,7 +44,6 @@ const _AdminManagement = () => {
   const currUsrIdOnRowRef = useRef<number | null>(null)
   const { usrInfo: _usrInfo } = useAuthContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
     null
   )
@@ -68,7 +66,18 @@ const _AdminManagement = () => {
   useEffect(() => {
     getAccountList()
   }, [])
-
+  const handleDelete = async (record: DataType) => {
+    currUsrIdOnRowRef.current = record.key
+    Modal.confirm({
+      type: 'warning',
+      title: 'You are about to delete a user. Are you sure?',
+      onOk: async () => {
+        currUsrIdOnRowRef.current &&
+          (await deleteAccount(currUsrIdOnRowRef.current))
+        await getAccountList()
+      },
+    })
+  }
   const handleOk = async (form: FormInstance) => {
     //validate
     try {
@@ -191,8 +200,7 @@ const _AdminManagement = () => {
       render: (_, record) => (
         <ActionGroup
           handleDelete={() => {
-            currUsrIdOnRowRef.current = record.key
-            setIsDeleteModalOpen(true)
+            handleDelete(record)
           }}
           handleManage={() => {
             currUsrIdOnRowRef.current = record.key
@@ -220,18 +228,7 @@ const _AdminManagement = () => {
         handleCancel={handleCancel}
         viewerRole={role.ADMIN}
       ></ModalProfileEdit>
-      <Modal
-        title="You are about to delete a user. Are you sure?"
-        open={isDeleteModalOpen}
-        okButtonProps={{ danger: true }}
-        onOk={async () => {
-          currUsrIdOnRowRef.current &&
-            (await deleteAccount(currUsrIdOnRowRef.current))
-          await getAccountList()
-          setIsDeleteModalOpen(false)
-        }}
-        onCancel={() => setIsDeleteModalOpen(false)}
-      ></Modal>
+
       <Table
         style={{
           width: '100%',
@@ -255,8 +252,7 @@ const _AdminManagement = () => {
                   >
                     <ActionGroup
                       handleDelete={() => {
-                        currUsrIdOnRowRef.current = record.key
-                        setIsDeleteModalOpen(true)
+                        handleDelete(record)
                       }}
                       handleManage={() => {
                         currUsrIdOnRowRef.current = record.key

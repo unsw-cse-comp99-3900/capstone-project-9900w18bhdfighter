@@ -87,8 +87,13 @@ const NotificationContextProvider = ({
       )
     }
   }
+
   useEffect(() => {
     fetchNotification()
+    const interval = setInterval(() => {
+      fetchNotification()
+    }, 5 * 1000)
+    return () => clearInterval(interval)
   }, [])
   const ctx = {
     notifications,

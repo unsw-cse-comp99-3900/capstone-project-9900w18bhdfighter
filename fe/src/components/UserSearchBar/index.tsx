@@ -14,12 +14,12 @@ const Text = styled(Typography.Text)``
 interface UserValue {
   label: ReactNode
   value: number
-  email: string
+  title: string
   role: string
 }
 type Props = {
   getAutoCompleteUsers: (_val: string) => Promise<void>
-  handleChange: (_val: { value: number }) => Promise<void>
+  handleChange: (_val: UserValue) => Promise<void>
   setCurrAutoCompleteUser: React.Dispatch<
     React.SetStateAction<UserProfileSlim[]>
   >
@@ -74,13 +74,22 @@ const UserSearchBar = ({
           </Flex>
         )
       }}
-      options={options}
+      options={autoCompUserWithoutSelf.map((contact) => ({
+        label: (
+          <Text strong>
+            {contact.firstName} {contact.lastName}
+          </Text>
+        ),
+        value: contact.id,
+        title: contact.email,
+        role: roleNames[contact.role],
+      }))}
       notFoundContent={fetching ? <Spin size="small" /> : 'No users found'}
       onChange={async (val) => {
-        await handleChange(val as { value: number })
-        setValue(val as UserValue)
+        await handleChange(val as UserValue)
+        setValue(null)
       }}
-      placeholder="Type email to search"
+      placeholder="Type email to add a user"
       loading={fetching}
       {...props}
     />

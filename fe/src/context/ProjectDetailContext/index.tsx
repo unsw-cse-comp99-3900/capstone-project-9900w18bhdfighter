@@ -13,6 +13,7 @@ import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { Group } from '../../types/group'
 import {
   getProjectById,
+  killOneProject,
   mapProjectDTOToProject,
   updateProject,
 } from '../../api/projectAPI'
@@ -23,6 +24,7 @@ import {
   mapGroupDTOToGroup,
   removeGroupFromProject,
 } from '../../api/groupAPI'
+import { errHandler } from '../../utils/parse'
 
 interface ProjectDetailContextType {
   project: Project | null
@@ -37,6 +39,7 @@ interface ProjectDetailContextType {
   removeGroup: (_groupId: number) => Promise<void>
   addGroup: (_data: { GroupID: number; ProjectID: number }) => Promise<void>
   updateCurrentGroup: (_projectUpdateDTO: ProjectReqDTO) => Promise<void>
+  deleteProject: (_id: number | string) => Promise<void>
 }
 
 const ProjectDetailContext = createContext({} as ProjectDetailContextType)
@@ -103,6 +106,18 @@ const ProjectDetailContextProvider = ({
       msg.err('Failed to assign group to project')
     }
   }
+  const deleteProject = async (projId: string | number) => {
+    try {
+      await killOneProject(projId)
+      msg.success('Project deleted successfully!')
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
   useEffect(() => {
     fetchProjectDetail()
   }, [id])
@@ -111,6 +126,7 @@ const ProjectDetailContextProvider = ({
     setProject,
     ownerName,
     setOwnerName,
+    deleteProject,
     creatorName,
     setCreatorName,
     groupsList,

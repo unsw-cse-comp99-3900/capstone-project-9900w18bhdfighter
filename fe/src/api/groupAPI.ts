@@ -49,17 +49,14 @@ const removeGroupFromProject = async (projectId: number, groupId: number) => {
 
   return api.delete(`api/group-projects/${projectId}/${groupId}/`)
 }
-
-// const removeMemberFromGroup = async (userId: number, groupId: number) => {
-//   console.log(`/group_leave/${userId}/${groupId}/`)
-
-//   return api.delete(`/group_leave/${userId}/${groupId}/`)
-// }
-
-const getAutoCompleteGroups = async (groupName: string) => {
+const getAutoCompleteGroups = async (
+  groupName: string,
+  onlyGroupsWithNoProj = false
+) => {
   return api.get<{ data: GroupRspDTO[] }>('api/groups/autocomplete-name', {
     params: {
       name_substring: groupName,
+      only_groups_with_no_proj: onlyGroupsWithNoProj,
     },
   })
 }

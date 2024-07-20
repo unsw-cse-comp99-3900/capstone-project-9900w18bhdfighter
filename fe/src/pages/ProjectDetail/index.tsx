@@ -1,8 +1,17 @@
-import { Button, Descriptions, Flex, List, Space, Tag, Typography } from 'antd'
+import {
+  Button,
+  Descriptions,
+  Flex,
+  List,
+  Modal,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import styled from 'styled-components'
 import type { DescriptionsProps } from 'antd/es/descriptions'
 import { getThemeToken } from '../../utils/styles'
-import Link from 'antd/es/typography/Link'
 import { nanoid } from 'nanoid'
 import route from '../../constant/route'
 import GroupSearchBar from './components/GroupSearchBar'
@@ -16,6 +25,7 @@ import { role } from '../../constant/role'
 import { useAuthContext } from '../../context/AuthContext'
 import dayjs from 'dayjs'
 import { useGlobalTheme } from '../../context/GlobalThemeContext'
+import { Link, useNavigate } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -45,14 +55,18 @@ const _ProjectDetail = () => {
     groupsList,
     removeGroup,
     updateCurrentGroup,
+    deleteProject,
   } = useProjectDetailContext()
+
   const [isOpened, setIsOpened] = useState(false)
-  const { role: _role, usrInfo } = useAuthContext()
+  const { usrInfo, isInRoleRange } = useAuthContext()
+  const { onWidth } = useGlobalTheme()
+  const navigate = useNavigate()
   const handleOk = async (projectUpdateDTO: ProjectReqDTO) => {
     updateCurrentGroup(projectUpdateDTO)
     setIsOpened(false)
   }
-  const { onWidth } = useGlobalTheme()
+
   const handleCancel = () => {
     setIsOpened(false)
   }
@@ -71,24 +85,15 @@ const _ProjectDetail = () => {
     }
   }, [project])
 
-  const isAdmin = () => {
-    return _role === role.ADMIN
-  }
-  const isManager = () => {
-    return _role === role.ADMIN || _role === role.TUTOR || _role === role.CORD
-  }
-
   const isCreator = () => {
     return project?.createdBy === usrInfo?.id
   }
-  const isCord = () => {
-    return _role === role.CORD
+
+  const accessToEditProjectMeta = () => {
+    return isInRoleRange([role.ADMIN, role.CORD]) || isCreator()
   }
-  const shouldDisplaySearchAndRemove = () => {
-    return isManager()
-  }
-  const shouldDisplayEdit = () => {
-    return isCreator() || isAdmin() || isCord()
+  const accessToAssignGroup = () => {
+    return isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
   }
 
   const items: DescriptionsProps['items'] = [
@@ -114,7 +119,7 @@ const _ProjectDetail = () => {
       span: 2,
       label: 'Owner',
       children: (
-        <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
+        <Link to={`${route.PROFILE}/${project?.projectOwnerId}`}>
           {ownerName}
         </Link>
       ),
@@ -123,13 +128,7 @@ const _ProjectDetail = () => {
       span: 2,
       label: 'Creator',
       children: (
-        <Link
-          href={`
-        ${route.PROFILE}/${project?.createdBy}
-      `}
-        >
-          {creatorName}
-        </Link>
+        <Link to={`${route.PROFILE}/${project?.createdBy}`}>{creatorName}</Link>
       ),
     },
     {
@@ -167,7 +166,7 @@ const _ProjectDetail = () => {
           <Flex>
             <GroupSearchBar
               style={{
-                display: shouldDisplaySearchAndRemove() ? 'block' : 'none',
+                display: accessToAssignGroup() ? 'block' : 'none',
               }}
             />
           </Flex>
@@ -190,7 +189,11 @@ const _ProjectDetail = () => {
           >
             {groupsList?.map((group) => (
               <List.Item key={group.groupId}>
-                <Typography.Text strong>{group.groupName}</Typography.Text>
+                <Typography.Text>
+                  <Link to={`${route.GROUPS}/${group.groupId}`}>
+                    {group.groupName}
+                  </Link>
+                </Typography.Text>
                 <Button
                   size={onWidth({
                     sm: 'small',
@@ -200,7 +203,7 @@ const _ProjectDetail = () => {
                   key={group.groupId}
                   type="text"
                   style={{
-                    display: shouldDisplaySearchAndRemove() ? 'block' : 'none',
+                    display: accessToAssignGroup() ? 'block' : 'none',
                     width: onWidth({
                       sm: '100%',
                       defaultValue: 'unset',
@@ -217,7 +220,12 @@ const _ProjectDetail = () => {
       ),
     },
   ]
-
+  if (!project)
+    return (
+      <Wrapper>
+        <Spin></Spin>
+      </Wrapper>
+    )
   return (
     <Wrapper>
       <ModalProjectForm
@@ -230,15 +238,39 @@ const _ProjectDetail = () => {
       <Header>
         <Title strong>Project Detail</Title>
 
-        <EditButton
-          style={{
-            display: shouldDisplayEdit() ? 'flex' : 'none',
-          }}
-          type="primary"
-          onClick={() => setIsOpened(true)}
-        >
-          Edit
-        </EditButton>
+        <Space align="center">
+          <EditButton
+            style={{
+              display: accessToEditProjectMeta() ? 'block' : 'none',
+            }}
+            type="primary"
+            onClick={() => setIsOpened(true)}
+          >
+            Edit
+          </EditButton>
+          <Button
+            style={{
+              display: accessToEditProjectMeta() ? 'block' : 'none',
+            }}
+            danger
+            type="primary"
+            onClick={() => {
+              Modal.confirm({
+                title: 'Do you want to delete this project?',
+                content:
+                  'When clicked the OK button, this project will be deleted.',
+                onOk: async () => {
+                  await deleteProject(project.id)
+                  navigate(route.DASHBOARD, {
+                    replace: true,
+                  })
+                },
+              })
+            }}
+          >
+            Delete
+          </Button>
+        </Space>
       </Header>
 
       <Description

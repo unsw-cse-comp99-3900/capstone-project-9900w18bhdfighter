@@ -8,7 +8,7 @@ import SiderMenu from './SiderMenu'
 const _Sider = styled(Sider)`
   padding-top: ${getThemeToken('paddingMD', 'px')};
   height: 100%;
-  z-index: 2;
+  z-index: 4;
 `
 
 const Mask = styled.div<{ visible: boolean }>`
@@ -18,7 +18,7 @@ const Mask = styled.div<{ visible: boolean }>`
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0);
-  z-index: 1;
+  z-index: 3;
   display: ${({ visible }) => (visible ? 'block' : 'none')};
 `
 

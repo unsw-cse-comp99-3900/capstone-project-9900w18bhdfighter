@@ -5,17 +5,18 @@ import styled from 'styled-components'
 const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
   justify-content: center;
-  align-items: center;
+  align-items: start;
   width: 100%;
   height: 100%;
+  padding-top: 10%;
 `
 
 const MessageLanding = () => {
   return (
     <Wrapper>
-      <Typography.Title level={3}>
-        Select or Add a Contact to Start
-      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Select or Add a Contact to Start.
+      </Typography.Paragraph>
     </Wrapper>
   )
 }

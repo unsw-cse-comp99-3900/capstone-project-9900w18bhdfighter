@@ -11,7 +11,7 @@ const getMyContactList = () => {
 const getAutoCompleteContacts = (emailSubstring: string) => {
   return api.get<{
     data: UserProfileSlimDTO[]
-  }>('api/users/autocomplete-email', {
+  }>('api/users/autocomplete', {
     params: {
       email_substring: emailSubstring,
     },

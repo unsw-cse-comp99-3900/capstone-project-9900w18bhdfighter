@@ -34,7 +34,7 @@ const GroupSearchBar = (
       if (val.trim() === '') return
       setFetching(true)
       try {
-        const res = await getAutoCompleteGroups(val)
+        const res = await getAutoCompleteGroups(val, true)
         autoCompGroups.current = res.data.data.map(mapGroupDTOToGroup)
         const groupsListWithoutCurrent = autoCompGroups.current.filter(
           (group) => !groupsList?.find((g) => g.groupId === group.groupId)

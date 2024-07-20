@@ -42,7 +42,12 @@ const SiderMenu = ({ setCollapsed }: Props) => {
           icon: <AiFillProject />,
           label: 'Projects',
           style: {
-            display: isInRoleRange([role.ADMIN, role.CORD, role.CLIENT])
+            display: isInRoleRange([
+              role.ADMIN,
+              role.CORD,
+              role.CLIENT,
+              role.STUDENT,
+            ])
               ? 'block'
               : 'none',
           },

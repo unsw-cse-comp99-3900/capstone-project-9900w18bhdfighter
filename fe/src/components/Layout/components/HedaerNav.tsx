@@ -1,13 +1,13 @@
-import { Flex } from 'antd'
+import { Flex, Image } from 'antd'
 
 import { Header } from 'antd/es/layout/layout'
 import styled from 'styled-components'
 import { getThemeColor } from '../../../utils/styles'
-import route from '../../../constant/route'
-
-import LinkButton from '../../LinkButton'
+import logo from '../../../assets/logo.png'
 import AvatarDropdown from './AvatarDropdown'
 import NotificationPopover from './NotificationPopover'
+import { Link } from 'react-router-dom'
+import route from '../../../constant/route'
 
 const Wrapper = styled(Header)`
   display: flex;
@@ -16,24 +16,20 @@ const Wrapper = styled(Header)`
   border-bottom: 1px solid ${getThemeColor('grayscalePalette', 3)};
 `
 
-const Logo = styled(LinkButton)`
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: none;
-  font-weight: bold;
-  color: ${getThemeColor('primary')};
-`
-
 const OperationsGroup = styled(Flex)`
   align-items: center;
+`
+const Img = styled(Image)`
+  height: 2.75rem !important;
 `
 
 const HeaderNav = () => {
   return (
     <Wrapper>
-      <Logo to={route.DASHBOARD}>LOGO</Logo>
+      <Link to={`${route.DASHBOARD}`}>
+        <Img preview={false} sizes="small" src={logo} alt="logo" />
+      </Link>
+
       <OperationsGroup>
         <NotificationPopover></NotificationPopover>
         <AvatarDropdown />

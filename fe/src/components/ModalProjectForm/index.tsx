@@ -8,11 +8,18 @@ import {
   Modal,
   Select,
 } from 'antd'
-import React, { CSSProperties, useMemo } from 'react'
+import React, { CSSProperties, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { ProjectReqDTO } from '../../types/proj'
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 import dayjs from 'dayjs'
+import UserSearchBar from '../UserSearchBar'
+import { UserProfileSlim } from '../../types/user'
+import {
+  getAutoCompleteByParams,
+  mapUserSlimProfileDTOUserProfileSlim,
+} from '../../api/userAPI'
+import { role } from '../../constant/role'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -86,6 +93,10 @@ const ModalProjectForm = ({
 }: Props) => {
   const [form] = Form.useForm<FormValues>()
   const { AREA_LIST } = useGlobalConstantContext()
+  const [autoCompUserWithoutSelf, setAutoCompUserWithoutSelf] = useState<
+    UserProfileSlim[]
+  >([])
+
   const areaOptions = useMemo<Option[]>(
     () =>
       AREA_LIST?.map((area) => ({ label: area.name, value: area.id })) || [],
@@ -94,8 +105,11 @@ const ModalProjectForm = ({
 
   const handleFinish = async () => {
     try {
-      await form.validateFields()
       const values = form.getFieldsValue()
+
+      await form.validateFields()
+      console.log(values)
+
       handleOk(mapFormValuesToProjectReqDTO(values))
     } catch (e) {
       console.log(e)
@@ -168,7 +182,22 @@ const ModalProjectForm = ({
           label="Project Owner's Email"
           name="email"
         >
-          <Input />
+          <UserSearchBar
+            handleChange={async (val) => {
+              console.log(val)
+            }}
+            onChange={(val) => {
+              form.setFieldValue('email', val.title)
+            }}
+            getAutoCompleteUsers={async (val) => {
+              const res = await getAutoCompleteByParams(val, role.CLIENT)
+              setAutoCompUserWithoutSelf(
+                res.data.data.map(mapUserSlimProfileDTOUserProfileSlim)
+              )
+            }}
+            setCurrAutoCompleteUser={setAutoCompUserWithoutSelf}
+            autoCompUserWithoutSelf={autoCompUserWithoutSelf}
+          />
         </Form.Item>
         <Form.Item
           rules={[
