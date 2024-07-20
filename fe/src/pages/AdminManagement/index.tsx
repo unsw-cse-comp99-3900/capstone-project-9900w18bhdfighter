@@ -10,7 +10,6 @@ import { Flex, Modal, Table, Tooltip } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
 import styled from 'styled-components'
 import { role, roleNames } from '../../constant/role'
-
 import ModalProfileEdit from '../../components/ModalProfileEdit'
 import TextFilter from './components/TextFilter'
 import ActionGroup from './components/ActionGroup'

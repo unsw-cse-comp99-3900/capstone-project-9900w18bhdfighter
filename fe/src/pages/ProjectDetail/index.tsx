@@ -12,7 +12,6 @@ import {
 import styled from 'styled-components'
 import type { DescriptionsProps } from 'antd/es/descriptions'
 import { getThemeToken } from '../../utils/styles'
-import Link from 'antd/es/typography/Link'
 import { nanoid } from 'nanoid'
 import route from '../../constant/route'
 import GroupSearchBar from './components/GroupSearchBar'
@@ -26,7 +25,7 @@ import { role } from '../../constant/role'
 import { useAuthContext } from '../../context/AuthContext'
 import dayjs from 'dayjs'
 import { useGlobalTheme } from '../../context/GlobalThemeContext'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -120,7 +119,7 @@ const _ProjectDetail = () => {
       span: 2,
       label: 'Owner',
       children: (
-        <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
+        <Link to={`${route.PROFILE}/${project?.projectOwnerId}`}>
           {ownerName}
         </Link>
       ),
@@ -129,13 +128,7 @@ const _ProjectDetail = () => {
       span: 2,
       label: 'Creator',
       children: (
-        <Link
-          href={`
-        ${route.PROFILE}/${project?.createdBy}
-      `}
-        >
-          {creatorName}
-        </Link>
+        <Link to={`${route.PROFILE}/${project?.createdBy}`}>{creatorName}</Link>
       ),
     },
     {
@@ -196,7 +189,11 @@ const _ProjectDetail = () => {
           >
             {groupsList?.map((group) => (
               <List.Item key={group.groupId}>
-                <Typography.Text strong>{group.groupName}</Typography.Text>
+                <Typography.Text>
+                  <Link to={`${route.GROUPS}/${group.groupId}`}>
+                    {group.groupName}
+                  </Link>
+                </Typography.Text>
                 <Button
                   size={onWidth({
                     sm: 'small',
