@@ -39,6 +39,7 @@ const StyledJoinButton = styled(Button)`
   margin-top: 2%;
   width: 100%;
 `
+const StyleLeaveButton = styled(StyledJoinButton)``
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -74,6 +75,7 @@ const _GroupDetail = () => {
     creatorProfile,
     lockPreferences,
     isGroupPreferenceLocked,
+    isUserInThisGroup,
   } = useGroupDetailContext()
 
   const [open, setOpen] = useState<Record<GroupDetailModalType, boolean>>({
@@ -167,13 +169,34 @@ const _GroupDetail = () => {
                   </List.Item>
                 )}
               />
-              {userRole == 'Student' && (
-                <ButtonContainer>
-                  <StyledJoinButton type="primary" onClick={joinOrLeave}>
-                    {isUserInGroup ? 'Leave Group' : 'Join Group'}
-                  </StyledJoinButton>
-                </ButtonContainer>
-              )}
+
+              <ButtonContainer
+                style={{
+                  display: userRole === 'Student' ? 'flex' : 'none',
+                }}
+              >
+                <StyledJoinButton
+                  style={{
+                    display:
+                      //不在这个组里，也不在其他组里才显示
+                      !isUserInThisGroup && !isUserInGroup ? 'block' : 'none',
+                  }}
+                  type="primary"
+                  onClick={joinOrLeave}
+                >
+                  Join Group
+                </StyledJoinButton>
+                <StyleLeaveButton
+                  style={{
+                    //在这个组里，就显示leave
+                    display: isUserInThisGroup ? 'block' : 'none',
+                  }}
+                  type="primary"
+                  onClick={joinOrLeave}
+                >
+                  Leave Group
+                </StyleLeaveButton>
+              </ButtonContainer>
             </Descriptions.Item>
 
             <Descriptions.Item span={3} label="Project Preferences">

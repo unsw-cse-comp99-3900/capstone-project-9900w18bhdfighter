@@ -33,6 +33,7 @@ interface GroupDetailContextType {
   updatePreferences: (_preferences: GroupPreferenceReqDTO[]) => Promise<void>
   lockPreferences: () => Promise<void>
   isGroupPreferenceLocked: boolean
+  isUserInThisGroup: boolean
 }
 
 const GroupDetailContextType = createContext({} as GroupDetailContextType)
@@ -57,6 +58,11 @@ const GroupDetailContextProvider = ({
   const isUserInGroup =
     groupDetail?.groupMembers.some((member) => member.id === usrInfo?.id) ||
     false
+  const isUserInThisGroup = useMemo(() => {
+    if (!groupDetail) return false
+    if (!usrInfo) return false
+    return groupDetail.groupMembers.some((member) => member.id === usrInfo.id)
+  }, [groupDetail, usrInfo])
   const isGroupPreferenceLocked = useMemo(() => {
     if (!groupDetail) return false
     if (groupDetail.preferences.length === 0) return false
@@ -211,6 +217,7 @@ const GroupDetailContextProvider = ({
     updatePreferences,
     lockPreferences,
     isGroupPreferenceLocked,
+    isUserInThisGroup,
   }
 
   return (
