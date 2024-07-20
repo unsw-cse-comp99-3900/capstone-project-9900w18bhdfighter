@@ -9,7 +9,7 @@ import { useGlobalComponentsContext } from '../../../context/GlobalComponentsCon
 import { useProjectContext } from '../../../context/ProjectContext'
 
 type Props = {
-  handleSelect: (_id: number) => Promise<void>
+  handleSelect: (_project: ProjectProfileSlim) => void
   setSelectedProject: React.Dispatch<
     React.SetStateAction<ProjectProfileSlim | null>
   >
@@ -53,11 +53,11 @@ const AllocateProjectSearchBar = ({
   return (
     <ProjectSearchBar
       handleChange={async (option) => {
-        handleSelect(option.value)
         const selectedOption = potentialProjects.find(
           (project) => project.id === option.value
         )
         if (selectedOption) {
+          handleSelect(selectedOption)
           setSelectedProject(selectedOption)
         }
       }}

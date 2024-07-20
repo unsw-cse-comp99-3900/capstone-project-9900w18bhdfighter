@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Button, Descriptions, Flex, List, Spin, Modal, Form } from 'antd'
+import { Button, Descriptions, Flex, List, Spin, Modal } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
@@ -15,6 +15,7 @@ import {
   Group,
   GroupPreferenceSlim,
   GroupPreferenceReqDTO,
+  GroupReqDTO,
 } from '../../types/group'
 import { roleNames } from '../../constant/role'
 import Paragraph from 'antd/es/typography/Paragraph'
@@ -29,13 +30,21 @@ import { getUserById } from '../../api/userAPI'
 import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
 import {
-  updateGroupPreference,
+  // updateGroupPreference,
   deleteGroupPreference,
 } from '../../api/groupPreferenceAPI'
+import { isAxiosError } from 'axios'
 export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
 
-const Wrapper = styled(Flex)`
+const WrapperContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
+`
+
+const Wrapper = styled(Flex)`
+  width: 60%;
   height: 100%;
   flex-direction: column;
   align-items: center;
@@ -48,6 +57,17 @@ const FlexContainer = styled(Flex)`
 
 const StyledButton = styled(Button)`
   height: 32px; /* Adjust height to match input/select */
+`
+const StyledJoinButton = styled(Button)`
+  height: 32px;
+  margin-top: 2%;
+  width: 100%;
+`
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 `
 
 const StyledModalContent = styled.div`
@@ -90,6 +110,9 @@ const GroupDetail = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfileSlim | null>(null)
   const [selectedProject, setSelectedProject] =
     useState<ProjectProfileSlim | null>(null)
+  const [selectedProjects, setSelectedProjects] = useState<
+    ProjectProfileSlim[]
+  >([])
   const { msg } = useGlobalComponentsContext()
   const members = useMemo(() => group?.groupMembers || [], [group])
   const isUserMember = useMemo(() => {
@@ -108,7 +131,7 @@ const GroupDetail = () => {
     allocation: false,
     confirm: false,
   })
-  const [form] = Form.useForm()
+  // const [form] = Form.useForm()
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
 
   const fetchGroupDetails = async () => {
@@ -124,6 +147,14 @@ const GroupDetail = () => {
         fullName: res1.data.data.FirstName + ' ' + res1.data.data.LastName,
       })
       setGroup(mapGroupDTOToGroup(groupData))
+
+      // Initialize selectedProjects with current group preferences
+      const currentPreferences = groupData.Preferences.map((pref) => ({
+        id: pref.PreferenceID,
+        name: pref.Preference.ProjectName,
+        owner: pref.Preference.ProjectOwner,
+      }))
+      setSelectedProjects(currentPreferences)
     } catch (e) {
       console.error('Error fetching group details:', e)
     } finally {
@@ -152,31 +183,64 @@ const GroupDetail = () => {
       msg.err('Failed to add member')
     }
   }
-
-  const handleAddProject = async (projectId: number) => {
-    const currentMaxRank = Math.max(
-      0,
-      ...(group?.preferences || []).map((p) => p.rank)
-    )
-    const data: GroupPreferenceReqDTO[] = [
-      {
-        Preference: projectId,
-        Rank: currentMaxRank + 1, // New rank
-        // Group: Number(id),
-      },
-    ]
-    try {
-      console.log('Adding project with id:', projectId)
-      console.log('Sending data:', data)
-      const res = await updateGroupPreference(data, Number(id))
-      console.log('Response from project_join:', res.data)
-      msg.success('Project added successfully')
-      await fetchGroupDetails()
-    } catch (error) {
-      console.error('Error adding project:', error)
-      msg.err('Failed to add project')
-    }
+  const handleSelectProject = (project: ProjectProfileSlim) => {
+    setSelectedProjects((prevProjects) => [...prevProjects, project])
+    console.log('Selected Project:', project)
   }
+
+  // const handleAddProject = async (projectId: number) => {
+  //   const currentMaxRank = Math.max(
+  //     0,
+  //     ...(group?.preferences || []).map((p) => p.rank)
+  //   )
+
+  //   const data: GroupPreferenceReqDTO[] = [
+  //     {
+  //       Preference: projectId,
+  //       Rank: currentMaxRank + 1, // New rank
+  //     },
+  //   ]
+  //   try {
+  //     console.log('Adding project with id:', projectId)
+  //     console.log('Sending data:', data)
+  //     // const res = await updateGroupPreference(data, Number(id))
+  //     const res = await api.put(
+  //       `api/groups/${group?.groupId}/preferences/submit`,
+  //       data
+  //     )
+  //     console.log('Response from project_join:', res.data)
+  //     msg.success('Project added successfully')
+  //     await fetchGroupDetails()
+  //   } catch (error) {
+  //     console.error('Error adding project:', error)
+  //     msg.err('Failed to add project')
+  //   }
+  // }
+
+  // const handleAddProject = async (projectId: number) => {
+  //   const currentMaxRank = Math.max(
+  //     0,
+  //     ...(group?.preferences || []).map((p) => p.rank)
+  //   )
+  //   const data: GroupPreferenceReqDTO[] = [
+  //     {
+  //       Preference: projectId,
+  //       Rank: currentMaxRank + 1, // New rank
+  //       // Group: Number(id),
+  //     },
+  //   ]
+  //   try {
+  //     console.log('Adding project with id:', projectId)
+  //     console.log('Sending data:', data)
+  //     const res = await updateGroupPreference(data, Number(id))
+  //     console.log('Response from project_join:', res.data)
+  //     msg.success('Project added successfully')
+  //     await fetchGroupDetails()
+  //   } catch (error) {
+  //     console.error('Error adding project:', error)
+  //     msg.err('Failed to add project')
+  //   }
+  // }
 
   const handleAddProjectPreference = async () => {
     console.log('Selected Project:', selectedProject)
@@ -184,6 +248,28 @@ const GroupDetail = () => {
       // await handleAddProject(selectedProject.id)
       fetchGroupDetails
       setSelectedProject(null) // Reset selected project to clear the search bar
+    }
+  }
+  const handleAddProjectPreferences = async () => {
+    // 获取当前渲染的selectedProjects列表
+    const data: GroupPreferenceReqDTO[] = selectedProjects.map(
+      (project, index) => ({
+        Rank: index + 1, // Rank based on selection order
+        Preference: project.id,
+        Group: group?.groupId,
+      })
+    )
+
+    try {
+      console.log('Adding projects:', data)
+      const res = await api.put(`/api/groups/${id}/preferences/submit`, data)
+      console.log('Response from project preferences submit:', res.data)
+      msg.success('Projects added successfully')
+      await fetchGroupDetails()
+      setSelectedProjects([]) // Clear the selected projects after submission
+    } catch (error) {
+      console.error('Error adding projects:', error)
+      msg.err('Failed to add projects')
     }
   }
 
@@ -258,14 +344,34 @@ const GroupDetail = () => {
     dict[type]()
   }
 
-  const handleSave = async () => {
+  // const handleSavePreference = async (groupReqDTO: GroupReqDTO) => {
+  //   try {
+  //     console.log('sending group preference', groupReqDTO)
+  //     await api.put(`/api/groups/${id}`, groupReqDTO)
+  //     msg.success('Preferences saved successfully')
+  //     handleModalClose('metaEdit')
+  //   } catch (error) {
+  //     msg.err('Failed to save preferences')
+  //   }
+  // }
+
+  const handleSaveMetadata = async (groupReqDTO: GroupReqDTO) => {
     try {
-      const values = await form.validateFields()
-      await api.post('/api/savePreferences', values)
-      msg.success('Preferences saved successfully')
+      console.log('sending group metadata', groupReqDTO)
+      const response = await api.put(`/api/groups/${id}`, groupReqDTO)
+      console.log('Response from API:', response)
+      msg.success('Metadata saved successfully')
       handleModalClose('metaEdit')
     } catch (error) {
-      msg.err('Failed to save preferences')
+      if (isAxiosError(error)) {
+        console.error('Error saving metadata:', error)
+        msg.err(
+          `Failed to save metadata: ${error.response?.data?.message || error.message}`
+        )
+      } else {
+        console.error('Unexpected error saving metadata:', error)
+        msg.err('An unexpected error occurred')
+      }
     }
   }
 
@@ -279,173 +385,259 @@ const GroupDetail = () => {
   console.log(group)
 
   return (
-    <Wrapper>
-      <Modal
-        title="Confirm Save"
-        open={open.confirm}
-        onOk={handleSave}
-        onCancel={() => handleModalClose('confirm')}
-      >
-        <Paragraph>
-          Are you sure you want to submit your project preferences? Once
-          submitted, they cannot be changed.
-        </Paragraph>
-      </Modal>
-      <ModalGroupForm
-        title="Edit Group Meta Data"
-        isModalOpen={open.metaEdit}
-        handleOk={handleSave}
-        handleCancel={() => handleModalClose('metaEdit')}
-        initialData={group || undefined}
-      />
-      <EditWrapper gap={10}>
-        <Button type="primary" onClick={() => handleModalOpen('metaEdit')}>
-          Edit Group Meta Data
-        </Button>
-      </EditWrapper>
-      <DescriptionsContainer>
-        <InnerDescriptionsContainer>
-          <Descriptions bordered title="Group Detail">
-            <Descriptions.Item span={1} label="Group Name">
-              {group?.groupName}
-            </Descriptions.Item>
-            <Descriptions.Item span={2} label="Creator">
-              <Link href={`${route.PROFILE}/${creatorProfile?.id}`}>
-                {creatorProfile?.fullName}
-              </Link>
-            </Descriptions.Item>
-            <Descriptions.Item span={3} label="Description">
-              {group?.groupDescription}
-            </Descriptions.Item>
-            <Descriptions.Item span={3} label="Group Members">
-              {userRole == 'Student' && (
+    <WrapperContainer>
+      <Wrapper>
+        <Modal
+          title="Confirm Save"
+          open={open.confirm}
+          onOk={() =>
+            handleSaveMetadata({
+              GroupName: '',
+              GroupDescription: '',
+              MaxMemberNumber: Number(),
+            })
+          }
+          onCancel={() => handleModalClose('confirm')}
+        >
+          <Paragraph>
+            Are you sure you want to submit your project preferences? Once
+            submitted, they cannot be changed.
+          </Paragraph>
+        </Modal>
+        <ModalGroupForm
+          title="Edit Group Meta Data"
+          isModalOpen={open.metaEdit}
+          handleOk={handleSaveMetadata}
+          handleCancel={() => handleModalClose('metaEdit')}
+          initialData={group || undefined}
+        />
+        {/* student cannot edit group */}
+        {userRole !== 'Student' && (
+          <EditWrapper gap={10}>
+            <Button type="primary" onClick={() => handleModalOpen('metaEdit')}>
+              Edit Group Meta Data
+            </Button>
+          </EditWrapper>
+        )}
+
+        <DescriptionsContainer>
+          <InnerDescriptionsContainer>
+            <Descriptions bordered title="Group Detail">
+              <Descriptions.Item span={1} label="Group Name">
+                {group?.groupName}
+              </Descriptions.Item>
+              <Descriptions.Item span={2} label="Creator">
+                <Link href={`${route.PROFILE}/${creatorProfile?.id}`}>
+                  {creatorProfile?.fullName}
+                </Link>
+              </Descriptions.Item>
+              <Descriptions.Item span={3} label="Description">
+                {group?.groupDescription}
+              </Descriptions.Item>
+              <Descriptions.Item span={3} label="Group Members">
+                {/* {userRole == 'Student' && (
                 <StyledButton type="primary" onClick={handleJoinOrLeaveGroup}>
                   {isUserMember ? 'Leave Group' : 'Join Group'}
                 </StyledButton>
-              )}
-              <FlexContainer>
-                <CandidateSearchBar
-                  handleSelect={handleAddMember}
-                  setSelectedUser={setSelectedUser}
-                />
-                <StyledButton
-                  size="small"
-                  type="primary"
-                  onClick={() => {
-                    console.log('Selected User:', selectedUser)
-                    handleAddMember(selectedUser?.id || 0)
+              )} */}
+                {userRole !== 'Student' && (
+                  <FlexContainer>
+                    <CandidateSearchBar
+                      handleSelect={handleAddMember}
+                      setSelectedUser={setSelectedUser}
+                    />
+                    <StyledButton
+                      size="small"
+                      type="primary"
+                      onClick={() => {
+                        console.log('Selected User:', selectedUser)
+                        handleAddMember(selectedUser?.id || 0)
+                      }}
+                    >
+                      Add New Member
+                    </StyledButton>
+                  </FlexContainer>
+                )}
+                <List
+                  bordered
+                  style={{
+                    maxHeight: '15rem',
+                    overflow: 'auto',
+                    marginTop: '1rem',
                   }}
-                >
-                  Add New Member
-                </StyledButton>
-              </FlexContainer>
-              <List
-                bordered
-                style={{
-                  maxHeight: '15rem',
-                  overflow: 'auto',
-                  marginTop: '1rem',
-                }}
-                dataSource={members}
-                renderItem={(member: UserProfileSlim) => (
-                  <List.Item
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    actions={[
-                      <StyledButton
-                        key="1"
-                        size="small"
-                        type="text"
-                        danger
-                        onClick={() => handleRemoveMember(member.id)}
-                      >
-                        Remove
-                      </StyledButton>,
-                    ]}
-                  >
-                    {member.firstName} {member.lastName}
-                  </List.Item>
-                )}
-              />
-              {userRole == 'Student' && (
-                <StyledButton type="primary" onClick={handleJoinOrLeaveGroup}>
-                  {isUserMember ? 'Leave Group' : 'Join Group'}
-                </StyledButton>
-              )}
-            </Descriptions.Item>
-
-            <Descriptions.Item span={3} label="Project Preferences">
-              <FlexContainer>
-                <AllocateProjectSearchBar
-                  handleSelect={async (projectId: number) =>
-                    await handleAddProject(projectId)
-                  }
-                  setSelectedProject={setSelectedProject}
+                  dataSource={members}
+                  renderItem={(member: UserProfileSlim) => (
+                    <List.Item
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      actions={[
+                        userRole !== 'Student' && (
+                          <StyledButton
+                            key="1"
+                            size="small"
+                            type="text"
+                            danger
+                            onClick={() => handleRemoveMember(member.id)}
+                          >
+                            Remove
+                          </StyledButton>
+                        ),
+                      ]}
+                    >
+                      {member.firstName} {member.lastName}
+                    </List.Item>
+                  )}
                 />
-                <StyledButton
-                  size="small"
-                  type="primary"
-                  onClick={handleAddProjectPreference}
-                >
-                  Add Project Preference
-                </StyledButton>
-              </FlexContainer>
-              <List
-                bordered
-                style={{
-                  maxHeight: '15rem',
-                  overflow: 'auto',
-                  marginTop: '1rem',
-                }}
-                dataSource={group?.preferences || []}
-                renderItem={(member: GroupPreferenceSlim) => (
-                  <List.Item
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    actions={[
-                      <StyledButton
-                        key="1"
-                        size="small"
-                        type="text"
-                        danger
-                        onClick={() =>
-                          handleRemovePreference(member.preferenceId)
-                        }
-                      >
-                        Remove
-                      </StyledButton>,
-                    ]}
-                  >
-                    No.{member.rank} {member.preference.name}
-                  </List.Item>
+                {userRole == 'Student' && (
+                  <ButtonContainer>
+                    <StyledJoinButton
+                      type="primary"
+                      onClick={handleJoinOrLeaveGroup}
+                    >
+                      {isUserMember ? 'Leave Group' : 'Join Group'}
+                    </StyledJoinButton>
+                  </ButtonContainer>
                 )}
-              />
-            </Descriptions.Item>
-          </Descriptions>
-        </InnerDescriptionsContainer>
-      </DescriptionsContainer>
+              </Descriptions.Item>
 
-      <Modal
-        title="Project Allocation"
-        open={open.allocation}
-        onCancel={() => handleModalClose('allocation')}
-        footer={null}
-      >
-        <StyledModalContent>
-          {allocationResults ? (
-            <StyledParagraph>{allocationResults}</StyledParagraph>
-          ) : allocationError ? (
-            <StyledParagraph>{allocationError}</StyledParagraph>
-          ) : (
-            <Spin tip="Allocating projects..." />
-          )}
-        </StyledModalContent>
-      </Modal>
-    </Wrapper>
+              {userRole == 'Student' && (
+                <Descriptions.Item span={3} label="Project Preferences for Stu">
+                  {isUserMember && (
+                    <FlexContainer>
+                      <AllocateProjectSearchBar
+                        handleSelect={handleSelectProject}
+                        setSelectedProject={setSelectedProject}
+                      />
+                      <StyledButton
+                        size="small"
+                        type="primary"
+                        onClick={handleAddProjectPreferences}
+                      >
+                        Add Project Preference
+                      </StyledButton>
+                    </FlexContainer>
+                  )}
+                  <List
+                    bordered
+                    style={{
+                      maxHeight: '15rem',
+                      overflow: 'auto',
+                      marginTop: '1rem',
+                    }}
+                    dataSource={selectedProjects}
+                    renderItem={(project: ProjectProfileSlim) => (
+                      <List.Item
+                        key={project.id} // 确保每个列表项都有唯一的key
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        actions={[
+                          isUserMember && (
+                            <StyledButton
+                              key="1"
+                              size="small"
+                              type="text"
+                              danger
+                              onClick={() =>
+                                setSelectedProjects((prevProjects) =>
+                                  prevProjects.filter(
+                                    (p) => p.id !== project.id
+                                  )
+                                )
+                              }
+                            >
+                              Remove
+                            </StyledButton>
+                          ),
+                        ]}
+                      >
+                        {project.name}
+                      </List.Item>
+                    )}
+                  />
+                </Descriptions.Item>
+              )}
+
+              {userRole !== 'Student' && (
+                <Descriptions.Item span={3} label="Project Preferences">
+                  <FlexContainer>
+                    {/* <AllocateProjectSearchBar
+                    handleSelect={async (projectId: number) =>
+                      await handleAddProject(projectId)
+                    }
+                    setSelectedProject={setSelectedProject}
+                  /> */}
+                    <AllocateProjectSearchBar
+                      handleSelect={handleSelectProject}
+                      setSelectedProject={setSelectedProject}
+                    />
+                    <StyledButton
+                      size="small"
+                      type="primary"
+                      onClick={handleAddProjectPreference}
+                    >
+                      Add Project Preference
+                    </StyledButton>
+                  </FlexContainer>
+                  <List
+                    bordered
+                    style={{
+                      maxHeight: '15rem',
+                      overflow: 'auto',
+                      marginTop: '1rem',
+                    }}
+                    dataSource={group?.preferences || []}
+                    renderItem={(member: GroupPreferenceSlim) => (
+                      <List.Item
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        actions={[
+                          <StyledButton
+                            key="1"
+                            size="small"
+                            type="text"
+                            danger
+                            onClick={() =>
+                              handleRemovePreference(member.preferenceId)
+                            }
+                          >
+                            Remove
+                          </StyledButton>,
+                        ]}
+                      >
+                        No.{member.rank} {member.preference.name}
+                      </List.Item>
+                    )}
+                  />
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </InnerDescriptionsContainer>
+        </DescriptionsContainer>
+
+        <Modal
+          title="Project Allocation"
+          open={open.allocation}
+          onCancel={() => handleModalClose('allocation')}
+          footer={null}
+        >
+          <StyledModalContent>
+            {allocationResults ? (
+              <StyledParagraph>{allocationResults}</StyledParagraph>
+            ) : allocationError ? (
+              <StyledParagraph>{allocationError}</StyledParagraph>
+            ) : (
+              <Spin tip="Allocating projects..." />
+            )}
+          </StyledModalContent>
+        </Modal>
+      </Wrapper>
+    </WrapperContainer>
   )
 }
 
