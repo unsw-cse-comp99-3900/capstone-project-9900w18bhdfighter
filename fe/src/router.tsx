@@ -18,6 +18,7 @@ import MessageLanding from './pages/MessagePage/components/MessageLanding'
 import { MessageMain } from './pages/MessagePage/components/MessageMain'
 import GroupDetail from './pages/GroupDetail'
 import AllocationDetail from './pages/AllocationDetail'
+import AssessmentDetail from './pages/AssessmentPage'
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
@@ -102,6 +103,10 @@ const routerConfig = [
       {
         element: <AdminManagement />,
         path: route.ADMIN,
+      },
+      {
+        element: <AssessmentDetail />,
+        path: `${route.ASSESSMENT}/:id`,
       },
     ],
   },

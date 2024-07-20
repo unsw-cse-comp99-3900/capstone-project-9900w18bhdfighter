@@ -6,7 +6,7 @@ import { getThemeColor, getThemeToken } from '../../utils/styles'
 import GroupsList from './components/GroupsList'
 import SubmissionTab from './components/SubmissionTab'
 import AllocationList from './components/AllocationList'
-
+import GroupsAssessmentList from './components/GroupAssessmentList'
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -22,7 +22,7 @@ const _Tabs = styled(Tabs)`
 `
 const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
-
+const _GroupsAssessmentList = styled(GroupsAssessmentList)``
 const Dashboard = () => {
   const theme = useTheme()
   console.log(theme)
@@ -52,7 +52,7 @@ const Dashboard = () => {
     {
       key: 'assessment',
       label: 'Assessment',
-      children: <_GroupsList />,
+      children: <_GroupsAssessmentList />,
     },
   ]
   return (
