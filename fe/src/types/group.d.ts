@@ -68,7 +68,7 @@ interface Group {
 
 type GroupPreferenceSlim = Pick<
   GroupPreference,
-  'preferenceId' | 'preference' | 'groupId'
+  'preferenceId' | 'preference' | 'groupId' | 'rank'
 >
 
 export {

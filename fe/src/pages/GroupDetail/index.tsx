@@ -11,7 +11,11 @@ import {
   getGroupDetailByGroupId,
   mapGroupDTOToGroup,
 } from '../../api/groupAPI'
-import { Group, GroupPreferenceSlim } from '../../types/group'
+import {
+  Group,
+  GroupPreferenceSlim,
+  GroupPreferenceReqDTO,
+} from '../../types/group'
 import { roleNames } from '../../constant/role'
 import Paragraph from 'antd/es/typography/Paragraph'
 import api from '../../api/config'
@@ -24,7 +28,10 @@ import { useGlobalComponentsContext } from '../../context/GlobalComponentsContex
 import { getUserById } from '../../api/userAPI'
 import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
-
+import {
+  updateGroupPreference,
+  deleteGroupPreference,
+} from '../../api/groupPreferenceAPI'
 export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
 
 const Wrapper = styled(Flex)`
@@ -147,19 +154,36 @@ const GroupDetail = () => {
   }
 
   const handleAddProject = async (projectId: number) => {
-    const data = {
-      ProjectID: projectId,
-    }
+    const currentMaxRank = Math.max(
+      0,
+      ...(group?.preferences || []).map((p) => p.rank)
+    )
+    const data: GroupPreferenceReqDTO[] = [
+      {
+        Preference: projectId,
+        Rank: currentMaxRank + 1, // New rank
+        // Group: Number(id),
+      },
+    ]
     try {
       console.log('Adding project with id:', projectId)
       console.log('Sending data:', data)
-      const res = await api.post('/preferences/', data)
+      const res = await updateGroupPreference(data, Number(id))
       console.log('Response from project_join:', res.data)
       msg.success('Project added successfully')
       await fetchGroupDetails()
     } catch (error) {
       console.error('Error adding project:', error)
       msg.err('Failed to add project')
+    }
+  }
+
+  const handleAddProjectPreference = async () => {
+    console.log('Selected Project:', selectedProject)
+    if (selectedProject) {
+      // await handleAddProject(selectedProject.id)
+      fetchGroupDetails
+      setSelectedProject(null) // Reset selected project to clear the search bar
     }
   }
 
@@ -181,15 +205,15 @@ const GroupDetail = () => {
   }
 
   const handleRemovePreference = async (preferenceId: number) => {
-    //todo: call preference add api
-    console.log(preferenceId)
-    await fetchGroupDetails()
-  }
-
-  const handleAddProjectPreference = async () => {
-    console.log('Selected Project:', selectedProject)
-    if (selectedProject) {
-      await handleAddProject(selectedProject.id)
+    try {
+      console.log('delete preference删除', preferenceId)
+      const res = await deleteGroupPreference(preferenceId)
+      console.log('Response from deleteGroupPreference:', res.data)
+      msg.success('Preference removed successfully')
+      await fetchGroupDetails()
+    } catch (error) {
+      console.error('Error removing preference:', error)
+      msg.err('Failed to remove preference')
     }
   }
 
@@ -355,7 +379,9 @@ const GroupDetail = () => {
             <Descriptions.Item span={3} label="Project Preferences">
               <FlexContainer>
                 <AllocateProjectSearchBar
-                  handleSelect={handleAddProject}
+                  handleSelect={async (projectId: number) =>
+                    await handleAddProject(projectId)
+                  }
                   setSelectedProject={setSelectedProject}
                 />
                 <StyledButton
@@ -394,7 +420,7 @@ const GroupDetail = () => {
                       </StyledButton>,
                     ]}
                   >
-                    {member.preference.name}
+                    No.{member.rank} {member.preference.name}
                   </List.Item>
                 )}
               />
