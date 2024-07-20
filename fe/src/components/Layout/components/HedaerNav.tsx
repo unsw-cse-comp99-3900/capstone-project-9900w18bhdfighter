@@ -13,6 +13,7 @@ const Wrapper = styled(Header)`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid ${getThemeColor('grayscalePalette', 3)};
 `
 
 const Logo = styled(LinkButton)`

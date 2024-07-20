@@ -1,3 +1,4 @@
+import { Dayjs } from 'dayjs'
 import { Area } from './user'
 
 interface Project {
@@ -9,6 +10,7 @@ interface Project {
   requiredSkills: Skill[]
   projectOwnerId: number
   createdBy: number
+  dueTime: Dayjs
 }
 interface ProjectInfo {
   id: number
@@ -37,6 +39,7 @@ interface ProjectReqDTO {
   ProjectOwner: string
   requiredSkills: SkillReqDTO[]
   MaxNumOfGroup: number
+  DueTime: string
 }
 interface AreaRspDTO {
   AreaID: number
@@ -56,6 +59,7 @@ interface ProjectRespDTO {
   CreatedBy: number
   MaxNumOfGroup: number
   projectOwner_id: number
+  DueTime: string
 }
 
 type ProjectProfileSlim = Pick<Project, 'id' | 'name' | 'owner'>

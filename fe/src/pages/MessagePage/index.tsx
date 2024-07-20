@@ -1,8 +1,8 @@
 import { Flex } from 'antd'
 import styled from 'styled-components'
-import { getThemeToken } from '../../utils/styles'
+import { getThemeColor, getThemeToken } from '../../utils/styles'
 import _MessageSider from './components/MessageSider'
-import MessageContextProvider from '../../context/MessageContext'
+
 import { Outlet } from 'react-router-dom'
 
 const Wrapper = styled(Flex)`
@@ -19,9 +19,10 @@ const Container = styled(Flex)`
 `
 
 const MsgSider = styled(_MessageSider)`
-  padding: ${getThemeToken('paddingLG', 'px')};
-  width: 20rem;
-
+  padding: ${getThemeToken('paddingSM', 'px')};
+  width: 18rem;
+  overflow: auto;
+  border-right: 1px solid ${getThemeColor('grayscalePalette', 5)};
   height: 100%;
   flex-direction: column;
   align-items: center;
@@ -38,11 +39,7 @@ const _MessagePage = () => {
 }
 
 const MessagePage = () => {
-  return (
-    <MessageContextProvider>
-      <_MessagePage />
-    </MessageContextProvider>
-  )
+  return <_MessagePage />
 }
 
 export default MessagePage

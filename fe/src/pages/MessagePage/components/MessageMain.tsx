@@ -7,15 +7,17 @@ import MessageInputArea from './MessageInputArea'
 
 const MsgContainer = styled(Flex)`
   padding: ${getThemeToken('paddingMD', 'px')};
-  width: 70%;
+  width: 100%;
   height: 100%;
   flex-direction: column;
   align-items: center;
 `
-export const MessageMain = () => (
-  <MsgContainer>
-    <MessageHeader />
-    <MessageList />
-    <MessageInputArea />
-  </MsgContainer>
-)
+export const MessageMain = () => {
+  return (
+    <MsgContainer>
+      <MessageHeader />
+      <MessageList />
+      <MessageInputArea />
+    </MsgContainer>
+  )
+}

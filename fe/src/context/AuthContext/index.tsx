@@ -13,6 +13,7 @@ import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import route from '../../constant/route'
 import type { NavigateFunction } from 'react-router-dom'
 import { errHandler } from '../../utils/parse'
+import { RoleNumber } from '../../constant/role'
 
 interface AuthContextType {
   usrInfo: UserInfo | null
@@ -22,6 +23,7 @@ interface AuthContextType {
   haveLoggedIn: () => boolean
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>
   role: number | undefined
+  isInRoleRange: (_roles: RoleNumber[]) => boolean
 }
 const GlobalAuthContext = createContext({} as AuthContextType)
 export const useAuthContext = () => useContext(GlobalAuthContext)
@@ -107,7 +109,9 @@ const AuthContextProvider = ({ children }: Props) => {
   const haveLoggedIn = () => {
     return !!localStorage.getItem('token')
   }
-
+  const isInRoleRange = (roles: RoleNumber[]) => {
+    return roles.includes(role as RoleNumber)
+  }
   const ctx = {
     usrInfo,
     role,
@@ -116,6 +120,7 @@ const AuthContextProvider = ({ children }: Props) => {
     logout,
     signup,
     haveLoggedIn,
+    isInRoleRange,
   }
   return (
     <GlobalAuthContext.Provider value={ctx}>

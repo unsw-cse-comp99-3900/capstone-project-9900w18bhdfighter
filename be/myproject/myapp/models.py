@@ -42,6 +42,7 @@ class Project(models.Model):
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     MaxNumOfGroup = models.IntegerField(default=1)
     Groups=models.ManyToManyField('Group', through='GroupProjectsLink')
+    DueTime = models.DateTimeField()
     
     def __str__(self):
         return str(self.ProjectID)
@@ -90,6 +91,8 @@ class GroupUsersLink(models.Model):
     UserID = models.ForeignKey(User, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.GroupUsersLinkID)
+    class Meta:
+        unique_together = ('UserID', 'GroupID')
 
 
 class GroupProjectsLink(models.Model):

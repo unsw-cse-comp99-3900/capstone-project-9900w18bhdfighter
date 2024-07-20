@@ -1,5 +1,6 @@
-import { Button, Descriptions, Flex, List, Tag, Typography } from 'antd'
+import { Button, Descriptions, Flex, List, Space, Tag, Typography } from 'antd'
 import styled from 'styled-components'
+import type { DescriptionsProps } from 'antd/es/descriptions'
 import { getThemeToken } from '../../utils/styles'
 import Link from 'antd/es/typography/Link'
 import { nanoid } from 'nanoid'
@@ -13,6 +14,8 @@ import { ProjectReqDTO } from '../../types/proj'
 import ModalProjectForm from '../../components/ModalProjectForm'
 import { role } from '../../constant/role'
 import { useAuthContext } from '../../context/AuthContext'
+import dayjs from 'dayjs'
+import { useGlobalTheme } from '../../context/GlobalThemeContext'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -21,11 +24,19 @@ const Wrapper = styled(Flex)`
   align-items: center;
   padding: ${getThemeToken('paddingLG', 'px')};
 `
-const EditWrapper = styled(Flex)`
+const Title = styled(Typography.Text)`
+  font-size: 1.2rem;
+`
+const Header = styled(Flex)`
   width: 100%;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: end;
+  padding: ${getThemeToken('paddingMD', 'px')};
 `
 const EditButton = styled(Button)``
+const Description = styled(Descriptions)`
+  box-shadow: ${getThemeToken('boxShadow')};
+`
 const _ProjectDetail = () => {
   const {
     project,
@@ -41,6 +52,7 @@ const _ProjectDetail = () => {
     updateCurrentGroup(projectUpdateDTO)
     setIsOpened(false)
   }
+  const { onWidth } = useGlobalTheme()
   const handleCancel = () => {
     setIsOpened(false)
   }
@@ -55,6 +67,7 @@ const _ProjectDetail = () => {
       })),
       email: project.owner,
       maxGroupNumber: project.maxNumOfGroup,
+      dueTime: dayjs(project.dueTime),
     }
   }, [project])
 
@@ -64,18 +77,147 @@ const _ProjectDetail = () => {
   const isManager = () => {
     return _role === role.ADMIN || _role === role.TUTOR || _role === role.CORD
   }
-  const isOwner = () => {
-    return project?.projectOwnerId === usrInfo?.id
-  }
+
   const isCreator = () => {
     return project?.createdBy === usrInfo?.id
   }
-  const shouldDisplayEditAndSearch = () => {
-    return isAdmin() || isOwner() || isCreator()
+  const isCord = () => {
+    return _role === role.CORD
   }
-  const shouldDisplayRemove = () => {
+  const shouldDisplaySearchAndRemove = () => {
     return isManager()
   }
+  const shouldDisplayEdit = () => {
+    return isCreator() || isAdmin() || isCord()
+  }
+
+  const items: DescriptionsProps['items'] = [
+    {
+      span: 2,
+      label: 'Project Name',
+      children: project?.name,
+    },
+    {
+      span: 2,
+      label: 'Due',
+      children: (
+        <Space>
+          {
+            <Typography.Text ellipsis>
+              {project?.dueTime.format('DD/MM/YYYY HH:mm')}
+            </Typography.Text>
+          }
+        </Space>
+      ),
+    },
+    {
+      span: 2,
+      label: 'Owner',
+      children: (
+        <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
+          {ownerName}
+        </Link>
+      ),
+    },
+    {
+      span: 2,
+      label: 'Creator',
+      children: (
+        <Link
+          href={`
+        ${route.PROFILE}/${project?.createdBy}
+      `}
+        >
+          {creatorName}
+        </Link>
+      ),
+    },
+    {
+      span: 3,
+
+      label: 'Description',
+      children: project?.description ? (
+        <Typography.Text>{project?.description}</Typography.Text>
+      ) : (
+        <Typography.Text type="secondary">
+          No description provided.
+        </Typography.Text>
+      ),
+    },
+    {
+      span: 3,
+      label: 'Expected Skills',
+      children: project?.requiredSkills.length ? (
+        project?.requiredSkills.map((skill) => (
+          <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
+            {skill.skillName}
+          </Tag>
+        ))
+      ) : (
+        <Typography.Text type="secondary">
+          No expected skills provided.
+        </Typography.Text>
+      ),
+    },
+    {
+      span: 3,
+      label: 'Participating Groups',
+      children: (
+        <Flex vertical>
+          <Flex>
+            <GroupSearchBar
+              style={{
+                display: shouldDisplaySearchAndRemove() ? 'block' : 'none',
+              }}
+            />
+          </Flex>
+
+          <List
+            bordered
+            itemLayout={onWidth({
+              sm: 'vertical',
+              defaultValue: 'horizontal',
+            })}
+            size={onWidth({
+              sm: 'small',
+              defaultValue: 'default',
+            })}
+            style={{
+              maxHeight: '15rem',
+              overflow: 'auto',
+              marginTop: '1rem',
+            }}
+          >
+            {groupsList?.map((group) => (
+              <List.Item key={group.groupId}>
+                <Typography.Text strong>{group.groupName}</Typography.Text>
+                <Button
+                  size={onWidth({
+                    sm: 'small',
+                    defaultValue: 'default',
+                  })}
+                  onClick={() => removeGroup(group.groupId)}
+                  key={group.groupId}
+                  type="text"
+                  style={{
+                    display: shouldDisplaySearchAndRemove() ? 'block' : 'none',
+                    width: onWidth({
+                      sm: '100%',
+                      defaultValue: 'unset',
+                    }),
+                  }}
+                  danger
+                >
+                  Remove
+                </Button>
+              </List.Item>
+            ))}
+          </List>
+        </Flex>
+      ),
+    },
+  ]
+
   return (
     <Wrapper>
       <ModalProjectForm
@@ -85,99 +227,34 @@ const _ProjectDetail = () => {
         handleOk={handleOk}
         handleCancel={handleCancel}
       />
-      <EditWrapper
-        style={{
-          display: shouldDisplayEditAndSearch() ? 'flex' : 'none',
-        }}
-      >
-        <EditButton type="primary" onClick={() => setIsOpened(true)}>
+      <Header>
+        <Title strong>Project Detail</Title>
+
+        <EditButton
+          style={{
+            display: shouldDisplayEdit() ? 'flex' : 'none',
+          }}
+          type="primary"
+          onClick={() => setIsOpened(true)}
+        >
           Edit
         </EditButton>
-      </EditWrapper>
-      <Descriptions
+      </Header>
+
+      <Description
         style={{
-          width: '100%',
+          width: onWidth({
+            xs: 'unset',
+            defaultValue: '100%',
+          }),
         }}
+        size={onWidth({
+          xs: 'small',
+          defaultValue: 'default',
+        })}
         bordered
-        title="Project Detail"
-      >
-        <Descriptions.Item span={3} label="Project Name">
-          {project?.name}
-        </Descriptions.Item>
-        <Descriptions.Item span={2} label="Owner">
-          <Link href={`${route.PROFILE}/${project?.projectOwnerId}`}>
-            {ownerName}
-          </Link>
-        </Descriptions.Item>
-        <Descriptions.Item span={2} label="Creator">
-          <Link
-            href={`
-            ${route.PROFILE}/${project?.createdBy}
-          `}
-          >
-            {creatorName}
-          </Link>
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Description">
-          {project?.description ? (
-            <Typography.Text>{project?.description}</Typography.Text>
-          ) : (
-            <Typography.Text type="secondary">
-              No description provided.
-            </Typography.Text>
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Expected Skills">
-          {project?.requiredSkills.length ? (
-            project?.requiredSkills.map((skill) => (
-              <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
-                {skill.skillName}
-              </Tag>
-            ))
-          ) : (
-            <Typography.Text type="secondary">
-              No expected skills provided.
-            </Typography.Text>
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Participating Groups">
-          <GroupSearchBar
-            style={{
-              display: shouldDisplayEditAndSearch() ? 'block' : 'none',
-            }}
-          />
-          <List
-            bordered
-            style={{
-              maxHeight: '15rem',
-              overflow: 'auto',
-              marginTop: '1rem',
-            }}
-          >
-            {groupsList?.map((group) => (
-              <List.Item
-                key={group.groupId}
-                actions={[
-                  <Button
-                    onClick={() => removeGroup(group.groupId)}
-                    key={group.groupId}
-                    size="small"
-                    type="text"
-                    style={{
-                      display: shouldDisplayRemove() ? 'block' : 'none',
-                    }}
-                    danger
-                  >
-                    Remove
-                  </Button>,
-                ]}
-              >
-                {group.groupName}
-              </List.Item>
-            ))}
-          </List>
-        </Descriptions.Item>
-      </Descriptions>
+        items={items}
+      ></Description>
     </Wrapper>
   )
 }

@@ -28,7 +28,11 @@ const mapNotificationDTOToNotification = (
     notificationId: notificationDTO.NotificationID,
     type: notificationDTO.Type,
     message: notificationDTO.Message,
-    additionalData: notificationDTO.AdditionalData,
+    additionalData: notificationDTO.AdditionalData
+      ? {
+          objectId: JSON.parse(notificationDTO.AdditionalData).ObjectID,
+        }
+      : null,
     createdAt: notificationDTO.CreatedAt,
     fromGroup: notificationDTO.FromGroup,
     fromUser: notificationDTO.FromUser,

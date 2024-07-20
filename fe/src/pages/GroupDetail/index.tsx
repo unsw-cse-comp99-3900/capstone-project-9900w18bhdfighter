@@ -276,7 +276,7 @@ const GroupDetail = () => {
       </Wrapper>
     )
   }
-  console.log('Group detail:', group)
+  console.log(group)
 
   return (
     <Wrapper>

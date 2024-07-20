@@ -20,6 +20,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
 import route from '../../constant/route'
+import NoDataView from '../../components/NoDataView'
 
 const Wrapper = styled.div`
   width: 100%;
@@ -40,7 +41,6 @@ const CardContainer = styled(Row)``
 const _Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [groups, setGroups] = useState<Group[]>([])
-  // const { createGroup } = useGroupContext()
   const { usrInfo } = useAuthContext()
   const currentUserId = usrInfo?.id
 
@@ -83,6 +83,33 @@ const _Teams = () => {
   const handleCancel = () => {
     setIsModalOpen(false)
   }
+  const Main = () => (
+    <CardContainer>
+      {groups.map((group) => (
+        <Col key={group.groupId} xs={24} sm={12} md={8} lg={6}>
+          <Card
+            title={group.groupName}
+            style={{
+              height: '10rem',
+            }}
+            extra={<Link to={`${route.GROUPS}/${group.groupId}`}>More</Link>}
+          >
+            <Tooltip title={group.groupDescription}>
+              {group.groupDescription ? (
+                <Typography.Paragraph ellipsis={{ rows: 3 }}>
+                  {group.groupDescription}
+                </Typography.Paragraph>
+              ) : (
+                <Typography.Paragraph type="secondary">
+                  No Description Provided.
+                </Typography.Paragraph>
+              )}
+            </Tooltip>
+          </Card>
+        </Col>
+      ))}
+    </CardContainer>
+  )
 
   return (
     <Wrapper>
@@ -99,31 +126,11 @@ const _Teams = () => {
         </Button>
       </Header>
       <Divider />
-      <CardContainer>
-        {groups.map((group) => (
-          <Col key={group.groupId} xs={24} sm={12} md={8} lg={6}>
-            <Card
-              title={group.groupName}
-              style={{
-                height: '10rem',
-              }}
-              extra={<Link to={`${route.GROUPS}/${group.groupId}`}>More</Link>}
-            >
-              <Tooltip title={group.groupDescription}>
-                {group.groupDescription ? (
-                  <Typography.Paragraph ellipsis={{ rows: 3 }}>
-                    {group.groupDescription}
-                  </Typography.Paragraph>
-                ) : (
-                  <Typography.Paragraph type="secondary">
-                    No Description Provided.
-                  </Typography.Paragraph>
-                )}
-              </Tooltip>
-            </Card>
-          </Col>
-        ))}
-      </CardContainer>
+      {groups.length > 0 ? (
+        <Main />
+      ) : (
+        <NoDataView>You do not have any groups to view or manage.</NoDataView>
+      )}
     </Wrapper>
   )
 }

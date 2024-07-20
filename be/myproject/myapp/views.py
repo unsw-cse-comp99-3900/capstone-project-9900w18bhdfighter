@@ -1,6 +1,7 @@
 
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
+from myapp.notification.notification import GroupNotification, ProjectNotification, save_notification
 from rest_framework import status
 from rest_framework import  status, mixins
 from rest_framework.authtoken.models import Token
@@ -19,7 +20,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
-from .permission import OnlyForAdmin,ForValidToken
+from .permission import ForPartialRole, OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, NotificationFetchSerializer, NotificationReceiverSerializer, \
     ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
@@ -31,7 +32,8 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-import logging
+from django.utils import timezone
+from datetime import timedelta
 # from .utils import generate_auth_token 
 
 
@@ -182,17 +184,19 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found.'}, status=404)
             
-            if user_data['role'] in [2, 4, 5]:
-                try:
-                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                    project_owner_email = project_owner.EmailAddress
-                except User.DoesNotExist:
-                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
-            else:
+            if user_data['role'] not in [2, 4, 5]:
                 return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
-                
+            try:
+                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                project_owner_email = project_owner.EmailAddress
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Project owner not found.'}, status=404)
+            
+            if project_owner.UserRole not in [2, 4, 5]:  
+                return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
+    
             data['ProjectOwner'] = project_owner_email  
-            data["CreatedBy"]=user_data['user_id']
+
             serializer = ProjectSerializer(data=data)
             if serializer.is_valid():
                 project = serializer.save(CreatedBy=user)
@@ -259,7 +263,11 @@ def project_update(request, id):
                     project_owner_email = project_owner.EmailAddress
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Project owner not found.'}, status=404)
+                
+                if project_owner.UserRole not in [2, 4]:  
+                    return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
                 data['ProjectOwner'] = project_owner_email  
+
             elif user_data['role'] == 2:
                 if data['ProjectOwner'] != user_data['email']:
                     return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
@@ -269,7 +277,6 @@ def project_update(request, id):
             serializer = ProjectSerializer(project, data=data, partial=True)
             skill_objects=[]
             if serializer.is_valid():
-
                 serializer.save(CreatedBy=user)
                 required_skills = data.get('requiredSkills', [])
 
@@ -288,7 +295,9 @@ def project_update(request, id):
       
                     if not skill:
                         skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
+                        skill_object, _ = Skill.objects.get_or_create(SkillName=skill_name, Area=area)
                     else:
+                        skill_object=skill
                         skill_object=skill
                     skill_objects.append(skill_object)
       
@@ -297,10 +306,21 @@ def project_update(request, id):
                 for skill_object in skill_objects:
                     SkillProject.objects.create(Skill=skill_object, Project=project)
                     
-                  
-                    
                         
-                    
+        
+                # send notification to all group members
+                project_name=project.ProjectName
+                msg=f'Your participating project {project_name} has been updated'
+                sender_id=user_data['user_id']
+                groups=project.Groups.all()
+                receivers_id_list=[]
+                for group in groups:
+                    receivers=group.GroupMembers.all()
+                    for receiver in receivers:
+                        receivers_id_list.append(receiver.UserID)
+                project_id=project.ProjectID
+                noti=ProjectNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,project_id=project_id)
+                noti.save()
 
                     
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
@@ -308,7 +328,37 @@ def project_update(request, id):
         else:
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+@csrf_exempt
+def project_delete(request, id):
+    try:
+        project = Project.objects.get(pk=id)
+    except Project.DoesNotExist:
+        return JsonResponse({'error': 'Project not found'}, status=404)
 
+    if request.method == 'DELETE':  
+        token = request.headers.get('Authorization').split()[1]
+        result = decode_jwt(token)
+
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Authentication failed'}, status=401)
+            
+            response_message = {'user_id': user_data['user_id'], 'role': user_data['role'], 'project_created_by': project.CreatedBy.pk}
+            if user_data['role'] in [1, 3]:
+                return JsonResponse({'error': 'Permission denied. Cannot delete projects.'}, status=403)
+            elif user_data['role'] == 2:
+                if project.CreatedBy.pk != user.pk:
+                    return JsonResponse({'error': 'Permission denied. Clients can only delete projects they created.'}, status=403)
+            elif user_data['role'] in [4, 5]:
+                Project.objects.filter(ProjectID=id).delete()
+            else:
+                return JsonResponse({'error': 'Permission denied.'}, status=403)
+            return JsonResponse({'message': 'Project deleted successfully!'}, status=200)
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 ############################################################################################
 #                                     Group Creation                                       #
@@ -387,7 +437,7 @@ def group_join(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if GroupUsersLink.objects.filter(UserID=user).exists():
+        if GroupUsersLink.objects.filter(UserID=user, GroupID=group).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
@@ -401,6 +451,20 @@ def group_join(request):
             if user_data['role'] == 1:
                 if user == add_user:
                     GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                    
+                    # send notification to all group members except the user
+                    group_members=group.GroupMembers.all()
+                    group_name=group.GroupName
+                    receivers_id_list=[]
+                    for member in group_members:
+                        if member.UserID!=user:
+                            receivers_id_list.append(member.UserID)
+                    msg=f'{user.FirstName} {user.LastName} has joined your group {group_name}'
+                    sender_id=user.UserID
+                    group_id=group.GroupID
+                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                    noti.save()
+                    
                     return JsonResponse({'message': 'Joined group successfully!'}, status=201)
                 else:
                     return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
@@ -444,14 +508,31 @@ def group_leave(request):
 
         if user.UserRole in [3, 4, 5]:
             if current_group_number > 0:
-                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                if GroupUsersLink.objects.filter(UserID=leave_user).exists():
+                    GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                    return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
+                return JsonResponse({'error': 'Student is not in this group'}, status=400)
             return JsonResponse({'error': 'Group is empty'}, status=400)
-    
+        
         if user_data['role'] == 1:
             if current_group_number > 1:
                 if user == leave_user:
                     GroupUsersLink.objects.filter(GroupID=group, UserID=user).delete()
+                    
+                    # send notification to all group members except the user
+                    group_members=group.GroupMembers.all()
+                    group_name=group.GroupName
+                    receivers_id_list=[]
+                    for member in group_members:
+                        if member.UserID!=user:
+                            receivers_id_list.append(member.UserID)
+                    msg=f'{user.FirstName} {user.LastName} has left your group {group_name}'
+                    sender_id=user.UserID
+                    group_id=group.GroupID
+                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                    noti.save()
+                    
+                    
                     return JsonResponse({'message': 'Left group successfully!'}, status=201)
                 else:
                     return JsonResponse({'error': 'You cannot remove other students from the group'}, status=403)
@@ -959,14 +1040,16 @@ def fetch_notifications(request):
     获取指定用户的所有通知。
     """
     user_id = request.user_id
-    # 获取所有未读通知
-    unread_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=False).distinct()
+    #  # read_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=True).order_by('-CreatedAt')[:10]
 
-    # 获取最近十条已读通知
-    read_notifications = Notification.objects.filter(notificationreceiver__Receiver_id=user_id, notificationreceiver__IsRead=True).order_by('-CreatedAt')[:10]
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    # 获取最近三十天通知
+    notifications=Notification.objects.filter(notificationreceiver__Receiver_id=user_id, CreatedAt__gte=thirty_days_ago)
+    
+    
+   
 
-    # 合并查询集
-    notifications = list(unread_notifications) + list(read_notifications)
+
 
     # 序列化通知
     serializer = NotificationFetchSerializer(notifications, many=True, context={'user_id': user_id})
@@ -986,8 +1069,13 @@ def update_notification_status(request, notificationId):
         notificationReceiver = NotificationReceiver.objects.get(Notification=notification, Receiver=user_id)
     except NotificationReceiver.DoesNotExist:
         return JsonResponse({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
-    notificationReceiver.IsRead = True
-    notificationReceiver.save()
+    try:
+        isRead=request.data.get('IsRead')
+        notificationReceiver.IsRead = isRead
+        notificationReceiver.save()
+    except:
+        return JsonResponse({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+
     return JsonResponse({'message': 'Notification status updated successfully!'}, status=status.HTTP_200_OK)
 
 
@@ -1011,30 +1099,36 @@ def delete_notification(request, notificationReceiverId):
 class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     queryset = GroupProjectsLink.objects.all()
     serializer_class = GroupProjectLinkSerializer
-    
+
+    def get_permissions(self):
+        if self.action in ['create', 'destroy']:
+            return [ForValidToken(),ForPartialRole([3, 4, 5])]
+        else:
+            return []
+        
     def create(self, request, *args, **kwargs):
-        #如果存在则返回错误
         try:    
             project_id = request.data.get('ProjectID')
             group_id = request.data.get('GroupID')
             if GroupProjectsLink.objects.filter(ProjectID=project_id, GroupID=group_id).exists():
-                return JsonResponse({'error': 'Group project link already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': 'Group already exists in this Project.'}, status=status.HTTP_400_BAD_REQUEST)
         except:
             return JsonResponse({'error': 'Invalid data.'}, status=status.HTTP_400_BAD_REQUEST)
         
         serializer = GroupProjectLinkSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            project_name=Project.objects.get(ProjectID=project_id).ProjectName
+            #通知组内成员
+            msg=f'Your group has been added to the project {project_name}'
+            sender_id=self.request.user_id
+            receivers_id_list=Group.objects.get(GroupID=group_id).groupuserslink_set.values_list('UserID',flat=True)
+            group_id=group_id
+            noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+            noti.save()
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = GroupProjectLinkSerializer(instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
-        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, request, *args, **kwargs):
         project_id = kwargs.get('projectID')
@@ -1042,12 +1136,17 @@ class GroupProjectsLinkAPIView(mixins.DestroyModelMixin, mixins.CreateModelMixin
         try:
             instance = GroupProjectsLink.objects.get(ProjectID=project_id, GroupID=group_id)
             instance.delete()
+            group_name = Group.objects.get(GroupID=group_id).GroupName
+            project_name=Project.objects.get(ProjectID=project_id).ProjectName
+            msg=f"Your group {group_name} has been removed from the project {project_name}"
+            sender_id=self.request.user_id
+            receivers_id_list=Group.objects.get(GroupID=group_id).groupuserslink_set.values_list('UserID',flat=True)
+            group_id=group_id
+            noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+            noti.save()
             return JsonResponse({'message': 'Group project link deleted successfully!'}, status=status.HTTP_200_OK)
         except GroupProjectsLink.DoesNotExist:
             return JsonResponse({'error': 'Group project link not found.'}, status=status.HTTP_404_NOT_FOUND)
-    
-        
-        
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

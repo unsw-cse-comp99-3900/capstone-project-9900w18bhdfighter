@@ -10,7 +10,7 @@ import api from '../../api/config'
 import { channel_id_to_ids, errHandler } from '../../utils/parse'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { useAuthContext } from '../AuthContext'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import {
   Contact,
   ContactPostDTO,
@@ -73,6 +73,7 @@ export interface MessageContextType {
   setGroupContactList: React.Dispatch<
     React.SetStateAction<GroupContact[] | null>
   >
+  unreadMsgs: number
 }
 
 const MessageContext = createContext({} as MessageContextType)
@@ -80,9 +81,10 @@ export const useMessageContext = () => useContext(MessageContext)
 
 type Props = {
   children: ReactNode
+  msgRoute: string
 }
 
-export const MessageContextProvider = ({ children }: Props) => {
+export const MessageContextProvider = ({ children, msgRoute }: Props) => {
   const [currAutoCompleteContacts, setCurrAutoCompleteContacts] = useState<
     UserProfileSlim[]
   >([])
@@ -104,7 +106,16 @@ export const MessageContextProvider = ({ children }: Props) => {
   })
   const id = usrInfo?.id
   const params = useParams<RouteParams>()
-
+  const unreadGroupMsgs =
+    contactList?.reduce((acc, contact) => acc + contact.unreadMsgsCount, 0) || 0
+  const unreadUserMsgs =
+    groupContactList?.reduce(
+      (acc, groupContact) => acc + groupContact.unreadMsgsCount,
+      0
+    ) || 0
+  const unreadMsgs = unreadGroupMsgs + unreadUserMsgs
+  const location = useLocation()
+  const [isLeaveMsgPage, setIsLeaveMsgPage] = useState(false)
   //currConversation is a contact with messages
   const currConversation = useCurrConversation({
     contactList,
@@ -296,7 +307,6 @@ export const MessageContextProvider = ({ children }: Props) => {
     if (!params.receiverId || !params.type) return
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
       return
-    console.log(params)
 
     sendWSMsg({
       type: params.type,
@@ -305,11 +315,26 @@ export const MessageContextProvider = ({ children }: Props) => {
     })
   }, [params, socketRef.current])
 
+  //set isLeaveMsgPage
+  useEffect(() => {
+    if (!location.pathname.includes(msgRoute)) setIsLeaveMsgPage(true)
+    else setIsLeaveMsgPage(false)
+    console.log(location.pathname)
+  }, [location])
+  //send leave msg to server when leaving msg page
+  useEffect(() => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
+      return
+    if (isLeaveMsgPage) {
+      sendWSMsg({
+        action: 'LEAVE',
+      })
+    }
+  }, [isLeaveMsgPage, socketRef.current])
   //mark as read when conversation is opened
   useEffect(() => {
     if (!params.receiverId) return
     if (!currConversation) return
-
     const todo = async () => {
       await markAsRead(Number(params.receiverId))
       await getContacts()
@@ -365,6 +390,7 @@ export const MessageContextProvider = ({ children }: Props) => {
     setGroupContactList,
     groupContactList,
     markAsReadGroup,
+    unreadMsgs,
   }
 
   return (
