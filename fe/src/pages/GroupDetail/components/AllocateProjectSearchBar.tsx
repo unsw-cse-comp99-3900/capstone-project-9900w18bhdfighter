@@ -27,7 +27,7 @@ const AllocateProjectSearchBar = ({
 
   const autoCompProjectsWithoutSelf = potentialProjects.filter(
     (project) =>
-      !projectList.some(
+      !projectList?.some(
         (existingProject) => existingProject.name === project.name
       )
   )
