@@ -5,7 +5,7 @@ from . import group_seria
 from rest_framework import viewsets, status, mixins
 from myapp.views import get_user_friendly_errors
 from rest_framework.decorators import action
-from .permission import ForGroupMemberOrManager, ForValidToken, PartialRole
+from .permission import ForGroupMemberOrManager, ForValidToken, OnlyForAdmin, PartialRole
 from .serializers import *
 
 
@@ -28,6 +28,8 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             return base+[ForGroupMemberOrManager()]
         elif self.action in ['preferences','settings_uri','post_preferences','skill_evaluation']:
             return base+[]
+        elif self.action in ['update']:
+            return base+[OnlyForAdmin()]
         else:
             return base+[]
 
@@ -127,4 +129,10 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         instance = self.get_object()
         serializers=GroupFetchSerializer(instance)
         return JsonResponse(serializers.data, status=status.HTTP_200_OK)
-    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializers=GroupSerializer(instance,data=request.data,partial=True)
+        if serializers.is_valid():
+            serializers.save()
+            return JsonResponse(serializers.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
