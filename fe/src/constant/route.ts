@@ -10,6 +10,7 @@ const route = {
   GROUPS: '/groups',
   MESSAGE: '/message',
   ALLOCATION: '/allocation',
+  ASSESSMENT: '/assessment',
 }
 
 export default route

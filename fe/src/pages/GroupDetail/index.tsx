@@ -29,10 +29,7 @@ import { useGlobalComponentsContext } from '../../context/GlobalComponentsContex
 import { getUserById } from '../../api/userAPI'
 import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
-import {
-  // updateGroupPreference,
-  deleteGroupPreference,
-} from '../../api/groupPreferenceAPI'
+import { deleteGroupPreference } from '../../api/groupPreferenceAPI'
 import { isAxiosError } from 'axios'
 export type GroupDetailModalType = 'metaEdit' | 'allocation' | 'confirm'
 
@@ -64,6 +61,17 @@ const StyledJoinButton = styled(Button)`
   width: 100%;
 `
 const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+`
+const StyledSubmitButton = styled(Button)`
+  height: 32px;
+  margin-top: 2%;
+  width: 100%;
+`
+const StyledSubmitButtonWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -131,6 +139,8 @@ const GroupDetail = () => {
     allocation: false,
     confirm: false,
   })
+
+  const [isLock, setIsLock] = useState<boolean>(false) // Add isLock state
   // const [form] = Form.useForm()
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
 
@@ -155,6 +165,10 @@ const GroupDetail = () => {
         owner: pref.Preference.ProjectOwner,
       }))
       setSelectedProjects(currentPreferences)
+
+      // Update isLock state
+      const allLocked = groupData.Preferences.every((pref) => pref.Lock)
+      setIsLock(allLocked)
     } catch (e) {
       console.error('Error fetching group details:', e)
     } finally {
@@ -188,64 +202,9 @@ const GroupDetail = () => {
     console.log('Selected Project:', project)
   }
 
-  // const handleAddProject = async (projectId: number) => {
-  //   const currentMaxRank = Math.max(
-  //     0,
-  //     ...(group?.preferences || []).map((p) => p.rank)
-  //   )
-
-  //   const data: GroupPreferenceReqDTO[] = [
-  //     {
-  //       Preference: projectId,
-  //       Rank: currentMaxRank + 1, // New rank
-  //     },
-  //   ]
-  //   try {
-  //     console.log('Adding project with id:', projectId)
-  //     console.log('Sending data:', data)
-  //     // const res = await updateGroupPreference(data, Number(id))
-  //     const res = await api.put(
-  //       `api/groups/${group?.groupId}/preferences/submit`,
-  //       data
-  //     )
-  //     console.log('Response from project_join:', res.data)
-  //     msg.success('Project added successfully')
-  //     await fetchGroupDetails()
-  //   } catch (error) {
-  //     console.error('Error adding project:', error)
-  //     msg.err('Failed to add project')
-  //   }
-  // }
-
-  // const handleAddProject = async (projectId: number) => {
-  //   const currentMaxRank = Math.max(
-  //     0,
-  //     ...(group?.preferences || []).map((p) => p.rank)
-  //   )
-  //   const data: GroupPreferenceReqDTO[] = [
-  //     {
-  //       Preference: projectId,
-  //       Rank: currentMaxRank + 1, // New rank
-  //       // Group: Number(id),
-  //     },
-  //   ]
-  //   try {
-  //     console.log('Adding project with id:', projectId)
-  //     console.log('Sending data:', data)
-  //     const res = await updateGroupPreference(data, Number(id))
-  //     console.log('Response from project_join:', res.data)
-  //     msg.success('Project added successfully')
-  //     await fetchGroupDetails()
-  //   } catch (error) {
-  //     console.error('Error adding project:', error)
-  //     msg.err('Failed to add project')
-  //   }
-  // }
-
   const handleAddProjectPreference = async () => {
     console.log('Selected Project:', selectedProject)
     if (selectedProject) {
-      // await handleAddProject(selectedProject.id)
       fetchGroupDetails
       setSelectedProject(null) // Reset selected project to clear the search bar
     }
@@ -285,7 +244,6 @@ const GroupDetail = () => {
       console.log('Response from project preferences submit:', res.data)
       msg.success('Projects submitted successfully')
       await fetchGroupDetails()
-      // setSelectedProjects([]) // Clear the selected projects after submission
     } catch (error) {
       console.error('Error submitting projects:', error)
       msg.err('Failed to submit projects')
@@ -374,24 +332,13 @@ const GroupDetail = () => {
     dict[type]()
   }
 
-  // const handleSavePreference = async (groupReqDTO: GroupReqDTO) => {
-  //   try {
-  //     console.log('sending group preference', groupReqDTO)
-  //     await api.put(`/api/groups/${id}`, groupReqDTO)
-  //     msg.success('Preferences saved successfully')
-  //     handleModalClose('metaEdit')
-  //   } catch (error) {
-  //     msg.err('Failed to save preferences')
-  //   }
-  // }
-
   const handleSaveMetadata = async (groupReqDTO: GroupReqDTO) => {
     try {
       console.log('sending group metadata', groupReqDTO)
       const response = await api.put(`/api/groups/${id}`, groupReqDTO)
       console.log('Response from API:', response)
       msg.success('Metadata saved successfully')
-      handleModalClose('metaEdit')
+      handleModalClose('confirm')
     } catch (error) {
       if (isAxiosError(error)) {
         console.error('Error saving metadata:', error)
@@ -465,11 +412,6 @@ const GroupDetail = () => {
                 {group?.groupDescription}
               </Descriptions.Item>
               <Descriptions.Item span={3} label="Group Members">
-                {/* {userRole == 'Student' && (
-                <StyledButton type="primary" onClick={handleJoinOrLeaveGroup}>
-                  {isUserMember ? 'Leave Group' : 'Join Group'}
-                </StyledButton>
-              )} */}
                 {userRole !== 'Student' && (
                   <FlexContainer>
                     <CandidateSearchBar
@@ -536,17 +478,21 @@ const GroupDetail = () => {
                 <Descriptions.Item span={3} label="Project Preferences for Stu">
                   {isUserMember && (
                     <FlexContainer>
-                      <AllocateProjectSearchBar
-                        handleSelect={handleSelectProject}
-                        setSelectedProject={setSelectedProject}
-                      />
-                      <StyledButton
-                        size="small"
-                        type="primary"
-                        onClick={handleAddProjectPreferences}
-                      >
-                        Add Project Preference
-                      </StyledButton>
+                      {!isLock && (
+                        <React.Fragment>
+                          <AllocateProjectSearchBar
+                            handleSelect={handleSelectProject}
+                            setSelectedProject={setSelectedProject}
+                          />
+                          <StyledButton
+                            size="small"
+                            type="primary"
+                            onClick={handleAddProjectPreferences}
+                          >
+                            Add Project Preference
+                          </StyledButton>
+                        </React.Fragment>
+                      )}
                     </FlexContainer>
                   )}
                   <List
@@ -565,7 +511,7 @@ const GroupDetail = () => {
                           alignItems: 'center',
                         }}
                         actions={[
-                          isUserMember && (
+                          !isLock && isUserMember && (
                             <StyledButton
                               key="1"
                               size="small"
@@ -588,33 +534,34 @@ const GroupDetail = () => {
                       </List.Item>
                     )}
                   />
-                  <StyledButton onClick={handleConfirmSubmit}>
-                    Submit
-                  </StyledButton>
-                  {/* <StyledButton onClick={handleTest}>test</StyledButton> */}
+                  {isUserMember && !isLock && (
+                    <StyledSubmitButtonWrapper>
+                      <StyledSubmitButton onClick={handleConfirmSubmit}>
+                        Submit
+                      </StyledSubmitButton>
+                    </StyledSubmitButtonWrapper>
+                  )}
                 </Descriptions.Item>
               )}
 
               {userRole !== 'Student' && (
                 <Descriptions.Item span={3} label="Project Preferences">
                   <FlexContainer>
-                    {/* <AllocateProjectSearchBar
-                    handleSelect={async (projectId: number) =>
-                      await handleAddProject(projectId)
-                    }
-                    setSelectedProject={setSelectedProject}
-                  /> */}
-                    <AllocateProjectSearchBar
-                      handleSelect={handleSelectProject}
-                      setSelectedProject={setSelectedProject}
-                    />
-                    <StyledButton
-                      size="small"
-                      type="primary"
-                      onClick={handleAddProjectPreference}
-                    >
-                      Add Project Preference
-                    </StyledButton>
+                    {!isLock && (
+                      <React.Fragment>
+                        <AllocateProjectSearchBar
+                          handleSelect={handleSelectProject}
+                          setSelectedProject={setSelectedProject}
+                        />
+                        <StyledButton
+                          size="small"
+                          type="primary"
+                          onClick={handleAddProjectPreference}
+                        >
+                          Add Project Preference
+                        </StyledButton>
+                      </React.Fragment>
+                    )}
                   </FlexContainer>
                   <List
                     bordered
@@ -631,17 +578,19 @@ const GroupDetail = () => {
                           alignItems: 'center',
                         }}
                         actions={[
-                          <StyledButton
-                            key="1"
-                            size="small"
-                            type="text"
-                            danger
-                            onClick={() =>
-                              handleRemovePreference(member.preferenceId)
-                            }
-                          >
-                            Remove
-                          </StyledButton>,
+                          !isLock && (
+                            <StyledButton
+                              key="1"
+                              size="small"
+                              type="text"
+                              danger
+                              onClick={() =>
+                                handleRemovePreference(member.preferenceId)
+                              }
+                            >
+                              Remove
+                            </StyledButton>
+                          ),
                         ]}
                       >
                         No.{member.rank} {member.preference.name}
