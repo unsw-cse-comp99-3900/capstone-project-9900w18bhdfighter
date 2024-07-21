@@ -17,7 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from myapp import views
+from django.http import HttpResponse
+
+def health_check(request):
+    return HttpResponse("OK")
 urlpatterns = [
     path('admin', admin.site.urls),
+    path('health/', health_check),  # 添加这一行处理健康检查
     path('', include("myapp.urls")),
+    
 ]
