@@ -17,26 +17,17 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        // 停止并删除任何现有的容器
+ 
                         sh "docker-compose down"
-                        
-                        //删除所有容器
-                        sh "docker rm \$(docker ps -a -q) -f"
-
-                        // 构建并启动容器（后台模式）
                         sh "docker-compose up --build -d"
 
                     
                     } else {
-                        // 停止并删除任何现有的容器
+          
                         powershell "docker-compose down"
-                        //删除所有容器
-                        powershell "docker rm \$(docker ps -a -q) -f"
-                        
-                        // 构建并启动容器（后台模式）
                         powershell "docker-compose up --build -d"
 
-                    
+
 
                     }
                 }
