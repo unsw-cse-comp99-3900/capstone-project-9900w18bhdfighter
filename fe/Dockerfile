@@ -8,10 +8,6 @@ RUN npm install
 
 COPY . .
 
-ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
-
-RUN chmod +x /wait-for-it.sh
-
 # 设置构建时环境变量
 ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL $REACT_APP_API_URL
