@@ -32,8 +32,6 @@ services:
 
   web:
     build: ./be
-    ports:
-      - "8000:8000" 
     volumes:
       - ./be:/app-be
     environment:
