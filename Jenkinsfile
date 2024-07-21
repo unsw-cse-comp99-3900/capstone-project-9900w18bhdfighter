@@ -24,10 +24,10 @@ pipeline {
                         sh "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} up --build -d"
                     } else {
                         // 停止并删除任何现有的容器
-                        powershell "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} down"
+                        powershell "docker-compose down"
                         
                         // 构建并启动容器
-                        powershell "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} up --build -d"
+                        powershell "docker-compose up --build -d"
                     }
                 }
             }
