@@ -26,7 +26,7 @@ pipeline {
                         // 停止并删除任何现有的容器
                         powershell "docker-compose down"
                         //删除所有容器
-                        powershell "docker rm $(docker ps -a -q) -f"
+                        powershell "docker rm \$(docker ps -a -q) -f"
                       
 
                         
@@ -34,8 +34,8 @@ pipeline {
                         powershell "docker-compose up --build -d"
 
                         //删除未使用的镜像
-                        powershell "docker rmi $(docker images -f dangling=true -q) -f"
-                        
+                        powershell "docker rmi \$(docker images -f dangling=true -q) -f"
+
                     }
                 }
             }
