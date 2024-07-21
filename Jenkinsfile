@@ -65,6 +65,12 @@ pipeline {
                         if (containerId) {
                             powershell "docker commit ${containerId} ${env.IMAGE_NAME}"
                         }
+                        //停止现有容器
+                        powershell "docker stop ${containerId}"
+
+                        //启动image 80端口 8080端口 8000端口 3306端口
+                        powershell "docker run -d -p 80:80 -p 8080:8080 -p 8000:8000 -p 3306:3306 ${env.IMAGE_NAME}"
+
                     }
                 }
             }
