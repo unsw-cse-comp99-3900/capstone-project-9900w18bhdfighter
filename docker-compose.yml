@@ -10,6 +10,8 @@ services:
       - "80:80"  
     volumes:
       - ./fe:/app-fe
+    depends_on:
+        - web
 
   db:
     container_name: mysql-container
