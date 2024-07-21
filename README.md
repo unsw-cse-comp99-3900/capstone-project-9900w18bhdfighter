@@ -17,7 +17,7 @@
 3. Install and set up Django project(myproject) (use pip3/python3 rather than pip)
 4. run `pip install -r requirements.txt`
 5. `cd` into the myproject folder
-6. run `python manage.py makemigrations myapp` and `python manage.py migrate`
+6. run `python manage.py makemigrations myapp` and `python reset_db.py`
    - this will create the database tables
 7. run `python manage.py runserver`
 
