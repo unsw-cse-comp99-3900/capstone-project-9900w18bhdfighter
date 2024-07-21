@@ -27,7 +27,7 @@ pipeline {
                         powershell "docker-compose down"
                         
                         // 构建并启动容器
-                        powershell "docker-compose up --build -d"
+                        powershell "docker-compose up --build"
                     }
                 }
             }
