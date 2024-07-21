@@ -33,8 +33,9 @@ pipeline {
                         // 构建并启动容器（后台模式）
                         powershell "docker-compose up --build -d"
 
-                        //删除未使用的镜像
-                        powershell "docker rmi \$(docker images -f dangling=true -q) -f"
+                        //删除未使用的image
+                        powershell "docker rmi \$(docker images -f \"dangling=true\" -q)"
+                        
 
                     }
                 }
