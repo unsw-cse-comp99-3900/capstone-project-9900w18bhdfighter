@@ -24,4 +24,4 @@ EXPOSE 80
 
 # CMD ["nginx", "-g", "daemon off;"]
 
-CMD ["/wait-for-it.sh", "be:8000", "--", "nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
