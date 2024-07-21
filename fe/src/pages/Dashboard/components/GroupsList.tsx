@@ -34,6 +34,8 @@ const GroupsList = ({ className = '' }: Props) => {
       setList(groups)
       setFilteredLists(groups)
     } catch (e) {
+      console.log(e)
+
       msg.err('Network error')
     }
   }

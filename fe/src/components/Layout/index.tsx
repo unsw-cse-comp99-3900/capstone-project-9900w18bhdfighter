@@ -5,6 +5,7 @@ import SiderNav from './components/SiderNav'
 import HeaderNav from './components/HedaerNav'
 import MessageContextProvider from '../../context/MessageContext'
 import route from '../../constant/route'
+import GlobalConstantProvider from '../../context/GlobalConstantContext'
 
 const { Content } = _Layout
 const Wrapper = styled(_Layout)`
@@ -19,19 +20,21 @@ const _Content = styled(Content)`
 `
 const Layout = () => {
   return (
-    <MessageContextProvider msgRoute={route.MESSAGE}>
-      <Wrapper>
-        <HeaderNav />
-        <Main>
-          <SiderNav />
-          <_Layout>
-            <_Content>
-              <Outlet />
-            </_Content>
-          </_Layout>
-        </Main>
-      </Wrapper>
-    </MessageContextProvider>
+    <GlobalConstantProvider>
+      <MessageContextProvider msgRoute={route.MESSAGE}>
+        <Wrapper>
+          <HeaderNav />
+          <Main>
+            <SiderNav />
+            <_Layout>
+              <_Content>
+                <Outlet />
+              </_Content>
+            </_Layout>
+          </Main>
+        </Wrapper>
+      </MessageContextProvider>
+    </GlobalConstantProvider>
   )
 }
 

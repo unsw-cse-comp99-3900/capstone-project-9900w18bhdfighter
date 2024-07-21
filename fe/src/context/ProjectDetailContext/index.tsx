@@ -72,10 +72,14 @@ const ProjectDetailContextProvider = ({
       setOwnerName(res1.data.data.FirstName + ' ' + res1.data.data.LastName)
       setCreatorName(res2.data.data.FirstName + ' ' + res2.data.data.LastName)
       const _groupsList = res3.data.map(mapGroupDTOToGroup)
-      setGroupsList(_groupsList.length ? _groupsList : null)
+      setGroupsList(_groupsList)
       setProject(_project)
     } catch (e) {
-      msg.err('Failed to fetch project detail')
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
   const removeGroup = async (groupId: number) => {

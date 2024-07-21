@@ -47,7 +47,7 @@ const AuthContextProvider = ({ children }: Props) => {
 
   const login = async (user: UserLogin, navigate: NavigateFunction) => {
     try {
-      const res = await api.post('login/', user)
+      const res = await api.post('api/login', user)
       const _usrInfo = {
         id: res.data.user_profile.UserID,
         firstName: res.data.user_profile.FirstName,
@@ -81,7 +81,7 @@ const AuthContextProvider = ({ children }: Props) => {
 
   const signup = async (user: UserSignup, navigate: NavigateFunction) => {
     try {
-      const res = await api.post('/student_signup/', user)
+      const res = await api.post('/api/student_signup/', user)
       const _usrInfo = {
         id: res.data.user.UserID,
         firstName: res.data.user.FirstName,

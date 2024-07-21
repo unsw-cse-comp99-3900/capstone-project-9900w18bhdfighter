@@ -73,6 +73,7 @@ class ForValidToken(BasePermission):
         result = decode_jwt(token)
         if result['status'] == 'success':
             request.user_id = result['data']['user_id']
+
             try:
                 User.objects.get(pk=request.user_id)
             except Exception:

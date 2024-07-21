@@ -5,30 +5,31 @@ import {
   GroupJoinDTO,
   GroupLeaveDTO,
 } from '../types/group'
+import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
 import api from './config'
 import { mapProjectDTOToProject } from './projectAPI'
 import { mapUserSlimProfileDTOUserProfileSlim } from './userAPI'
 
 // post request
 const createGroup = async (grp: GroupReqDTO) => {
-  return api.post<GroupRspDTO>('group_creation/', grp)
+  return api.post<GroupRspDTO>('api/group_creation/', grp)
 }
 
 const joinGroup = async (grp: GroupJoinDTO) => {
-  return api.post<GroupJoinDTO[]>('/group_join/', grp)
+  return api.post<GroupJoinDTO[]>('/api/group_join/', grp)
 }
 
 const leaveGroup = async (grp: GroupLeaveDTO) => {
-  return api.post<GroupLeaveDTO[]>('/group_leave/', grp)
+  return api.post<GroupLeaveDTO[]>('/api/group_leave/', grp)
 }
 
 // get api
 const getAllGroups = async () => {
-  return api.get<GroupRspDTO[]>('groups')
+  return api.get<GroupRspDTO[]>('api/groups')
 }
 
 const getGroupByProjectId = async (projectId: number | string) => {
-  return api.get<GroupRspDTO[]>(`groups/${projectId}`)
+  return api.get<GroupRspDTO[]>(`api/groups/projects/${projectId}`)
 }
 
 const getGroupByParticipant = async (groupId: string | number) => {
@@ -71,6 +72,21 @@ const getGroupDetailByGroupId = async (groupId: number) => {
 const updateGroupMeta = async (groupId: number, groupReqDTO: GroupReqDTO) => {
   return api.put<GroupRspDTO>(`api/groups/${groupId}`, groupReqDTO)
 }
+
+const createOrUpdateSkillEval = (
+  groupId: number | string,
+  reqDTO: SkillEvalReqDTO
+) => {
+  return api.put<SkillEvalRspDTO>(
+    `api/groups/${groupId}/preferences/evaluation`,
+    reqDTO
+  )
+}
+const getSkillEvalByGroup = (groupId: number | string) => {
+  return api.get<SkillEvalRspDTO[]>(
+    `api/groups/${groupId}/preferences/evaluation-group`
+  )
+}
 //mapper
 
 const mapGroupPreferenceDTOToGroupPreference = (
@@ -105,7 +121,13 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
     groupId: groupRspDTO.GroupID,
   }
 }
-
+const mapSkillEvalDTOToSkillEval = (skillEval: SkillEvalRspDTO) => {
+  return {
+    note: skillEval.Note,
+    score: skillEval.Score,
+    skill: skillEval.Skill,
+  }
+}
 export {
   getAllGroups,
   mapGroupDTOToGroup,
@@ -122,4 +144,7 @@ export {
   getGroupDetailByGroupId,
   updateGroupMeta,
   mapGroupPreferenceDTOToGroupPreference,
+  createOrUpdateSkillEval,
+  getSkillEvalByGroup,
+  mapSkillEvalDTOToSkillEval,
 }

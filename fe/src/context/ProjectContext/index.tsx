@@ -65,7 +65,7 @@ const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
   }
   const createProject = async (project: ProjectCreate) => {
     try {
-      await api.post('project_creation/', project)
+      await api.post('api/project_creation/', project)
       msg.success('Project created successfully!')
       await getProjectsList(usrInfo?.email as string)
     } catch (err) {

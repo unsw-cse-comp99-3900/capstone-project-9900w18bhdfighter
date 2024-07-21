@@ -15,12 +15,13 @@ import { Group, GroupCreate, GroupRspDTO } from '../../types/group'
 import { UserProfileSlim } from '../../types/user'
 import GroupContextProvider from '../../context/GroupContext'
 import api from '../../api/config'
-import { mapGroupDTOToGroup } from '../../api/groupAPI'
+import { getAllGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
 import { useAuthContext } from '../../context/AuthContext'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
 import route from '../../constant/route'
 import NoDataView from '../../components/NoDataView'
+import { getUserById } from '../../api/userAPI'
 
 const Wrapper = styled.div`
   width: 100%;
@@ -46,9 +47,12 @@ const _Teams = () => {
 
   useEffect(() => {
     const fetchGroups = async () => {
+      if (!currentUserId) {
+        return
+      }
       try {
-        const response = await api.get(`groups`)
-        const user_response = await api.get(`api/users/${currentUserId}`)
+        const response = await getAllGroups()
+        const user_response = await getUserById(currentUserId)
         console.log('user', user_response)
         console.log(response)
         console.log(currentUserId)

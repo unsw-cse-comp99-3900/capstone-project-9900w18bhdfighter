@@ -13,7 +13,7 @@ const GroupsListItem: React.FC<Props> = ({ item }) => {
   return (
     <List.Item.Meta
       title={
-        <Flex justify="space-between" vertical>
+        <Flex vertical>
           <Typography.Text ellipsis>{item.groupName}</Typography.Text>
           <CustomTitle>
             <Typography.Text

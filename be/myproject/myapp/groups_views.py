@@ -18,7 +18,8 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     def get_serializer_class(self):
         dic = {
             'settings_uri': group_seria.GrouSettingsSerializer,
-            'skill_evaluation': group_seria.GroupSkillEvaluationSerializer,
+            'skills_evaluation': group_seria.GroupSkillEvaluationSerializer,
+            'get_skills_evaluation_by_group': group_seria.GroupSkillEvaluationSerializer,
         }
         return dic.get(self.action, self.serializer_class)
     
@@ -40,10 +41,7 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         serializer = self.get_serializer(instance)
         return JsonResponse(serializer.data)
 
-
-    def grouppre_ference_many_update(self,data, instance):
-        serializer = group_seria.LgwGroupPreferenceSerializer(data=data, instance=instance, partial=True)
-        return serializer
+    
     @action(detail=True, methods=['put'], url_path='preferences', url_name='post_preferences')
     def update_preferences(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -86,22 +84,69 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
         else:
             return JsonResponse({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['post'], url_path='skill-evaluation', url_name='skill_evaluation')
-    def skill_evaluation(self, request, *args, **kwargs):
+    
+    @action(detail=True, methods=['put'], url_path='preferences/evaluation', url_name='skills_evaluation')
+    def skills_evaluation(self, request, *args, **kwargs):
         instance = self.get_object()
-        user = request.user
-        data = request.data
-        groupUser_id = GroupUsersLink.objects.filter(GroupID_id=instance.id, UserID_id=user.id).first()
-        data["groupUser_id"] = groupUser_id
-        serializer = group_seria.GroupSkillEvaluationSerializer(data=request.data)
-        ret = serializer.is_valid()
-        if ret:
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        errors = get_user_friendly_errors(serializer.errors)
-        return JsonResponse(errors, status=status.HTTP_400_BAD_REQUEST)
+        user_id = request.user_id
+
+        try:
+            role = User.objects.get(pk=user_id).UserRole
+        except User.DoesNotExist:
+            return JsonResponse({"errors": "User not found"}, status=status.HTTP_401_UNAUTHORIZED)        
+        
+        # Check if the user is a member of the group
+        if not instance.GroupMembers.filter(UserID=user_id).exists() and role not in [3, 4, 5]:
+            return JsonResponse({"errors": "You are not in this group"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        evaluate_group_id = instance.GroupID
+        print(evaluate_group_id)
+        print(request.data)
+        skill_id = request.data.get('Skill')
+        note = request.data.get('Note')
+        score = request.data.get('Score')
+        try:
+            if score <0 or score >10:
+
+                raise Exception
+        except Exception as e:
+            return JsonResponse({"errors": "Score should be a number less than 10 and greater than 1"}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        
+        # Check if the evaluation for the same group and skill already exists
+        group_skill_evaluation = GroupSkillEvaluation.objects.filter(EvaluateGroup_id=evaluate_group_id, Skill_id=skill_id).first()
+
+        if group_skill_evaluation:
+            # Update existing evaluation
+            group_skill_evaluation.Note = note
+            group_skill_evaluation.Score = score
+            group_skill_evaluation.save()
+            serializer = self.get_serializer(group_skill_evaluation)
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # Create new evaluation
+            
+            data = {
+                'EvaluateGroup': instance.GroupID,
+                'Skill': skill_id,
+                'Note': note,
+                'Score': score,
+            }
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=True, methods=['get'], url_path='preferences/evaluation-group', url_name='get_skills_evaluation_by_group')
+    def get_skills_evaluation_by_group(self, request, *args, **kwargs):
+        instance = self.get_object()
+        queryset = GroupSkillEvaluation.objects.filter(EvaluateGroup=instance)
+        serializer = group_seria.GroupSkillEvaluationSerializer(queryset, many=True)
+        return JsonResponse(serializer.data, status=status.HTTP_200_OK, safe=False)
+
 
     @action(detail=True, methods=['put'], url_path='preferences/submit', url_name='submit_preferences')
     def submit_preferences(self, request, *args, **kwargs):
@@ -146,3 +191,12 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             serializers.save()
             return JsonResponse(serializers.data, status=status.HTTP_200_OK)
         return JsonResponse(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return JsonResponse({"success": "Group deleted"}, status=status.HTTP_200_OK)
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = GroupFetchSerializer(queryset, many=True)
+        return JsonResponse(serializer.data, status=status.HTTP_200_OK,safe=False)
+    
