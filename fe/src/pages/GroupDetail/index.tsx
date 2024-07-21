@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Descriptions, Flex, List, Modal, Spin } from 'antd'
+import { Button, Descriptions, Flex, List, Modal, Spin, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
@@ -12,12 +12,34 @@ import { UserProfileSlim } from '../../types/user'
 
 import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
-
+import api from '../../api/config'
 import GroupDetailContextProvider, {
   useGroupDetailContext,
 } from '../../context/GroupDetailContext'
 import PreferenceEditModal from './components/PreferenceEditModal'
 export type GroupDetailModalType = 'metaEdit' | 'preference' | 'confirm'
+
+interface Area {
+  AreaID: number
+  AreaName: string
+}
+
+interface Skill {
+  Area: Area
+  SkillID: number
+  SkillName: string
+}
+
+interface RequiredSkill {
+  Skill: Skill
+}
+
+interface SkillEvaluationData {
+  ProjectName: string
+  ProjectDescription: string
+  ProjectOwner: string
+  RequiredSkills: RequiredSkill[]
+}
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -30,7 +52,18 @@ const Wrapper = styled(Flex)`
 const FlexContainer = styled(Flex)`
   align-items: center;
 `
-
+const FlexEditContainer = styled(Flex)`
+  align-items: center;
+  justify-content: space-between; /* Add this line */
+`
+const SkillEvaluationContainer = styled(Flex)`
+  align-items: center;
+`
+const StyledEditButton = styled(Button)`
+  height: 32px;
+  margin-top: 2%;
+  margin-left: auto;
+`
 const StyledButton = styled(Button)`
   height: 32px; /* Adjust height to match input/select */
 `
@@ -85,8 +118,11 @@ const _GroupDetail = () => {
     confirm: false,
   })
   // const [form] = Form.useForm()
+  const [skillEvaluationData, setSkillEvaluationData] =
+    useState<SkillEvaluationData | null>(null)
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
-
+  const [isSkillEvaluationModalOpen, setSkillEvaluationModalOpen] =
+    useState(false)
   if (!group) {
     return (
       <Wrapper>
@@ -97,6 +133,24 @@ const _GroupDetail = () => {
 
   const handleModal = (type: GroupDetailModalType, isOpen: boolean) => {
     setOpen((prev) => ({ ...prev, [type]: isOpen }))
+  }
+
+  const handleSkillEvaluationModal = async (isOpen: boolean, id?: number) => {
+    setSkillEvaluationModalOpen(isOpen)
+    if (isOpen && id) {
+      // Fetch data from the backend when the modal is opened
+      await api
+        .get(`/projects/${id}/`)
+        .then((response) => {
+          console.log('Fetched skill evaluation data:', response.data)
+          setSkillEvaluationData(response.data)
+        })
+        .catch((error) => {
+          console.error('Error fetching skill evaluation data:', error)
+        })
+    } else {
+      setSkillEvaluationData(null)
+    }
   }
 
   return (
@@ -216,32 +270,17 @@ const _GroupDetail = () => {
               ${isGroupPreferenceLocked ? '(Locked)' : ''}
               `}
             >
-              <FlexContainer
+              <FlexEditContainer
                 style={{
                   display: isGroupPreferenceLocked ? 'none' : 'flex',
                 }}
               >
-                <Button onClick={() => handleModal('preference', true)}>
-                  Edit Preferences
-                </Button>
-                <Button
-                  style={{
-                    display: group.preferences.length === 0 ? 'none' : 'block',
-                  }}
-                  onClick={() => {
-                    Modal.confirm({
-                      title: 'Are you sure you want to submit?',
-                      content:
-                        'You cannot change your preferences after submission',
-                      onOk: () => {
-                        lockPreferences()
-                      },
-                    })
-                  }}
+                <StyledEditButton
+                  onClick={() => handleModal('preference', true)}
                 >
-                  Submit
-                </Button>
-              </FlexContainer>
+                  Edit Preferences
+                </StyledEditButton>
+              </FlexEditContainer>
 
               <List
                 bordered
@@ -258,10 +297,16 @@ const _GroupDetail = () => {
                       display: 'flex',
                       alignItems: 'center',
                     }}
-                    // todo : skill evaluation modal
                     actions={[
                       isUserInThisGroup && (
-                        <StyledButton key="1" size="small" type="link">
+                        <StyledButton
+                          key="1"
+                          size="small"
+                          type="link"
+                          onClick={() =>
+                            handleSkillEvaluationModal(true, pre.preference.id)
+                          }
+                        >
                           Skill Evaluation
                         </StyledButton>
                       ),
@@ -273,10 +318,73 @@ const _GroupDetail = () => {
                   </List.Item>
                 )}
               />
+              <StyleLeaveButton
+                style={{
+                  display: group.preferences.length === 0 ? 'none' : 'block',
+                }}
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Are you sure you want to submit?',
+                    content:
+                      'You cannot change your preferences after submission',
+                    onOk: () => {
+                      lockPreferences()
+                    },
+                  })
+                }}
+              >
+                Submit
+              </StyleLeaveButton>
             </Descriptions.Item>
           </Descriptions>
         </InnerDescriptionsContainer>
       </DescriptionsContainer>
+      <Modal
+        title="Skill Evaluation"
+        visible={isSkillEvaluationModalOpen}
+        onCancel={() => handleSkillEvaluationModal(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => handleSkillEvaluationModal(false)}
+          >
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary">
+            Submit
+          </Button>,
+        ]}
+      >
+        {skillEvaluationData ? (
+          <SkillEvaluationContainer>
+            <Typography.Title level={4}>
+              {skillEvaluationData.ProjectName}
+            </Typography.Title>
+            <Typography.Paragraph strong>
+              Owner: {skillEvaluationData.ProjectOwner}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              {skillEvaluationData.ProjectDescription}
+            </Typography.Paragraph>
+            <Typography.Title level={5}>Required Skills</Typography.Title>
+            <List
+              dataSource={skillEvaluationData.RequiredSkills}
+              renderItem={({ Skill }) => (
+                <List.Item>
+                  <Typography.Paragraph>
+                    <Typography.Title>Skill Name:</Typography.Title>{' '}
+                    {Skill.SkillName}
+                    <Typography.Title>Area:</Typography.Title>{' '}
+                    {Skill.Area.AreaName}
+                  </Typography.Paragraph>
+                </List.Item>
+              )}
+            />
+          </SkillEvaluationContainer>
+        ) : (
+          <Spin tip="Loading..." />
+        )}
+      </Modal>
     </Wrapper>
   )
 }
