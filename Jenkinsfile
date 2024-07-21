@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         DOCKER_COMPOSE_PROJECT_NAME = 'capstone-project'
-        IMAGE_NAME = 'my-image-name'
+        IMAGE_NAME = 'my-image'
     }
 
     stages {
