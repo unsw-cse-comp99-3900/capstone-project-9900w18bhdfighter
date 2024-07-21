@@ -23,20 +23,27 @@ pipeline {
                         // 构建并启动容器（后台模式）
                         sh "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} up --build -d"
                     } else {
-                        // 停止并删除任何现有的容器
-                        powershell "docker-compose down"
-                        //删除所有容器
-                        powershell "docker rm \$(docker ps -a -q) -f"
-                      
+                            // 停止并删除任何现有的容器
+                            powershell "docker-compose down"
+                            
+                            // 获取所有容器ID
+                            def containers = powershell(returnStdout: true, script: "docker ps -a -q").trim()
+                            
+                            // 如果有容器，删除它们
+                            if (containers) {
+                                powershell "docker rm \$(docker ps -a -q) -f"
+                            }
 
-                        
-                        // 构建并启动容器（后台模式）
-                        powershell "docker-compose up --build -d"
+                            // 构建并启动容器（后台模式）
+                            powershell "docker-compose up --build -d"
 
-                        //删除未使用的image
-                        powershell "docker rmi \$(docker images -f \"dangling=true\" -q)"
-                        
-
+                            // 获取未使用的image ID
+                            def danglingImages = powershell(returnStdout: true, script: "docker images -f \"dangling=true\" -q").trim()
+                            
+                            // 如果有未使用的image，删除它们
+                            if (danglingImages) {
+                                powershell "docker rmi \$(docker images -f \"dangling=true\" -q)"
+                            }
                     }
                 }
             }
