@@ -17,16 +17,12 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
- 
                         sh "docker-compose down"
                         sh "docker-compose up --build -d"
-
                     
                     } else {
-          
                         powershell "docker-compose down"
                         powershell "docker-compose up --build -d"
-
 
 
                     }
