@@ -36,14 +36,6 @@ pipeline {
 
                             // 构建并启动容器（后台模式）
                             powershell "docker-compose up --build -d"
-
-                            // 获取未使用的image ID
-                            def unusedImages = powershell(returnStdout: true, script: "docker images -q --filter \"dangling=true\" --filter \"label!=inuse\"").trim()
-                            
-                            // 如果有未使用的image，删除它们
-                            if (unusedImages) {
-                                powershell "docker rmi \$(docker images -q --filter \"dangling=true\" --filter \"label!=inuse\")"
-                            }
                     }
                 }
             }
