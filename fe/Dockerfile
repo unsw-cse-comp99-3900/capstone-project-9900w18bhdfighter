@@ -20,7 +20,11 @@ COPY --from=build-stage /app-fe/build /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
+
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# CMD ["nginx", "-g", "daemon off;"]
 
+CMD ["/wait-for-it.sh", "be:8000", "--", "nginx", "-g", "daemon off;"]
