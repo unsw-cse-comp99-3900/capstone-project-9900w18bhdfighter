@@ -36,7 +36,7 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
       console.log('Group Data to be sent:', groupData)
 
       try {
-        const response = await api.post('/group_creation/', groupData)
+        const response = await api.post('/api/group_creation/', groupData)
         console.log('Response:', response)
 
         if (response.status === 201) {

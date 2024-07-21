@@ -55,6 +55,7 @@ const UserSearchBar = ({
     ),
     value: contact.id,
     email: contact.email,
+    title: contact.email,
     role: roleNames[contact.role],
   }))
 
@@ -75,9 +76,11 @@ const UserSearchBar = ({
       }}
       options={options}
       notFoundContent={fetching ? <Spin size="small" /> : 'No users found'}
-      onChange={async (_val) => {
+      onChange={async (_val, option) => {
         const val = _val as UserValue
-        await handleChange(val as UserValue)
+        console.log(option)
+
+        await handleChange(option as UserValue)
         setValue(null)
         setCurrAutoCompleteUser((prev) =>
           prev.filter((user) => user.id !== val.value)

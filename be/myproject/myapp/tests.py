@@ -387,7 +387,7 @@ class ProjectUpdateTests(TestCase):
 
 class UserProfileTests(TestCase):
     def setUp(self):
-        self.login_url = f'/login/'
+        self.login_url = f'/api/login'
         data = {
             'EmailAddress': 'admin@admin.com',
             'Passwd': 'admin'

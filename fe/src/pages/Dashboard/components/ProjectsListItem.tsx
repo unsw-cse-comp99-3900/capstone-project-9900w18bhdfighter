@@ -14,12 +14,23 @@ const ProjectsListItem = ({ item }: Props) => {
         <Flex vertical>
           <Flex>
             <Tooltip title={item.description}>
-              <Typography.Paragraph ellipsis={{ rows: 3 }}>
+              <Typography.Paragraph
+                style={{
+                  marginBottom: 0,
+                }}
+                type="secondary"
+                ellipsis={{ rows: 3 }}
+              >
                 {item.description}
               </Typography.Paragraph>
             </Tooltip>
           </Flex>
-          <Flex wrap>
+          <Flex
+            style={{
+              marginTop: '0.5rem',
+            }}
+            wrap
+          >
             {item.requiredSkills.map((skill) => (
               <Tag color="orange" key={skill.skillId}>
                 {skill.skillName}

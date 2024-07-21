@@ -12,31 +12,31 @@ import { Area } from '../types/user'
 import api from './config'
 
 const createProject = async (proj: ProjectReqDTO) => {
-  return api.post<ProjectRespDTO>('project_creation/', proj)
+  return api.post<ProjectRespDTO>('api/project_creation/', proj)
 }
 
 const updateProject = async (proj: ProjectReqDTO, projId: number | string) => {
-  return api.put<ProjectRespDTO>(`project_update/${projId}/`, proj)
+  return api.put<ProjectRespDTO>(`api/project_update/${projId}/`, proj)
 }
 
 const getAllProjects = async () => {
-  return api.get<ProjectRespDTO[]>('projects/')
+  return api.get<ProjectRespDTO[]>('api/projects/')
 }
 
 const getProjectsByCreator = async (creatorEmail: string) => {
-  return api.get<ProjectRespDTO[]>(`projects/createdBy/${creatorEmail}/`)
+  return api.get<ProjectRespDTO[]>(`api/projects/createdBy/${creatorEmail}/`)
 }
 const getProjectsByOwner = async (owner: string) => {
-  return api.get<ProjectRespDTO[]>(`projects/ownBy/${owner}/`)
+  return api.get<ProjectRespDTO[]>(`api/projects/ownBy/${owner}/`)
 }
 
 const getProjectsByOwnerAndCreator = async (owner: string, creator: string) => {
   return api.get<ProjectRespDTO[]>(
-    `projects/own_and_create/${owner}/${creator}/`
+    `api/projects/own_and_create/${owner}/${creator}/`
   )
 }
 const getProjectById = async (id: number | string) => {
-  return api.get<ProjectRespDTO>(`projects/${id}/`)
+  return api.get<ProjectRespDTO>(`api/projects/${id}/`)
 }
 
 const getProjectByParticipant = async (participantId: string | number) => {
@@ -58,7 +58,7 @@ const getAutoCompleteProjectsByName = async (projectName: string) => {
   })
 }
 const killOneProject = async (projectId: number | string) => {
-  return api.delete(`project_delete/${projectId}/`)
+  return api.delete(`api/project_delete/${projectId}/`)
 }
 //mapper
 const mapProjectDTOToProject: (_projectRespDTO: ProjectRespDTO) => Project = (

@@ -46,6 +46,8 @@ const Header = styled(Flex)`
 const EditButton = styled(Button)``
 const Description = styled(Descriptions)`
   box-shadow: ${getThemeToken('boxShadow')};
+  overflow: auto;
+  max-height: 100%;
 `
 const _ProjectDetail = () => {
   const {
@@ -96,6 +98,12 @@ const _ProjectDetail = () => {
     return isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
   }
 
+  if (!project || !ownerName || !creatorName || !groupsList)
+    return (
+      <Wrapper>
+        <Spin></Spin>
+      </Wrapper>
+    )
   const items: DescriptionsProps['items'] = [
     {
       span: 2,
@@ -160,7 +168,7 @@ const _ProjectDetail = () => {
     },
     {
       span: 3,
-      label: 'Participating Groups',
+      label: `Involved Groups (${groupsList.length}/${project.maxNumOfGroup})`,
       children: (
         <Flex vertical>
           <Flex>
@@ -187,45 +195,40 @@ const _ProjectDetail = () => {
               marginTop: '1rem',
             }}
           >
-            {groupsList?.map((group) => (
-              <List.Item key={group.groupId}>
-                <Typography.Text>
-                  <Link to={`${route.GROUPS}/${group.groupId}`}>
-                    {group.groupName}
-                  </Link>
-                </Typography.Text>
-                <Button
-                  size={onWidth({
-                    sm: 'small',
-                    defaultValue: 'default',
-                  })}
-                  onClick={() => removeGroup(group.groupId)}
-                  key={group.groupId}
-                  type="text"
-                  style={{
-                    display: accessToAssignGroup() ? 'block' : 'none',
-                    width: onWidth({
-                      sm: '100%',
-                      defaultValue: 'unset',
-                    }),
-                  }}
-                  danger
-                >
-                  Remove
-                </Button>
-              </List.Item>
-            ))}
+            {Boolean(groupsList.length) &&
+              groupsList?.map((group) => (
+                <List.Item key={group.groupId}>
+                  <Typography.Text>
+                    <Link to={`${route.GROUPS}/${group.groupId}`}>
+                      {group.groupName}
+                    </Link>
+                  </Typography.Text>
+                  <Button
+                    size={onWidth({
+                      sm: 'small',
+                      defaultValue: 'default',
+                    })}
+                    onClick={() => removeGroup(group.groupId)}
+                    key={group.groupId}
+                    type="text"
+                    style={{
+                      display: accessToAssignGroup() ? 'block' : 'none',
+                      width: onWidth({
+                        sm: '100%',
+                        defaultValue: 'unset',
+                      }),
+                    }}
+                    danger
+                  >
+                    Remove
+                  </Button>
+                </List.Item>
+              ))}
           </List>
         </Flex>
       ),
     },
   ]
-  if (!project)
-    return (
-      <Wrapper>
-        <Spin></Spin>
-      </Wrapper>
-    )
   return (
     <Wrapper>
       <ModalProjectForm

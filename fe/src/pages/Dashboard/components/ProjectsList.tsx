@@ -21,7 +21,6 @@ const Wrapper = styled.div`
 
 const _ProjectsList = styled(List)`
   height: calc(100vh - 10rem);
-
   overflow-y: auto;
 `
 

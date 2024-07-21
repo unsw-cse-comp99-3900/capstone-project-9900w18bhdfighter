@@ -319,8 +319,9 @@ def project_update(request, id):
                     for receiver in receivers:
                         receivers_id_list.append(receiver.UserID)
                 project_id=project.ProjectID
-                noti=ProjectNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,project_id=project_id)
-                noti.save()
+                if receivers_id_list:    
+                    noti=ProjectNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,project_id=project_id)
+                    noti.save()
 
                     
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
@@ -359,6 +360,8 @@ def project_delete(request, id):
             return JsonResponse({'message': 'Project deleted successfully!'}, status=200)
 
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
 
 ############################################################################################
 #                                     Group Creation                                       #
@@ -542,16 +545,6 @@ def group_leave(request):
 
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-# get group list or delete group
-@csrf_exempt
-def groups_list_del(request,id=None):
-    if request.method == 'GET':
-        groups = Group.objects.all()
-        serializer = GroupFetchSerializer(groups, many=True)
-        return JsonResponse(serializer.data, safe=False)
-    if request.method == 'DELETE':
-        return del_group(request,id)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 # get group list by project
 @csrf_exempt
@@ -568,13 +561,7 @@ def get_groups_list_by_project(request, id):
 
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-def del_group(request, id):
-        try:
-            group = Group.objects.get(pk=id)
-        except Group.DoesNotExist:
-            return JsonResponse({'error': 'Group not found'}, status=404)
-        group.delete()
-        return JsonResponse({'message': 'Group deleted successfully!'}, status=200)
+
 
 ############################################################################################
 #                                     Get project list                                     #

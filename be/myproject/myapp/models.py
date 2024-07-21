@@ -118,14 +118,16 @@ class StudentArea(models.Model):
 
 class GroupSkillEvaluation(models.Model):
     # （需要新建这个table）：需要一个新的模型来存储每个组员对于特定项目所需技能的评分和理由。
-    id = models.AutoField(primary_key=True)
-    notes = models.CharField(max_length=500)
-    score = models.IntegerField(choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5),
+    GroupSkillEvaluationID = models.AutoField(primary_key=True)
+    Note = models.CharField(max_length=255, null=True, blank=True)
+    Score = models.IntegerField(choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5),
                                          (6, 6), (7, 7), (8, 8), (9, 9), (10, 10)
                                          ])
-    groupUser = models.ForeignKey(GroupUsersLink, on_delete=models.CASCADE)
-    skill_project = models.ForeignKey(SkillProject, on_delete=models.CASCADE)
+    EvaluateGroup= models.ForeignKey(Group, on_delete=models.CASCADE)
+    Skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ('EvaluateGroup', 'Skill')
     def __str__(self):
         return self.notes
 

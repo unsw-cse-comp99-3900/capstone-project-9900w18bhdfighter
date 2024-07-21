@@ -78,6 +78,14 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
         triggerHeight: 48,
         headerHeight: 64,
       },
+      DatePicker: {
+        colorBgTextActive: _themeColor.highlight,
+        colorBgTextHover: _themeColor.highlight,
+        colorBgBase: _themeColor.grayscalePalette[0] as string,
+        colorBgSpotlight: _themeColor.highlight,
+        colorFillContent: _themeColor.highlight,
+      },
+
       Menu: {
         itemSelectedColor: _themeColor.grayscalePalette[0] as string,
       },

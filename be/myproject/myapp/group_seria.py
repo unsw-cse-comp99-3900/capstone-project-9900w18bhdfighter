@@ -1,3 +1,4 @@
+from myapp.serializers import SkillSerializer
 from rest_framework import serializers
 from .models import *
 
@@ -37,8 +38,21 @@ class GrouPostPreferenceSerializer(serializers.ModelSerializer):
 class GroupSkillEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupSkillEvaluation
-        fields = "__all__"
+        fields = ["Note","Score","Skill","EvaluateGroup"]
 
+        
+    def validate(self, data):
+        #score不能小于1，不能大于10
+        if data["Score"] < 1 or data["Score"] > 10:
+            raise serializers.ValidationError("Score must be between 1 and 10")
+        #只能对自己的组进行评分
+        
+        return data
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # 删除不需要的字段
+        representation.pop('EvaluateGroup', None)
+        return representation
 class LgwGroupPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupPreference

@@ -48,7 +48,7 @@ const GroupContextProvider = ({ children }: { children: ReactNode }) => {
   }
   const createGroup = async (group: GroupCreate) => {
     try {
-      await api.post('group_creation/', group)
+      await api.post('api/group_creation/', group)
       msg.success('Group created successfully!')
       await getGroupsList(usrInfo?.id as number)
     } catch (err) {
