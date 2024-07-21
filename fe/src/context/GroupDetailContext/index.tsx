@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
+  getGroupByParticipant,
   getGroupDetailByGroupId,
   joinGroup,
   leaveGroup,
@@ -34,6 +35,7 @@ interface GroupDetailContextType {
   lockPreferences: () => Promise<void>
   isGroupPreferenceLocked: boolean
   isUserInThisGroup: boolean
+  isThisGroupFull: boolean
 }
 
 const GroupDetailContextType = createContext({} as GroupDetailContextType)
@@ -55,9 +57,8 @@ const GroupDetailContextProvider = ({
 
   const { msg } = useGlobalComponentsContext()
   const [groupDetail, setGroupDetail] = useState<Group | null>(null)
-  const isUserInGroup =
-    groupDetail?.groupMembers.some((member) => member.id === usrInfo?.id) ||
-    false
+  const [myOwnGroup, setMyOwnGroup] = useState<Group | null>(null)
+  const isUserInGroup = !!myOwnGroup
   const isUserInThisGroup = useMemo(() => {
     if (!groupDetail) return false
     if (!usrInfo) return false
@@ -72,11 +73,29 @@ const GroupDetailContextProvider = ({
     return isLocked
   }, [groupDetail])
 
+  const isThisGroupFull = useMemo(() => {
+    if (!groupDetail) return false
+    return groupDetail.groupMembers.length >= groupDetail.maxMemberNum
+  }, [groupDetail])
+  const getMyOwnGroup = async () => {
+    if (!usrInfo) return
+    try {
+      const res = await getGroupByParticipant(usrInfo.id)
+      setMyOwnGroup(res.data.map(mapGroupDTOToGroup)[0] || null)
+    } catch (e) {
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
   const fetchGroupDetail = async () => {
     if (!id) return
     try {
       const res = await getGroupDetailByGroupId(Number(id))
       setGroupDetail(mapGroupDTOToGroup(res.data))
+      await getMyOwnGroup()
     } catch (e) {
       errHandler(
         e,
@@ -198,8 +217,10 @@ const GroupDetailContextProvider = ({
       )
     }
   }
+
   useEffect(() => {
     fetchGroupDetail()
+    getMyOwnGroup()
   }, [])
 
   useEffect(() => {
@@ -218,6 +239,7 @@ const GroupDetailContextProvider = ({
     lockPreferences,
     isGroupPreferenceLocked,
     isUserInThisGroup,
+    isThisGroupFull,
   }
 
   return (

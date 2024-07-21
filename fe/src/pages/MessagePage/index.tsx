@@ -4,6 +4,8 @@ import { getThemeColor, getThemeToken } from '../../utils/styles'
 import _MessageSider from './components/MessageSider'
 
 import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useMessageContext } from '../../context/MessageContext'
 
 const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
@@ -27,6 +29,10 @@ const MsgSider = styled(_MessageSider)`
   align-items: center;
 `
 const _MessagePage = () => {
+  const { getAllGroupContacts } = useMessageContext()
+  useEffect(() => {
+    getAllGroupContacts()
+  }, [])
   return (
     <Wrapper>
       <Container>

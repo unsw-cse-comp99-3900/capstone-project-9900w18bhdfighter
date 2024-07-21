@@ -74,6 +74,7 @@ export interface MessageContextType {
     React.SetStateAction<GroupContact[] | null>
   >
   unreadMsgs: number
+  getAllGroupContacts: () => Promise<void>
 }
 
 const MessageContext = createContext({} as MessageContextType)
@@ -391,6 +392,7 @@ export const MessageContextProvider = ({ children, msgRoute }: Props) => {
     groupContactList,
     markAsReadGroup,
     unreadMsgs,
+    getAllGroupContacts,
   }
 
   return (

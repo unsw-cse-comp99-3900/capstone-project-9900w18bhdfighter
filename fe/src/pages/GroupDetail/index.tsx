@@ -76,6 +76,7 @@ const _GroupDetail = () => {
     lockPreferences,
     isGroupPreferenceLocked,
     isUserInThisGroup,
+    isThisGroupFull,
   } = useGroupDetailContext()
 
   const [open, setOpen] = useState<Record<GroupDetailModalType, boolean>>({
@@ -97,6 +98,7 @@ const _GroupDetail = () => {
   const handleModal = (type: GroupDetailModalType, isOpen: boolean) => {
     setOpen((prev) => ({ ...prev, [type]: isOpen }))
   }
+
   return (
     <Wrapper>
       <ModalGroupForm
@@ -131,7 +133,12 @@ const _GroupDetail = () => {
             <Descriptions.Item span={3} label="Description">
               {group?.groupDescription}
             </Descriptions.Item>
-            <Descriptions.Item span={3} label="Group Members">
+            <Descriptions.Item
+              span={3}
+              label={`Members (${group.groupMembers.length}/${
+                group.maxMemberNum
+              })`}
+            >
               {userRole !== 'Student' && (
                 <FlexContainer>
                   <CandidateSearchBar handleSelect={(val) => addMember(val)} />
@@ -165,7 +172,9 @@ const _GroupDetail = () => {
                       ),
                     ]}
                   >
-                    {member.firstName} {member.lastName}
+                    <Link to={`${route.PROFILE}/${member.id}`}>
+                      {member.firstName} {member.lastName}
+                    </Link>
                   </List.Item>
                 )}
               />
@@ -178,8 +187,10 @@ const _GroupDetail = () => {
                 <StyledJoinButton
                   style={{
                     display:
-                      //不在这个组里，也不在其他组里才显示
-                      !isUserInThisGroup && !isUserInGroup ? 'block' : 'none',
+                      //不在这个组里，也不在其他组里才显示,并且这个组没满
+                      !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
+                        ? 'block'
+                        : 'none',
                   }}
                   type="primary"
                   onClick={joinOrLeave}
@@ -199,7 +210,12 @@ const _GroupDetail = () => {
               </ButtonContainer>
             </Descriptions.Item>
 
-            <Descriptions.Item span={3} label="Project Preferences">
+            <Descriptions.Item
+              span={3}
+              label={`Project Preferences
+              ${isGroupPreferenceLocked ? '(Locked)' : ''}
+              `}
+            >
               <FlexContainer
                 style={{
                   display: isGroupPreferenceLocked ? 'none' : 'flex',
@@ -251,7 +267,9 @@ const _GroupDetail = () => {
                       ),
                     ]}
                   >
-                    {pre.preference.name}
+                    <Link to={`${route.PROJECTS}/${pre.preference.id}`}>
+                      {pre.preference.name}
+                    </Link>
                   </List.Item>
                 )}
               />

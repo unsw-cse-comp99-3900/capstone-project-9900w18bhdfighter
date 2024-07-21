@@ -7,10 +7,11 @@ import {
   getGroupByParticipant,
   mapGroupDTOToGroup,
 } from '../../../api/groupAPI'
+import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import { errHandler } from '../../../utils/parse'
 
 const Select = styled(_Select)`
   width: 10rem;
-
   .ant-select-selector {
     box-shadow: none !important;
   }
@@ -24,16 +25,24 @@ type Props = {
 const GroupFilter = ({ list, setFilteredLists }: Props) => {
   const { usrInfo } = useAuthContext()
   const [participated, setParticipated] = useState<Group[] | null>(null)
-
+  const { msg } = useGlobalComponentsContext()
   const fetchParticipated = async (id: number) => {
-    const res = await getGroupByParticipant(id)
-    return res.data.map(mapGroupDTOToGroup)
+    try {
+      const res = await getGroupByParticipant(id)
+      setParticipated(res.data.map(mapGroupDTOToGroup))
+      setFilteredLists(res.data.map(mapGroupDTOToGroup))
+    } catch (e) {
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
   }
 
   useEffect(() => {
-    if (usrInfo) {
-      fetchParticipated(usrInfo.id).then(setParticipated)
-    }
+    if (!usrInfo) return
+    fetchParticipated(usrInfo.id)
   }, [usrInfo])
 
   return (
@@ -54,9 +63,7 @@ const GroupFilter = ({ list, setFilteredLists }: Props) => {
           case 2:
             if (!usrInfo) return
             if (!participated) {
-              const res = await fetchParticipated(usrInfo.id)
-              setParticipated(res)
-              setFilteredLists(res)
+              fetchParticipated(usrInfo.id)
             } else {
               setFilteredLists(participated)
             }

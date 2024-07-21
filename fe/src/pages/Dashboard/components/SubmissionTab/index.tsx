@@ -11,9 +11,12 @@ const Wrapper = styled(Flex)`
   width: 100%;
   flex-direction: column;
   align-items: center;
+  box-shadow: ${getThemeToken('boxShadow')};
+  height: calc(100vh - 10rem);
 `
 const _SubmissionTab = () => {
   const { undueProjects, participatedProject } = useSubmissionTabContext()
+
   const project = undueProjects[0]
   const _project = participatedProject?.[0]
 

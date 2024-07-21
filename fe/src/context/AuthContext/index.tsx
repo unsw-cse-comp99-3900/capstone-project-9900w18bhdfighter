@@ -73,6 +73,7 @@ const AuthContextProvider = ({ children }: Props) => {
   const logout = (navigate: NavigateFunction) => {
     localStorage.removeItem('token')
     localStorage.removeItem('user_info')
+    sessionStorage.clear()
     setUserInfo(null)
     msg.info('Logout success')
     navigate(route.ROOT)
