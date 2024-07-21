@@ -64,6 +64,7 @@ pipeline {
                         def containerId = powershell(returnStdout: true, script: "docker ps -q --filter 'name=${env.DOCKER_COMPOSE_PROJECT_NAME}'").trim()
                         if (containerId) {
                             powershell "docker commit ${containerId} ${env.IMAGE_NAME}"
+                            echo "docker commit ${containerId} ${env.IMAGE_NAME}"
                         }
                         //停止现有容器down
                         powershell "docker-compose down"
