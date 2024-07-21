@@ -61,7 +61,7 @@ pipeline {
                         }
                     } else {
                         // 获取要提交的容器ID
-                        def containerId = powershell(returnStdout: true, script: "docker ps -q --filter 'name=web-1'").trim()
+                        def containerId = powershell(returnStdout: true, script: "docker ps -q --filter 'name=${env.DOCKER_COMPOSE_PROJECT_NAME}'").trim()
                         if (containerId) {
                             powershell "docker commit ${containerId} ${env.IMAGE_NAME}"
                         }
