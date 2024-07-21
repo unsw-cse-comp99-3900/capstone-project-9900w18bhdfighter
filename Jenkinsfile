@@ -20,17 +20,19 @@ pipeline {
                         // 停止并删除任何现有的容器
                         sh "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} down"
                         
-                        // 构建并启动容器
+                        // 构建并启动容器（后台模式）
                         sh "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} up --build -d"
                     } else {
                         // 停止并删除任何现有的容器
-                        powershell "docker-compose down"
+                        powershell "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} down"
                         
-                        // 构建并启动容器
-                        powershell "docker-compose up --build"
+                        // 构建并启动容器（后台模式）
+                        powershell "docker-compose -f ${env.DOCKER_COMPOSE_FILE} -p ${env.DOCKER_COMPOSE_PROJECT_NAME} up --build -d"
                     }
                 }
             }
         }
+        
     }
+
 }
