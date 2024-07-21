@@ -38,11 +38,11 @@ pipeline {
                             powershell "docker-compose up --build -d"
 
                             // 获取未使用的image ID
-                            def danglingImages = powershell(returnStdout: true, script: "docker images -f \"dangling=true\" -q").trim()
+                            def unusedImages = powershell(returnStdout: true, script: "docker images -q --filter \"dangling=true\" --filter \"label!=inuse\"").trim()
                             
                             // 如果有未使用的image，删除它们
-                            if (danglingImages) {
-                                powershell "docker rmi \$(docker images -f \"dangling=true\" -q)"
+                            if (unusedImages) {
+                                powershell "docker rmi \$(docker images -q --filter \"dangling=true\" --filter \"label!=inuse\")"
                             }
                     }
                 }
