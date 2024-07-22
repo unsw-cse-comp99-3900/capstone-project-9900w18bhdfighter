@@ -26,7 +26,7 @@ export default GroupsAssessmentListItem
 // }
 
 // const TitleWrapper = styled.div`
-//   display: flex;
+//   /* display: flex; */
 //   align-items: center;
 // `
 

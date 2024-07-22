@@ -15,4 +15,25 @@ interface SkillEval {
   score: number
   skill: number
 }
-export { SkillEvalReqDTO, SkillEvalRspDTO, SkillEval }
+
+interface SkillEvaluationData {
+  ProjectName: string
+  ProjectDescription: string
+  ProjectOwner: string
+  RequiredSkills: RequiredSkill[]
+}
+interface RequiredSkill {
+  Skill: Skill
+}
+
+interface Area {
+  AreaID: number
+  AreaName: string
+}
+
+interface Skill {
+  Area: Area
+  SkillID: number
+  SkillName: string
+}
+export { SkillEvalReqDTO, SkillEvalRspDTO, SkillEval, SkillEvaluationData }

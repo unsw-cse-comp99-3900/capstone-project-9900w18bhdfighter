@@ -3,7 +3,8 @@ import styled from 'styled-components'
 
 import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
-import GroupsListItem from './GroupListItem'
+// import GroupsListItem from './GroupListItem'
+import GroupsAssessmentListItem from './GroupAssessmentItem'
 import { getThemeToken } from '../../../utils/styles'
 import { getAllGroups, mapGroupDTOToGroup } from '../../../api/groupAPI'
 import { Group } from '../../../types/group'
@@ -48,7 +49,7 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
         bordered
         header={
           <Flex justify="space-between" align="center">
-            Groups List
+            Groups Assessment List
             <GroupFilter list={list} setFilteredLists={setFilteredLists} />
           </Flex>
         }
@@ -65,7 +66,7 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
               </LinkButton>,
             ]}
           >
-            <GroupsListItem item={item as Group} />
+            <GroupsAssessmentListItem item={item as Group} />
           </List.Item>
         )}
       />

@@ -1,5 +1,15 @@
-import { useState } from 'react'
-import { Button, Descriptions, Flex, List, Modal, Spin, Typography } from 'antd'
+import { useState, useEffect } from 'react'
+import {
+  Button,
+  Descriptions,
+  Flex,
+  List,
+  Modal,
+  Spin,
+  Typography,
+  Input,
+  message,
+} from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
@@ -12,13 +22,19 @@ import { UserProfileSlim } from '../../types/user'
 
 import route from '../../constant/route'
 import ModalGroupForm from './components/GroupEditModal'
-import api from '../../api/config'
+import { getProjectById } from '../../api/projectAPI'
+import {
+  createOrUpdateSkillEval,
+  getSkillEvalByGroup,
+} from '../../api/groupAPI'
+import { SkillEvalReqDTO } from '../../types/skillEval'
 import GroupDetailContextProvider, {
   useGroupDetailContext,
 } from '../../context/GroupDetailContext'
 import PreferenceEditModal from './components/PreferenceEditModal'
 export type GroupDetailModalType = 'metaEdit' | 'preference' | 'confirm'
 
+const { TextArea } = Input
 interface Area {
   AreaID: number
   AreaName: string
@@ -54,18 +70,24 @@ const FlexContainer = styled(Flex)`
 `
 const FlexEditContainer = styled(Flex)`
   align-items: center;
-  justify-content: space-between; /* Add this line */
+  justify-content: space-between;
 `
-const SkillEvaluationContainer = styled(Flex)`
-  align-items: center;
+
+const SkillEvaluationContainer = styled.div`
+  padding-top: 5%;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: ${getThemeToken('paddingMD', 'px')};
+  width: 100%;
 `
+
 const StyledEditButton = styled(Button)`
   height: 32px;
   margin-top: 2%;
   margin-left: auto;
 `
 const StyledButton = styled(Button)`
-  height: 32px; /* Adjust height to match input/select */
+  height: 32px;
 `
 const StyledJoinButton = styled(Button)`
   height: 32px;
@@ -82,9 +104,9 @@ const ButtonContainer = styled.div`
 
 const DescriptionsContainer = styled.div`
   width: 100%;
-  padding-bottom: 2rem; /* Add bottom padding */
+  padding-bottom: 2rem;
   display: flex;
-  justify-content: center; /* Center the table horizontally */
+  justify-content: center;
 `
 
 const InnerDescriptionsContainer = styled.div`
@@ -95,6 +117,15 @@ const EditWrapper = styled(Flex)`
   width: 100%;
   justify-content: flex-end;
 `
+
+const StyledInput = styled(Input)`
+  margin-bottom: 1rem;
+`
+
+const StyledTextArea = styled(TextArea)`
+  margin-bottom: 1rem;
+`
+
 const roleMap = roleNames
 
 const _GroupDetail = () => {
@@ -117,18 +148,94 @@ const _GroupDetail = () => {
     metaEdit: false,
     confirm: false,
   })
-  // const [form] = Form.useForm()
   const [skillEvaluationData, setSkillEvaluationData] =
     useState<SkillEvaluationData | null>(null)
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
   const [isSkillEvaluationModalOpen, setSkillEvaluationModalOpen] =
     useState(false)
+  const [evaluationScores, setEvaluationScores] = useState<
+    Record<number, number>
+  >({})
+  const [evaluationComments, setEvaluationComments] = useState<
+    Record<number, string>
+  >({})
+  const [skillEvaluations, setSkillEvaluations] = useState<
+    SkillEvalReqDTO[] | null
+  >(null)
+  const [evaluationSubmitted, setEvaluationSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (skillEvaluations) {
+      const scores: Record<number, number> = {}
+      const comments: Record<number, string> = {}
+
+      skillEvaluations.forEach((evalData) => {
+        scores[evalData.Skill] = evalData.Score
+        comments[evalData.Skill] = evalData.Note
+      })
+
+      setEvaluationScores(scores)
+      setEvaluationComments(comments)
+    }
+  }, [skillEvaluations])
+
+  const handleScoreChange = (skillId: number, value: string) => {
+    setEvaluationScores((prev) => ({
+      ...prev,
+      [skillId]: Number(value),
+    }))
+  }
+
+  const handleSubmitEvaluation = () => {
+    Modal.confirm({
+      title: 'Confirm Submission',
+      content: 'Are you sure you want to submit your evaluation?',
+      onOk: async () => {
+        try {
+          const evaluationData: SkillEvalReqDTO[] = Object.keys(
+            evaluationScores
+          ).map((skillId) => {
+            const score = evaluationScores[Number(skillId)]
+            if (score === undefined) {
+              throw new Error(`Score for skillId ${skillId} is undefined`)
+            }
+
+            return {
+              Note: evaluationComments[Number(skillId)] || '',
+              Score: score,
+              Skill: Number(skillId),
+            }
+          })
+
+          for (const evalData of evaluationData) {
+            const response = await createOrUpdateSkillEval(
+              Number(group?.groupId),
+              evalData
+            )
+            message.success('Self evaluation created successfully!')
+            console.log('Evaluation submitted:', response.data)
+          }
+          setEvaluationSubmitted(true) // Set the state to true after successful submission
+        } catch (error) {
+          console.error('Error submitting evaluation:', error)
+        }
+      },
+    })
+  }
+
   if (!group) {
     return (
       <Wrapper>
         <Spin tip="Loading..." />
       </Wrapper>
     )
+  }
+
+  const handleCommentChange = (skillId: number, value: string) => {
+    setEvaluationComments((prev) => ({
+      ...prev,
+      [skillId]: value,
+    }))
   }
 
   const handleModal = (type: GroupDetailModalType, isOpen: boolean) => {
@@ -138,18 +245,21 @@ const _GroupDetail = () => {
   const handleSkillEvaluationModal = async (isOpen: boolean, id?: number) => {
     setSkillEvaluationModalOpen(isOpen)
     if (isOpen && id) {
-      // Fetch data from the backend when the modal is opened
-      await api
-        .get(`/projects/${id}/`)
-        .then((response) => {
-          console.log('Fetched skill evaluation data:', response.data)
-          setSkillEvaluationData(response.data)
-        })
-        .catch((error) => {
-          console.error('Error fetching skill evaluation data:', error)
-        })
+      try {
+        const response = await getProjectById(id)
+        console.log('Fetched skill evaluation data:', response.data)
+        setSkillEvaluationData(response.data)
+
+        const skillEvalResponse = await getSkillEvalByGroup(group.groupId)
+        console.log('Skill evaluation data by group:', skillEvalResponse.data)
+
+        setSkillEvaluations(skillEvalResponse.data)
+      } catch (error) {
+        console.error('Error fetching skill evaluation data:', error)
+      }
     } else {
       setSkillEvaluationData(null)
+      setSkillEvaluations(null)
     }
   }
 
@@ -160,7 +270,6 @@ const _GroupDetail = () => {
         isModalOpen={open.metaEdit}
         handleCancel={() => handleModal('metaEdit', false)}
       />
-      {/* student cannot edit group */}
       {userRole !== 'Student' && (
         <EditWrapper gap={10}>
           <Button type="primary" onClick={() => handleModal('metaEdit', true)}>
@@ -241,7 +350,6 @@ const _GroupDetail = () => {
                 <StyledJoinButton
                   style={{
                     display:
-                      //不在这个组里，也不在其他组里才显示,并且这个组没满
                       !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
                         ? 'block'
                         : 'none',
@@ -253,7 +361,6 @@ const _GroupDetail = () => {
                 </StyledJoinButton>
                 <StyleLeaveButton
                   style={{
-                    //在这个组里，就显示leave
                     display: isUserInThisGroup ? 'block' : 'none',
                   }}
                   type="primary"
@@ -298,18 +405,22 @@ const _GroupDetail = () => {
                       alignItems: 'center',
                     }}
                     actions={[
-                      isUserInThisGroup && (
-                        <StyledButton
-                          key="1"
-                          size="small"
-                          type="link"
-                          onClick={() =>
-                            handleSkillEvaluationModal(true, pre.preference.id)
-                          }
-                        >
-                          Skill Evaluation
-                        </StyledButton>
-                      ),
+                      isUserInThisGroup &&
+                        !evaluationSubmitted && ( // Hide button if evaluation is submitted
+                          <StyledButton
+                            key="1"
+                            size="small"
+                            type="link"
+                            onClick={() =>
+                              handleSkillEvaluationModal(
+                                true,
+                                pre.preference.id
+                              )
+                            }
+                          >
+                            Skill Evaluation
+                          </StyledButton>
+                        ),
                     ]}
                   >
                     <Link to={`${route.PROJECTS}/${pre.preference.id}`}>
@@ -319,8 +430,11 @@ const _GroupDetail = () => {
                 )}
               />
               <StyleLeaveButton
+                // style={{
+                //   display: group.preferences.length === 0 ? 'none' : 'block',
+                // }}
                 style={{
-                  display: group.preferences.length === 0 ? 'none' : 'block',
+                  display: isGroupPreferenceLocked ? 'none' : 'flex',
                 }}
                 onClick={() => {
                   Modal.confirm({
@@ -333,7 +447,24 @@ const _GroupDetail = () => {
                   })
                 }}
               >
-                Submit
+                Submit Preference
+              </StyleLeaveButton>
+              <StyleLeaveButton
+                style={{
+                  display: group.preferences.length === 0 ? 'none' : 'block',
+                }}
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Are you sure you want to submit?',
+                    content:
+                      'You cannot change your evaluation after submission',
+                    onOk: () => {
+                      setEvaluationSubmitted(true) // Hide button after evaluation is submitted
+                    },
+                  })
+                }}
+              >
+                Submit Evaluation
               </StyleLeaveButton>
             </Descriptions.Item>
           </Descriptions>
@@ -350,7 +481,7 @@ const _GroupDetail = () => {
           >
             Cancel
           </Button>,
-          <Button key="submit" type="primary">
+          <Button key="submit" type="primary" onClick={handleSubmitEvaluation}>
             Submit
           </Button>,
         ]}
@@ -364,21 +495,45 @@ const _GroupDetail = () => {
               Owner: {skillEvaluationData.ProjectOwner}
             </Typography.Paragraph>
             <Typography.Paragraph>
-              {skillEvaluationData.ProjectDescription}
+              Project Detail: {skillEvaluationData.ProjectDescription}
             </Typography.Paragraph>
             <Typography.Title level={5}>Required Skills</Typography.Title>
             <List
               dataSource={skillEvaluationData.RequiredSkills}
-              renderItem={({ Skill }) => (
-                <List.Item>
-                  <Typography.Paragraph>
-                    <Typography.Title>Skill Name:</Typography.Title>{' '}
-                    {Skill.SkillName}
-                    <Typography.Title>Area:</Typography.Title>{' '}
-                    {Skill.Area.AreaName}
-                  </Typography.Paragraph>
-                </List.Item>
-              )}
+              renderItem={({ Skill }) => {
+                const score = evaluationScores[Skill.SkillID] || ''
+                const comment = evaluationComments[Skill.SkillID] || ''
+                return (
+                  <List.Item style={{ width: '100%' }}>
+                    <Typography.Paragraph style={{ width: '100%' }}>
+                      <Typography.Title level={5}>Skill Name:</Typography.Title>{' '}
+                      {Skill.SkillName}
+                      <Typography.Title level={5}>Area:</Typography.Title>{' '}
+                      {Skill.Area.AreaName}
+                      <Typography.Title level={5}>
+                        Score (0-10):
+                      </Typography.Title>
+                      <StyledInput
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={score}
+                        onChange={(e) =>
+                          handleScoreChange(Skill.SkillID, e.target.value)
+                        }
+                      />
+                      <Typography.Title level={5}>Comment:</Typography.Title>
+                      <StyledTextArea
+                        rows={2}
+                        value={comment}
+                        onChange={(e) =>
+                          handleCommentChange(Skill.SkillID, e.target.value)
+                        }
+                      />
+                    </Typography.Paragraph>
+                  </List.Item>
+                )
+              }}
             />
           </SkillEvaluationContainer>
         ) : (
