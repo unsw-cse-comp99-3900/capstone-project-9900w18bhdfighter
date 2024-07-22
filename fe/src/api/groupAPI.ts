@@ -7,6 +7,7 @@ import {
 } from '../types/group'
 import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
 import api from './config'
+import { mapCourseDTOToCourse } from './courseAPI'
 import { mapProjectDTOToProject } from './projectAPI'
 import { mapUserSlimProfileDTOUserProfileSlim } from './userAPI'
 
@@ -119,6 +120,7 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
     createdBy: groupRspDTO.CreatedBy,
     preferences: groupPreference,
     groupId: groupRspDTO.GroupID,
+    course: mapCourseDTOToCourse(groupRspDTO.CourseCode),
   }
 }
 const mapSkillEvalDTOToSkillEval = (skillEval: SkillEvalRspDTO) => {

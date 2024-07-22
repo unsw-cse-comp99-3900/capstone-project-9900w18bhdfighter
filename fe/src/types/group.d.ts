@@ -1,16 +1,12 @@
+import { Course, CourseRspDTO } from './course'
 import { Project, ProjectRespDTO } from './proj'
 import { UserProfileSlim, UserProfileSlimDTO } from './user'
-
-type GroupCreate = {
-  GroupName: string
-  GroupDescription: string
-  // GroupOwner: string
-}
 
 interface GroupReqDTO {
   GroupName: string
   GroupDescription: string
   MaxMemberNumber: number
+  CourseCode: number
 }
 
 interface GroupJoinDTO {
@@ -53,6 +49,7 @@ interface GroupRspDTO {
   GroupOwner: string
   CreatedBy: number
   Preferences: GroupPreferenceRspDTO[]
+  CourseCode: CourseRspDTO
 }
 
 interface Group {
@@ -64,6 +61,7 @@ interface Group {
   groupOwner: string
   createdBy: number
   preferences: GroupPreference[]
+  course: Course
 }
 
 type GroupPreferenceSlim = Pick<
@@ -74,7 +72,6 @@ type GroupPreferenceSlim = Pick<
 export {
   GroupRspDTO,
   Group,
-  GroupCreate,
   GroupReqDTO,
   GroupJoinDTO,
   GroupLeaveDTO,

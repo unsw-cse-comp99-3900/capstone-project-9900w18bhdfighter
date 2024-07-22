@@ -23,9 +23,10 @@ import { ProjectReqDTO } from '../../types/proj'
 import ModalProjectForm from '../../components/ModalProjectForm'
 import { role } from '../../constant/role'
 import { useAuthContext } from '../../context/AuthContext'
-import dayjs from 'dayjs'
 import { useGlobalTheme } from '../../context/GlobalThemeContext'
 import { Link, useNavigate } from 'react-router-dom'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
+import { timeFormat } from '../../utils/parse'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -62,6 +63,7 @@ const _ProjectDetail = () => {
 
   const [isOpened, setIsOpened] = useState(false)
   const { usrInfo, isInRoleRange } = useAuthContext()
+  const { PROJECT_DUE } = useGlobalConstantContext()
   const { onWidth } = useGlobalTheme()
   const navigate = useNavigate()
   const handleOk = async (projectUpdateDTO: ProjectReqDTO) => {
@@ -83,7 +85,6 @@ const _ProjectDetail = () => {
       })),
       email: project.owner,
       maxGroupNumber: project.maxNumOfGroup,
-      dueTime: dayjs(project.dueTime),
     }
   }, [project])
 
@@ -117,7 +118,7 @@ const _ProjectDetail = () => {
         <Space>
           {
             <Typography.Text ellipsis>
-              {project?.dueTime.format('DD/MM/YYYY HH:mm')}
+              {PROJECT_DUE ? timeFormat(PROJECT_DUE) : 'Not set'}
             </Typography.Text>
           }
         </Space>

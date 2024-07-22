@@ -4,6 +4,7 @@ import {
   Flex,
   Tag,
   Typography,
+  Spin,
 } from 'antd'
 import type { FormInstance } from 'antd'
 import styled from 'styled-components'
@@ -13,8 +14,8 @@ import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
 import { useEffect, useState } from 'react'
 import AccountManagementContextProvider, {
-  useAccountManagementContext,
-} from '../../context/AccountManagementContext'
+  useManagementContext,
+} from '../../context/ManagementContext'
 import { UserUpdate } from '../../types/user'
 import { useParams } from 'react-router-dom'
 import ModalProfileEdit from '../../components/ModalProfileEdit'
@@ -57,7 +58,7 @@ const _Profile = () => {
   }
   const isMyProfile = !usrId
   const { updateAccount, getAnUserProfile, currProfileViewing } =
-    useAccountManagementContext()
+    useManagementContext()
   // when user id is changed, get the user profile
   useEffect(() => {
     usrId
@@ -81,6 +82,7 @@ const _Profile = () => {
         UserRole: values.role,
         Passwd: values.password,
         EmailAddress: values.email,
+        CourseCode: values.courseCode,
       }
       Object.keys(updateInfo).forEach(
         (key) =>
@@ -99,15 +101,22 @@ const _Profile = () => {
   const handleCancel = () => {
     setIsModalOpen(false)
   }
-  const { role, email, firstName, lastName, description, interestAreas } =
-    currProfileViewing || {
-      email: '',
-      role: 1,
-      firstName: '',
-      lastName: '',
-      description: '',
-      interestAreas: [],
-    }
+
+  if (!currProfileViewing)
+    return (
+      <Wrapper>
+        <Spin></Spin>
+      </Wrapper>
+    )
+  const {
+    role,
+    email,
+    firstName,
+    lastName,
+    description,
+    interestAreas,
+    courseCode,
+  } = currProfileViewing
   return (
     <Wrapper>
       <ModalProfileEdit
@@ -136,8 +145,17 @@ const _Profile = () => {
         ></_Avatar>
       </Header>
       <Descriptions bordered>
-        <Descriptions.Item span={3} label="Full Name">
+        <Descriptions.Item span={2} label="Full Name">
           {`${firstName} ${lastName}`}
+        </Descriptions.Item>
+        <Descriptions.Item span={2} label="Course">
+          {courseCode ? (
+            courseCode.courseName
+          ) : (
+            <Typography.Text type="secondary">
+              No course provided
+            </Typography.Text>
+          )}
         </Descriptions.Item>
         <Descriptions.Item span={2} label="Email">
           {email}

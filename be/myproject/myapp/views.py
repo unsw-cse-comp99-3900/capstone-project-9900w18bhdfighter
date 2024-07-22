@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
-from .models import Contact, Group, GroupMessage, GroupPreference, GroupProjectsLink, Skill, SkillProject, User, StudentArea, Notification, \
+from .models import Contact, CourseCode, Group, GroupMessage, GroupPreference, GroupProjectsLink, Skill, SkillProject, TimeRule, User, StudentArea, Notification, \
     NotificationReceiver, GroupUsersLink
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
@@ -21,9 +21,9 @@ from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
 from .permission import ForPartialRole, OnlyForAdmin,ForValidToken
-from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
+from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, CourseSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, NotificationFetchSerializer, NotificationReceiverSerializer, \
-    ProjectSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
+    ProjectSerializer, TimeRuleSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 import jwt
@@ -93,6 +93,8 @@ def student_signup(request):
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24 * 7)  # Token expires in 24 * 7 hours
             }, settings.SECRET_KEY, algorithm='HS256')
 
+  
+            
             return JsonResponse({
                 'token': token,
                 'user': {
@@ -102,7 +104,8 @@ def student_signup(request):
                     'EmailAddress': user.EmailAddress,
                     'role': user.UserRole,
                     'description': user.UserInformation,
-                    'interestAreas': []
+                    'interestAreas': [],
+                    'courseCode':None
                 }
             }, status=201)
 
@@ -139,6 +142,15 @@ def student_login(request):
                         # Token expires in 24 * 7 hours
                     }, settings.SECRET_KEY, algorithm='HS256')
 
+                    try:
+                        course_code=user.CourseCode
+                        course_code={
+                                'id':course_code.CourseCodeID,
+                                'courseName':course_code.CourseName
+                            }     
+                    except:
+                        course_code=None
+                    
                     response_data = {
                         'user_profile': {
                             'UserID': user.pk,
@@ -147,7 +159,8 @@ def student_login(request):
                             'EmailAddress': user.EmailAddress,
                             'role': user.UserRole,
                             'description': user.UserInformation,
-                            'interestAreas': []
+                            'interestAreas': [],
+                            'courseCode':course_code
 
                         },
                         'token': token
@@ -392,19 +405,25 @@ def group_creation(request):
         if GroupUsersLink.objects.filter(UserID=user).exists():
             return JsonResponse({'error': 'You are already in a group'}, status=400)
 
-        serializer = GroupSerializer(data=data)
+        course_id = data.get('CourseCode', None)
+        try:
+            course_code = CourseCode.objects.get(pk=course_id)
+        except CourseCode.DoesNotExist:
+            return JsonResponse({'error': 'Course code not found'}, status=404)
+
+
+        data['CourseCode'] = course_code.CourseCodeID
+        request.user=user
+        serializer = GroupSerializer(data=data, context={'request': request})
         if serializer.is_valid():
-            try:
-                group = serializer.save(CreatedBy=user)
-                
-                if user_data['role'] == 1:
-                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
-                
-                return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
-            except Exception as e:
-                return JsonResponse({'error': 'Error creating group. Please try again.'}, status=500)
+            group = serializer.save()
+            if user_data['role'] == 1:
+                GroupUsersLink.objects.create(GroupID=group, UserID=user)
+            return JsonResponse({'message': 'Group created successfully!', 'group': serializer.data}, status=201)
+  
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
 
 ############################################################################################
 #                                     Group Operation                                      #
@@ -439,6 +458,17 @@ def group_join(request):
             #如果学生。只能自己加入
             if user.UserID!=add_user.UserID:
                 return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
+            #如果学生没有courseCode，不能加入
+            if not user.CourseCode:
+                return JsonResponse({'error': 'You need to select a course code before joining a group'}, status=403)
+            #如果学生和group的courseCode不一样，不能加入
+            try:
+                group = Group.objects.get(GroupID=data['group_id'])
+            except Group.DoesNotExist:
+                return JsonResponse({'error': 'Group does not exist'}, status=404)
+            if user.CourseCode!=group.CourseCode:
+                return JsonResponse({'error': 'Your course code does not match the group course code'}, status=403)
+                                   
             
             
         try:
@@ -1223,3 +1253,75 @@ def get_group_members(request, id):
     serializer = UserSlimSerializer(members, many=True)
     return JsonResponse(serializer.data, safe=False)
 
+
+class TimeRuleAPIView( mixins.CreateModelMixin, GenericViewSet, mixins.ListModelMixin, mixins.DestroyModelMixin, mixins.UpdateModelMixin):
+    queryset = TimeRule.objects.all()
+    serializer_class = TimeRuleSerializer
+    def get_permissions(self):
+        if self.action in ['create']:
+            return []
+        else:
+            return []
+        
+    def create(self, request, *args, **kwargs):
+        serializer = TimeRuleSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = TimeRuleSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        #如果这个规则active，不能删除
+        if instance.IsActive:
+            return JsonResponse({'error': 'Cannot delete active time rule.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        instance.delete()
+        return JsonResponse({'message': 'Time rule deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = TimeRuleSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class CourseAPIView( mixins.CreateModelMixin, GenericViewSet, mixins.ListModelMixin, mixins.DestroyModelMixin, mixins.UpdateModelMixin):
+    queryset = CourseCode.objects.all()
+    serializer_class = CourseSerializer
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [OnlyForAdmin()]
+        else:
+            return []
+        
+    def create(self, request, *args, **kwargs):
+        serializer = CourseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = CourseSerializer(queryset, many=True)
+        return JsonResponse({
+            'data': serializer.data,
+        }, status=status.HTTP_200_OK)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return JsonResponse({'message': 'Course deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = CourseSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

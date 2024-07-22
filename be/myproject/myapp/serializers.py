@@ -42,7 +42,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     ProjectDescription = serializers.CharField( allow_blank=True)
     class Meta:
         model = Project
-        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id","DueTime"]
+        fields = ['ProjectID', 'ProjectName', 'ProjectDescription', 'ProjectOwner','MaxNumOfGroup', 'RequiredSkills',"CreatedBy","projectOwner_id"]
         read_only_fields = ['CreatedBy']
     def get_RequiredSkills(self, obj):
         skills = SkillProject.objects.filter(Project=obj)
@@ -76,14 +76,17 @@ class UserSlimSerializer(serializers.ModelSerializer):
         model = User
         fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole']
         extra_kwargs = {'Passwd': {'write_only': True}}
-
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseCode
+        fields = ['CourseCodeID', 'CourseName']
 
 class UserWithAreaSerializer(serializers.ModelSerializer):
     Areas = AreaSerializer(many=True, read_only=True)
-
+    CourseCode = CourseSerializer()
     class Meta:
         model = User
-        fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole', 'UserInformation', 'Areas']
+        fields = ['UserID', 'FirstName', 'LastName', 'EmailAddress', 'UserRole', 'UserInformation', 'Areas',  'CourseCode']
         extra_kwargs = {'Passwd': {'write_only': True}}
 
 
@@ -91,16 +94,36 @@ class UserWithAreaSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     GroupDescription = serializers.CharField(allow_blank=True)
     MaxMemberNumber = serializers.IntegerField(min_value=5)
+    
+    # CourseCode 用作 PrimaryKeyRelatedField
+    CourseCode = serializers.PrimaryKeyRelatedField(queryset=CourseCode.objects.all())
+    
     class Meta:
-        model=Group
-        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID']
+        model = Group
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber', 'GroupID', 'CourseCode', 'CreatedBy']
+        read_only_fields = ['CreatedBy']
 
+    def create(self, validated_data):
+        # 从 validated_data 中提取 CourseCode 数据
+        course_code = validated_data.pop('CourseCode')
+        
+        # 从上下文中获取 `CreatedBy` 用户
+        created_by = self.context['request'].user
+        
+        # 创建 Group 实例
+        group = Group.objects.create(**validated_data, CourseCode=course_code, CreatedBy=created_by)
+        
+        return group
+
+
+    
 class GroupFetchSerializer(serializers.ModelSerializer):
     GroupMembers = UserSlimSerializer(many=True, read_only=True)
     Preferences = serializers.SerializerMethodField()
+    CourseCode = CourseSerializer()
     class Meta:
         model=Group
-        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences"]
+        fields = ['GroupName', 'GroupDescription', 'MaxMemberNumber',  'GroupID',"GroupMembers","CreatedBy","Preferences","CourseCode"]
     def get_Preferences(self, obj):
         preferences = GroupPreference.objects.filter(Group=obj)
         return GroupPreferenceSerializer(preferences, many=True).data
@@ -134,7 +157,13 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             if not Area.objects.filter(AreaID=area_id).exists():
                 raise serializers.ValidationError(f"Area with ID {area_id} does not exist.")
         data['Areas'] = areas_data
-
+        course_code = data.get('CourseCodeID', None)
+        if course_code:
+            try:
+                course = CourseCode.objects.get(CourseCodeID=course_code)
+                data['CourseCode'] = course
+            except CourseCode.DoesNotExist:
+                raise serializers.ValidationError("The course does not exist.")
         # if not admin
         if requester.UserRole != 5:
             # only alow the user to update their own information
@@ -156,6 +185,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         instance.UserInformation = validated_data.get('UserInformation', instance.UserInformation)
         instance.Passwd = validated_data.get('Passwd', instance.Passwd)
         instance.UserRole = validated_data.get('UserRole', instance.UserRole)
+        instance.CourseCode = validated_data.get('CourseCode', instance.CourseCode)
+        
         StudentArea.objects.filter(User=instance).delete()
         for area_id in areas_data:
             area = Area.objects.get(AreaID=area_id)
@@ -417,3 +448,13 @@ class GroupProjectLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupProjectsLink
         fields = ['GroupID', 'ProjectID', 'GroupProjectsLinkID']
+        
+
+class TimeRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TimeRule
+        # fields = [TimeNodeID,GroupFreezeTime,ProjectDeadline,IsActive]
+        fields=["TimeNodeID","GroupFreezeTime","ProjectDeadline","IsActive","RuleName"]
+        extra_kwargs = {
+            'TimeRuleID': {'read_only': True}
+        }

@@ -130,6 +130,9 @@ const _GroupDetail = () => {
                 {creatorProfile?.fullName}
               </Link>
             </Descriptions.Item>
+            <Descriptions.Item span={3} label="Course">
+              {group?.course.courseName}
+            </Descriptions.Item>
             <Descriptions.Item span={3} label="Description">
               {group?.groupDescription}
             </Descriptions.Item>

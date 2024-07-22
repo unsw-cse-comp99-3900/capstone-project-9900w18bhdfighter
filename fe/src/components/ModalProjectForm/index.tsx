@@ -1,18 +1,8 @@
-import {
-  Button,
-  DatePicker,
-  Flex,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-} from 'antd'
+import { Button, Flex, Form, Input, InputNumber, Modal, Select } from 'antd'
 import React, { CSSProperties, useMemo, useState } from 'react'
-import styled, { useTheme } from 'styled-components'
+import styled from 'styled-components'
 import { ProjectReqDTO } from '../../types/proj'
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
-import dayjs from 'dayjs'
 import UserSearchBar from '../UserSearchBar'
 import { UserProfileSlim } from '../../types/user'
 import {
@@ -20,7 +10,7 @@ import {
   mapUserSlimProfileDTOUserProfileSlim,
 } from '../../api/userAPI'
 import { role } from '../../constant/role'
-import { OverrideAntdDatePicker } from '../../styles/GlobalStyle'
+import ResponsiveForm from '../ResponsiveForm/ResponsiveForm'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -58,7 +48,6 @@ type FormValues = {
   skills: Skill[]
   email: string
   maxGroupNumber: number
-  dueTime: dayjs.Dayjs
 }
 type Option = {
   label: string
@@ -70,7 +59,6 @@ const initialValues = {
   skills: [{ area: 1, skill: '' }],
   email: '',
   maxGroupNumber: 5,
-  dueTime: dayjs(new Date()),
 }
 const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
   return {
@@ -82,7 +70,6 @@ const mapFormValuesToProjectReqDTO = (values: FormValues): ProjectReqDTO => {
       skill: s.skill,
     })),
     MaxNumOfGroup: values.maxGroupNumber,
-    DueTime: values.dueTime.toISOString(),
   }
 }
 const ModalProjectForm = ({
@@ -116,7 +103,7 @@ const ModalProjectForm = ({
       console.log(e)
     }
   }
-  const theme = useTheme()
+
   return (
     <_Modal
       title={title}
@@ -127,8 +114,7 @@ const ModalProjectForm = ({
         body: modalBodyStyle,
       }}
     >
-      <OverrideAntdDatePicker theme={theme}></OverrideAntdDatePicker>
-      <Form
+      <ResponsiveForm
         layout="vertical"
         initialValues={initialData}
         form={form}
@@ -217,11 +203,7 @@ const ModalProjectForm = ({
         >
           <InputNumber style={{ width: '100%' }} min={1} />
         </Form.Item>
-
-        <Form.Item label="Due Time" name="dueTime">
-          <DatePicker style={{ width: '100%' }} showTime />
-        </Form.Item>
-      </Form>
+      </ResponsiveForm>
     </_Modal>
   )
 }

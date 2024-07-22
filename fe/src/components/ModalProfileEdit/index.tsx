@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { UserInfo, UserRole } from '../../types/user'
 
-import AreaContextProvider, { useAreaContext } from '../../context/AreaContext'
+import AreaContextProvider from '../../context/AreaContext'
 import { role as _role } from '../../constant/role'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 
 type Props = {
   isModalOpen: boolean
@@ -27,14 +28,19 @@ const _ModalProfileEdit = ({
 }: Props) => {
   const [visible, setVisible] = useState(false)
   const [form] = Form.useForm()
-  const { getAreaList, areaList } = useAreaContext()
-  const { firstName, lastName, description, interestAreas, role } =
+
+  const { AREA_LIST, COURSE_LIST } = useGlobalConstantContext()
+
+  const areaList = AREA_LIST || []
+  const courseList = COURSE_LIST || []
+  const { firstName, lastName, description, interestAreas, role, courseCode } =
     userInfo || {
       firstName: '',
       lastName: '',
       description: '',
       interestAreas: [],
       role: 1,
+      courseCode: null,
     }
   useEffect(() => {
     form.setFieldsValue({
@@ -43,13 +49,16 @@ const _ModalProfileEdit = ({
       description: description,
       interestAreas: interestAreas.map((area) => area.id),
       role: role,
+      courseCode: courseCode
+        ? {
+            label: courseCode.courseName,
+            value: courseCode.id,
+          }
+        : null,
     })
     console.log(interestAreas)
   }, [userInfo, form])
 
-  useEffect(() => {
-    getAreaList()
-  }, [])
   useEffect(() => {
     if (!visible) {
       form.setFieldsValue({
@@ -88,6 +97,24 @@ const _ModalProfileEdit = ({
           rules={[{ required: true, message: 'Please input your last name!' }]}
         >
           <Input />
+        </Form.Item>
+        <Form.Item
+          style={{
+            display: `${
+              viewerRole === _role.ADMIN || !courseCode ? 'block' : 'none'
+            }`,
+          }}
+          label="Course Code"
+          name="courseCode"
+        >
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Course Code"
+            options={courseList.map((course) => ({
+              label: course.courseName,
+              value: course.id,
+            }))}
+          />
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea

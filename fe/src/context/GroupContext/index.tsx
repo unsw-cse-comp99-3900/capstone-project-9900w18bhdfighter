@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { Group, GroupCreate } from '../../types/group'
+import { Group, GroupReqDTO } from '../../types/group'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { errHandler } from '../../utils/parse'
@@ -13,7 +13,7 @@ import { useAuthContext } from '../AuthContext'
 import { getGroupByParticipant, mapGroupDTOToGroup } from '../../api/groupAPI'
 
 interface GroupContextType {
-  createGroup: (_group: GroupCreate) => Promise<void>
+  createGroup: (_group: GroupReqDTO) => Promise<void>
   updateGroup: () => void
   deleteGroup: () => void
   getGroupsList: (_id: number) => Promise<void>
@@ -46,7 +46,7 @@ const GroupContextProvider = ({ children }: { children: ReactNode }) => {
       )
     }
   }
-  const createGroup = async (group: GroupCreate) => {
+  const createGroup = async (group: GroupReqDTO) => {
     try {
       await api.post('api/group_creation/', group)
       msg.success('Group created successfully!')

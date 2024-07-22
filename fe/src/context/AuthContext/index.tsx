@@ -56,6 +56,7 @@ const AuthContextProvider = ({ children }: Props) => {
         role: res.data.user_profile.role,
         description: res.data.user_profile.description,
         interestAreas: res.data.user_profile.interestAreas,
+        courseCode: res.data.user_profile.courseCode,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
@@ -90,6 +91,7 @@ const AuthContextProvider = ({ children }: Props) => {
         role: res.data.user.role,
         description: res.data.user.description,
         interestAreas: res.data.user.interestAreas,
+        courseCode: res.data.user.courseCode,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))

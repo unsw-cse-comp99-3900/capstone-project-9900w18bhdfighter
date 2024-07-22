@@ -10,6 +10,8 @@ url.register(r'api/contacts', views.ContactAPIView)
 url.register(r'api/group-messages', views.GroupMessageAPIView)
 url.register(r'api/groups', groups_views.GroupsAPIView)
 url.register(r'api/group-projects', views.GroupProjectsLinkAPIView)
+url.register(r'api/time-rules', views.TimeRuleAPIView)
+url.register(r'api/courses', views.CourseAPIView)
 urlpatterns = [
     path("api/login", views.student_login, name="student_login"),
     path("api/project_creation/", views.project_creation, name="project_creation"),

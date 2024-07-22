@@ -28,8 +28,8 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
     Project[] | null
   >(null)
   const undueProjects =
-    participatedProject?.filter((project) => {
-      const dueTime = project.dueTime.toDate()
+    participatedProject?.filter(() => {
+      const dueTime = new Date()
       const currentTime = new Date()
       return dueTime <= currentTime
     }) || []

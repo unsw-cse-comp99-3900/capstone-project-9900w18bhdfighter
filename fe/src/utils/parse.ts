@@ -1,4 +1,5 @@
 import { AxiosError, isAxiosError } from 'axios'
+import dayjs from 'dayjs'
 
 const shortName = (firstName = '', lastName = '') => {
   console.log('firstName:', firstName)
@@ -73,6 +74,13 @@ const ids_to_channel_id = (ids: [number, number]) => {
 const channel_id_to_ids = (channel_id: string) => {
   return channel_id.split('_').map(Number) as [number, number]
 }
+const timeFormat = (iso: string, time = true) => {
+  if (!time) return dayjs(iso).format('DD/MM/YYYY')
+  return dayjs(iso).format('DD/MM/YY HH:mm')
+}
+const isDue = (dueTime: string) => {
+  return dayjs(dueTime) <= dayjs()
+}
 export {
   shortName,
   isDarkColor,
@@ -80,4 +88,6 @@ export {
   errHandler,
   ids_to_channel_id,
   channel_id_to_ids,
+  timeFormat,
+  isDue,
 }

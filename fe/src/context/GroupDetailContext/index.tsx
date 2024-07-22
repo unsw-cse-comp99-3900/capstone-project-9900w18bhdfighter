@@ -12,8 +12,7 @@ import { Group, GroupPreferenceReqDTO, GroupReqDTO } from '../../types/group'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { errHandler } from '../../utils/parse'
 import { useAuthContext } from '../AuthContext'
-import { getUserById } from '../../api/userAPI'
-import { mapUserProfileDTOToUserInfo } from '../AccountManagementContext/mapper'
+import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
 import {
   lockGroupPreference,
   updateGroupPreference,

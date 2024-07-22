@@ -12,11 +12,33 @@ class Area(models.Model):
 
     def __str__(self):
         return self.AreaName
+    
 
+class TimeRule(models.Model):
+    TimeNodeID = models.AutoField(primary_key=True)
+    #这个时间过后,学生不能再自行加入离开，学生不能选择小组偏好，不能进行自评
+    GroupFreezeTime = models.DateTimeField(default=timezone.now)
+    
+    #项目结束时间，这时候可以mark了
+    ProjectDeadline = models.DateTimeField(default=timezone.now)
+    
+    #RuleRange
+    RuleName = models.CharField(max_length=255)
+    
+    #是否启用规则
+    IsActive = models.BooleanField(default=False)
+    #只能有一个规则是active的
+    def save(self, *args, **kwargs):
+        if self.IsActive:
+            # Deactivate other active rules
+            TimeRule.objects.filter(IsActive=True).update(IsActive=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.RuleName
 
 class User(models.Model):
     ROLE_CHOICES = [(1, 'student'), (2, 'client'), (3, 'tut'), (4, 'cord'), (5, 'admin')]
-
     UserID = models.AutoField(primary_key=True)
     FirstName = models.CharField(max_length=50)
     LastName = models.CharField(max_length=50)
@@ -29,10 +51,15 @@ class User(models.Model):
     Areas = models.ManyToManyField(Area, through='StudentArea')
     Notifications = models.ManyToManyField('Notification', through='NotificationReceiver')
     Contacts = models.ManyToManyField('self', through='Contact', symmetrical=False)
-
+    #COMP[39]900
+    CourseCode=models.ForeignKey('CourseCode', on_delete=models.CASCADE, null=True, blank=True)
     def __str__(self):
         return str(self.UserID)
-
+class CourseCode(models.Model):
+    CourseCodeID = models.AutoField(primary_key=True)
+    CourseName = models.CharField(max_length=10)
+    def __str__(self):
+        return self.CourseName
 
 class Project(models.Model):
     ProjectID = models.AutoField(primary_key=True)
@@ -42,8 +69,6 @@ class Project(models.Model):
     CreatedBy = models.ForeignKey(User, related_name='created_projects', on_delete=models.CASCADE)
     MaxNumOfGroup = models.IntegerField(default=1)
     Groups=models.ManyToManyField('Group', through='GroupProjectsLink')
-    DueTime = models.DateTimeField()
-    
     def __str__(self):
         return str(self.ProjectID)
 
@@ -70,6 +95,7 @@ class Group(models.Model):
     MaxMemberNumber = models.IntegerField(default=1)
     Preferences=models.ManyToManyField(Project, through='GroupPreference')
     GroupMembers = models.ManyToManyField(User, through='GroupUsersLink')
+    CourseCode=models.ForeignKey(CourseCode, on_delete=models.CASCADE)
     def __str__(self):
         return str(self.GroupID)
 

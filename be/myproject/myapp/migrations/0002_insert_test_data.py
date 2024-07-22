@@ -49,12 +49,25 @@ def add_areas(apps, schema_editor):
         Area.objects.create(AreaName=area)
     print("=====================================")
     print("Areas created")
+    
+def add_course_code(apps, schema_editor):
+    course= [
+    "COMP9900",
+    "COMP3900",
+    ]
+    CourseCode = apps.get_model('myapp', 'CourseCode')
+    for c in course:
+        CourseCode.objects.create(CourseName=c)
+    print("=====================================")
+    print("CourseCode created")
+    
 
 def create_test_users(apps, schema_editor):
     User = apps.get_model('myapp', 'User')
-    random.seed(42)
+    CourseCode = apps.get_model('myapp', 'CourseCode')
     # Create additional students
     user_ls = []
+    course_ls=list(CourseCode.objects.all())
     for i in range(100):
         email=f"stu{i}@stu.com"
         password = make_password("stu")
@@ -64,7 +77,8 @@ def create_test_users(apps, schema_editor):
             EmailAddress=email,
             Passwd=password,
             UserRole=1,
-            UserInformation=f"Information for stu{i}"
+            UserInformation=f"Information for stu{i}",
+            CourseCode=course_ls[i%2] 
         ))
     User.objects.bulk_create(user_ls)
     # Create additional clients
@@ -95,19 +109,17 @@ def add_projects(apps, schema_editor):
             ProjectDescription=f"Description for Project {i}",
             ProjectOwner=user.EmailAddress,
             CreatedBy=user,
-            MaxNumOfGroup=random.randint(1, 10),
-            DueTime=timezone.now() + timezone.timedelta(days=random.randint(60, 90))
+            MaxNumOfGroup=random.randint(6, 10),
         )
         for i, user in enumerate(users)
     ])
     print("Test projects created successfully.")
  
      
-
 def add_groups(apps, schema_editor):
     User = apps.get_model('myapp', 'User')
     Group = apps.get_model('myapp', 'Group')    
-    random.seed(42)
+    CourseCode = apps.get_model('myapp', 'CourseCode')
 
     cord = User.objects.get(EmailAddress="cord@cord.com")
     admin = User.objects.get(EmailAddress="admin@admin.com")
@@ -115,28 +127,33 @@ def add_groups(apps, schema_editor):
 
     # Creating groups
 
-    group1 = Group.objects.create(GroupName='Group 1', GroupDescription='Description for Group 1', CreatedBy=cord, MaxMemberNumber=6)
-    group2 = Group.objects.create(GroupName='Group 2', GroupDescription='Description for Group 2', CreatedBy=admin, MaxMemberNumber=6)
-    group3 = Group.objects.create(GroupName='Group 3', GroupDescription='Description for Group 3', CreatedBy=tut, MaxMemberNumber=6)
+    course=CourseCode.objects.get(CourseName="COMP9900")
+
+    group1 = Group.objects.create(GroupName='Group 1', GroupDescription='Description for Group 1', CreatedBy=cord, MaxMemberNumber=6, CourseCode=course)
+    group2 = Group.objects.create(GroupName='Group 2', GroupDescription='Description for Group 2', CreatedBy=admin, MaxMemberNumber=6, CourseCode=course)
+    group3 = Group.objects.create(GroupName='Group 3', GroupDescription='Description for Group 3', CreatedBy=tut, MaxMemberNumber=6, CourseCode=course)
 
     group1.save()
     group2.save()
     group3.save()
 
     # create 10 more groups
-    users=User.objects.filter(UserRole=1)
-    users_list = list(users)
+    users9900=User.objects.filter(UserRole=1, CourseCode__CourseName="COMP9900")
+    users3900=User.objects.filter(UserRole=1, CourseCode__CourseName="COMP3900")
+    list=[users9900,users3900]
     for i in range(50):
-        random_user = random.choice(users_list)
-        users_list.remove(random_user)
-        
+        user=list[i%2][i]
+        if not user:
+            break
         group = Group.objects.create(
             GroupName=f"Group {i+4}",
             GroupDescription=f"Description for Group {i+4}",
-            CreatedBy=random_user,
-            MaxMemberNumber=random.randint(5,7 )
+            CreatedBy=user,
+            MaxMemberNumber=random.randint(5,7),
+            CourseCode=user.CourseCode
         )
         group.save()
+    print("Groups created successfully.")
     
 def assign_users_to_groups(apps, schema_editor):
     random.seed(42)
@@ -145,32 +162,29 @@ def assign_users_to_groups(apps, schema_editor):
     Group = apps.get_model('myapp', 'Group')
     GroupUsersLink = apps.get_model('myapp', 'GroupUsersLink')
 
+    def assign_users_to_course(course_name):
+        users = list(User.objects.filter(UserRole=1, CourseCode__CourseName=course_name))
+        existing_groups = list(Group.objects.filter(CourseCode__CourseName=course_name))
 
-    users = list(User.objects.filter(UserRole=1))
-    existing_groups = list(Group.objects.all())
+        while users and existing_groups:
+            for user in users[:]:  # 使用切片副本来安全地修改列表
+                if not existing_groups:
+                    break
+                group = random.choice(existing_groups)
+                if group.GroupMembers.count() >= group.MaxMemberNumber:
+                    existing_groups.remove(group)
+                    continue
 
+                GroupUsersLink.objects.create(UserID=user, GroupID=group)
+                users.remove(user)
+                if group.GroupMembers.count() >= group.MaxMemberNumber:
+                    existing_groups.remove(group)
 
-    for group in [g for g in existing_groups if g.CreatedBy.UserRole == 1]:
-        if group.CreatedBy in users:
-            GroupUsersLink.objects.create(GroupID=group, UserID=group.CreatedBy)
-            users.remove(group.CreatedBy)
-
-
-    for group in existing_groups:
-        max_members = group.MaxMemberNumber
-        current_members = GroupUsersLink.objects.filter(GroupID=group).count()
-
-
-        if group.CreatedBy.UserRole == 1 and group.CreatedBy in users:
-            max_members -= 1
-
-
-        while current_members < max_members and users:
-            user = users.pop(0)
-            GroupUsersLink.objects.create(GroupID=group, UserID=user)
-            current_members += 1
+    assign_users_to_course("COMP9900")
+    assign_users_to_course("COMP3900")
 
     print("Assignment done")
+
 
 def add_group_preferences(apps, schema_editor):
     Group = apps.get_model('myapp', 'Group')
@@ -206,6 +220,20 @@ def assign_group_to_projects(apps, schema_editor):
         GroupProjectsLink.objects.create(GroupID=group, ProjectID=project)
         groups=groups.exclude(GroupID=group.GroupID)
     print("Groups assigned to projects")
+    
+
+def add_time_rule(apps, schema_editor):
+    timerule= [
+    "2024T2",
+    ]
+    TimeRule = apps.get_model('myapp', 'TimeRule')
+    for t in timerule:
+        projectDeadline= timezone.now()+timezone.timedelta(days=90)
+        groupFreezeTime= timezone.now()+timezone.timedelta(days=10)
+        TimeRule.objects.create(RuleName=t,ProjectDeadline=projectDeadline,GroupFreezeTime=groupFreezeTime,IsActive=False)
+        
+    print("=====================================")
+    print("TimeRule created")
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -215,10 +243,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(add_roles),
         migrations.RunPython(add_areas),
+        migrations.RunPython(add_course_code),
+        migrations.RunPython(add_time_rule),
         migrations.RunPython(create_test_users),
         migrations.RunPython(add_projects),
         migrations.RunPython(add_groups),
         migrations.RunPython(assign_users_to_groups),
         migrations.RunPython(add_group_preferences),
         migrations.RunPython(assign_group_to_projects),
+       
     ]
