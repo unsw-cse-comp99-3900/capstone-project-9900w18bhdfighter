@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from .allocation import launch
 from rest_framework.viewsets import GenericViewSet
-
+from rest_framework.decorators import action
 class AllocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Allocation
@@ -41,3 +41,54 @@ class AllocationAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins
         launch()
         
         return JsonResponse({"message": "This is the allocation list"})
+
+    @action(detail=False, methods=['get'])
+    def get_allocations(self, request):
+        allocations = Allocation.objects.select_related('Project', 'Group').all()
+        results = []
+        for allocation in allocations:
+            results.append({
+                'group': {
+                    'groupId': allocation.Group.GroupID,
+                    'groupName': allocation.Group.GroupName,
+                    'groupDesc': allocation.Group.GroupDescription,
+                },
+                'project': {
+                    'projectId': allocation.Project.ProjectID,
+                    'projectName': allocation.Project.ProjectName,
+                    'projectDesc': allocation.Project.ProjectDescription,
+                }
+            })
+        return JsonResponse(results, safe=False, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def approve(self, request):
+        Allocation.objects.all().delete()
+        return JsonResponse({"message": "All allocations have been cleared upon approval"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['put'])
+    def update_allocation(self, request, pk=None):
+        try:
+            allocation = Allocation.objects.get(pk=pk)
+        except Allocation.DoesNotExist:
+            return JsonResponse({"message": "Allocation not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        group_id = data.get('group_id')
+        project_id = data.get('project_id')
+        if group_id:
+            try:
+                group = Group.objects.get(pk=group_id)
+                allocation.Group = group
+            except Group.DoesNotExist:
+                return JsonResponse({"message": "Group not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if project_id:
+            try:
+                project = Project.objects.get(pk=project_id)
+                allocation.Project = project
+            except Project.DoesNotExist:
+                return JsonResponse({"message": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        allocation.save()
+        return JsonResponse({"message": "Allocation updated successfully"}, status=status.HTTP_200_OK)

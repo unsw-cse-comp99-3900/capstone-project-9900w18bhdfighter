@@ -2,7 +2,7 @@ from . import views, groups_views
 from .allocation import allocation_views
 from rest_framework.routers import SimpleRouter
 from django.urls import path
-
+from .allocation.allocation_views import AllocationAPIView
 url = SimpleRouter(trailing_slash=False)
 url.register(r'api/users', views.UserAPIView)
 url.register(r'api/areas', views.AreaAPIView)
@@ -39,8 +39,10 @@ urlpatterns = [
     path("api/groups/autocomplete-name", groups_views.GroupsAPIView.as_view({'get': 'autocomplete_groups'}), name="autocomplete_groups"),
     path("api/projects/autocomplete-name", views.autocomplete_projects, name="autocomplete_projects"),
     path("api/groups/<int:GroupID>/preferences/evaluation", groups_views.GroupsAPIView.as_view({'put':"skills_evaluation"}), name="skills_evaluation"),
-    path("api/groups/<int:GroupID>/preferences/evaluation-group", groups_views.GroupsAPIView.as_view({'get':"get_skills_evaluation_by_group"}), name="get_skills_evaluation_by_group")
-
+    path("api/groups/<int:GroupID>/preferences/evaluation-group", groups_views.GroupsAPIView.as_view({'get':"get_skills_evaluation_by_group"}), name="get_skills_evaluation_by_group"),
+    path('api/allocations/get/', AllocationAPIView.as_view({'get': 'get_allocations'}), name='get_allocations'),
+    path('api/allocations/approve/', AllocationAPIView.as_view({'post': 'approve'}), name='approve_allocations'),
+    path('api/allocations/<int:pk>/', AllocationAPIView.as_view({'put': 'update_allocation'}), name='update_allocation'),
 ]
 
 
