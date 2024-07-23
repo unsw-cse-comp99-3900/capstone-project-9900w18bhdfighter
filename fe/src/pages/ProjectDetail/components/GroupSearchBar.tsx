@@ -17,6 +17,7 @@ interface GroupValue {
   label: ReactNode
   value: number
 }
+
 const GroupSearchBar = (
   { style }: { style: React.CSSProperties } = {
     style: {},

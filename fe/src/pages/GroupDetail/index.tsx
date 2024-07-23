@@ -8,6 +8,7 @@ import {
   Typography,
   Input,
   message,
+  Modal,
 } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
@@ -430,26 +431,7 @@ const _GroupDetail = () => {
                   </List.Item>
                 )}
               />
-              <StyleLeaveButton
-                // style={{
-                //   display: group.preferences.length === 0 ? 'none' : 'block',
-                // }}
-                style={{
-                  display: isGroupPreferenceLocked ? 'none' : 'flex',
-                }}
-                onClick={() => {
-                  Modal.confirm({
-                    title: 'Are you sure you want to submit?',
-                    content:
-                      'You cannot change your preferences after submission',
-                    onOk: () => {
-                      lockPreferences()
-                    },
-                  })
-                }}
-              >
-                Submit Preference
-              </StyleLeaveButton>
+
               <StyleLeaveButton
                 style={{
                   display: group.preferences.length === 0 ? 'none' : 'block',
@@ -473,7 +455,7 @@ const _GroupDetail = () => {
       </DescriptionsContainer>
       <Modal
         title="Skill Evaluation"
-        visible={isSkillEvaluationModalOpen}
+        open={isSkillEvaluationModalOpen}
         onCancel={() => handleSkillEvaluationModal(false)}
         footer={[
           <Button

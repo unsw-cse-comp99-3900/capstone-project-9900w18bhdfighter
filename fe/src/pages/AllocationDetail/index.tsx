@@ -1,10 +1,8 @@
-import React, { ReactNode, useState } from 'react'
+import React, { useState } from 'react'
 import { Button, Descriptions, List, Modal, Form } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
-import GroupSearchBar from '../ProjectDetail/components/GroupSearchBar'
-import { Group } from '../../types/group'
-import { getAutoCompleteGroups } from '../../api/groupAPI'
+
 const Wrapper = styled.div`
   width: 100%;
   height: 100%;
@@ -33,17 +31,17 @@ const ListItemWrapper = styled.div`
   justify-content: space-between;
   width: 100%;
 `
-interface GroupValue {
-  label: ReactNode
-  value: number
-  title: string
-  description: string
-}
+// interface GroupValue {
+//   label: ReactNode
+//   value: number
+//   title: string
+//   description: string
+// }
 
 const AllocationDetail: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [autoCompGroupList, setAutoCompGroupList] = useState<Group[]>([])
-  const [selectedGroup, setSelectedGroup] = useState<GroupValue | null>(null) // Add state to store selected group
+  // const [autoCompGroupList, setAutoCompGroupList] = useState<Group[]>([])
+  // const [selectedGroup, setSelectedGroup] = useState<GroupValue | null>(null) // Add state to store selected group
 
   const showModal = () => {
     setIsModalVisible(true)
@@ -77,15 +75,15 @@ const AllocationDetail: React.FC = () => {
   //   setAutoCompGroupList(fetchedGroups)
   // }
 
-  const handleChange = async (val: GroupValue) => {
-    // Implement the logic to handle the selected group
-    console.log(`Selected group: ${val.label}`)
-    console.log('selected group', selectedGroup)
-  }
+  // const handleChange = async (val: GroupValue) => {
+  //   // Implement the logic to handle the selected group
+  //   console.log(`Selected group: ${val.label}`)
+  //   console.log('selected group', selectedGroup)
+  // }
 
-  const addGroupMember = (val: GroupValue) => {
-    setSelectedGroup(val)
-  }
+  // const addGroupMember = (val: GroupValue) => {
+  //   setSelectedGroup(val)
+  // }
 
   return (
     <Wrapper>
@@ -128,13 +126,13 @@ const AllocationDetail: React.FC = () => {
         <Form>
           <Form.Item label="Group Name">
             <FlexContainer>
-              <GroupSearchBar
+              {/* <GroupSearchBar
                 getAutoCompleteGroups={getAutoCompleteGroups}
                 handleChange={handleChange}
                 setCurrAutoCompleteGroup={setAutoCompGroupList}
                 autoCompGroupList={autoCompGroupList}
                 handleSelect={addGroupMember} // Pass the handleSelect prop
-              />
+              /> */}
             </FlexContainer>
           </Form.Item>
           <Form.Item>
