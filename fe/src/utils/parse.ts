@@ -78,6 +78,10 @@ const timeFormat = (iso: string, time = true) => {
   if (!time) return dayjs(iso).format('DD/MM/YYYY')
   return dayjs(iso).format('DD/MM/YY HH:mm')
 }
+const daysFromTime = (dueTime: string) => {
+  return dayjs(dueTime).diff(dayjs(), 'day')
+}
+
 const isDue = (dueTime: string) => {
   return dayjs(dueTime) <= dayjs()
 }
@@ -90,4 +94,5 @@ export {
   channel_id_to_ids,
   timeFormat,
   isDue,
+  daysFromTime,
 }

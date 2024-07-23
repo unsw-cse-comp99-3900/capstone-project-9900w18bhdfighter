@@ -87,7 +87,7 @@ const _Teams = () => {
     setIsModalOpen(false)
   }
   const Main = () => (
-    <CardContainer>
+    <CardContainer gutter={[16, 8]}>
       {groups.map((group) => (
         <Col key={group.groupId} xs={24} sm={12} md={8} lg={6}>
           <Card

@@ -369,7 +369,7 @@ class GroupPreferenceSerializer(serializers.ModelSerializer):
     Preference=ProjectSerializer()
     class Meta:
         model = GroupPreference
-        fields = ['PreferenceID', 'Preference', 'Rank',"Lock"]
+        fields = ['PreferenceID', 'Preference', 'Rank']
         extra_kwargs = {
             'PreferenceID': {'read_only': True}
         }

@@ -24,7 +24,6 @@ interface GroupPreferenceRspDTO {
   PreferenceID: number
   Preference: ProjectRespDTO
   Rank: number
-  Lock: boolean
   Group: number
 }
 interface GroupPreferenceReqDTO {
@@ -36,7 +35,6 @@ interface GroupPreference {
   preferenceId: number
   preference: Project
   rank: number
-  lock: boolean
   groupId: number
 }
 

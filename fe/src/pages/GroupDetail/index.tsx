@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Descriptions, Flex, List, Modal, Spin } from 'antd'
+import { Button, Descriptions, Flex, List, Spin } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { Link } from 'react-router-dom'
@@ -17,6 +17,7 @@ import GroupDetailContextProvider, {
   useGroupDetailContext,
 } from '../../context/GroupDetailContext'
 import PreferenceEditModal from './components/PreferenceEditModal'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 export type GroupDetailModalType = 'metaEdit' | 'preference' | 'confirm'
 
 const Wrapper = styled(Flex)`
@@ -73,18 +74,15 @@ const _GroupDetail = () => {
     removeMember,
     isUserInGroup,
     creatorProfile,
-    lockPreferences,
-    isGroupPreferenceLocked,
     isUserInThisGroup,
     isThisGroupFull,
   } = useGroupDetailContext()
-
+  const { isDueGroupFormation } = useGlobalConstantContext()
   const [open, setOpen] = useState<Record<GroupDetailModalType, boolean>>({
     preference: false,
     metaEdit: false,
     confirm: false,
   })
-  // const [form] = Form.useForm()
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
 
   if (!group) {
@@ -216,33 +214,16 @@ const _GroupDetail = () => {
             <Descriptions.Item
               span={3}
               label={`Project Preferences
-              ${isGroupPreferenceLocked ? '(Locked)' : ''}
+              ${isDueGroupFormation ? '(Locked)' : ''}
               `}
             >
               <FlexContainer
                 style={{
-                  display: isGroupPreferenceLocked ? 'none' : 'flex',
+                  display: isDueGroupFormation ? 'none' : 'flex',
                 }}
               >
                 <Button onClick={() => handleModal('preference', true)}>
                   Edit Preferences
-                </Button>
-                <Button
-                  style={{
-                    display: group.preferences.length === 0 ? 'none' : 'block',
-                  }}
-                  onClick={() => {
-                    Modal.confirm({
-                      title: 'Are you sure you want to submit?',
-                      content:
-                        'You cannot change your preferences after submission',
-                      onOk: () => {
-                        lockPreferences()
-                      },
-                    })
-                  }}
-                >
-                  Submit
                 </Button>
               </FlexContainer>
 

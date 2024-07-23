@@ -98,7 +98,6 @@ const mapGroupPreferenceDTOToGroupPreference = (
       preferenceId: preference.PreferenceID,
       preference: mapProjectDTOToProject(preference.Preference),
       rank: preference.Rank,
-      lock: preference.Lock,
       groupId: preference.Group,
     }
   })

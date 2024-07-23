@@ -49,12 +49,7 @@ const _ModalProfileEdit = ({
       description: description,
       interestAreas: interestAreas.map((area) => area.id),
       role: role,
-      courseCode: courseCode
-        ? {
-            label: courseCode.courseName,
-            value: courseCode.id,
-          }
-        : null,
+      courseCode: courseCode?.id || undefined,
     })
     console.log(interestAreas)
   }, [userInfo, form])

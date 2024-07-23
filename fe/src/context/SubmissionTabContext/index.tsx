@@ -10,9 +10,8 @@ import { Project } from '../../types/proj'
 interface SubmissionTabContextType {
   selectedSubmissionId: number
   setSelectedSubmissionId: (_id: number) => void
-  participatedProject: Project[] | null
+  participatedProject: Project | null
   getMyProject: () => Promise<void>
-  undueProjects: Project[]
 }
 
 const SubmissionTabContext = createContext<SubmissionTabContextType>(
@@ -24,20 +23,15 @@ export const useSubmissionTabContext = () => useContext(SubmissionTabContext)
 const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(0)
   const { usrInfo } = useAuthContext()
-  const [participatedProject, setParticipatedProject] = useState<
-    Project[] | null
-  >(null)
-  const undueProjects =
-    participatedProject?.filter(() => {
-      const dueTime = new Date()
-      const currentTime = new Date()
-      return dueTime <= currentTime
-    }) || []
+
+  const [participatedProject, setParticipatedProject] =
+    useState<Project | null>(null)
+
   const getMyProject = async () => {
     if (!usrInfo) return
     try {
       const res = await getProjectByParticipant(usrInfo?.id)
-      setParticipatedProject(res.data.map(mapProjectDTOToProject))
+      setParticipatedProject(res.data.map(mapProjectDTOToProject)[0] || null)
     } catch (e) {
       errHandler(
         e,
@@ -55,7 +49,6 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
     setSelectedSubmissionId,
     participatedProject,
     getMyProject,
-    undueProjects,
   }
   return (
     <SubmissionTabContext.Provider value={ctx}>

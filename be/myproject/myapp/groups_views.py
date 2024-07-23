@@ -5,7 +5,7 @@ from . import group_seria
 from rest_framework import viewsets, status, mixins
 from myapp.views import get_user_friendly_errors
 from rest_framework.decorators import action
-from .permission import ForGroupMemberOrManager, ForValidToken, OnlyForAdmin, PartialRole
+from .permission import ForGroupMemberOrManager, ForValidToken, GroupRegisterDeadlinePermission, OnlyForAdmin, PartialRole
 from .serializers import *
 
 
@@ -25,8 +25,8 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     
     def get_permissions(self):
         base=[ForValidToken()]
-        if self.action in ['submit_preferences','update_preferences']:
-            return base+[ForGroupMemberOrManager()]
+        if self.action in ['update_preferences']:
+            return base+[ForGroupMemberOrManager(),GroupRegisterDeadlinePermission()]
         elif self.action in ['preferences','settings_uri','post_preferences','skill_evaluation']:
             return base+[]
         elif self.action in ['update']:
@@ -46,11 +46,6 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     def update_preferences(self, request, *args, **kwargs):
         instance = self.get_object()
         group_preferences = GroupPreference.objects.filter(Group=instance)
-
-        # Check if any preferences are locked
-        for item in group_preferences:
-            if item.Lock:
-                return JsonResponse({"errors": "Preferences are locked"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Delete existing preferences
         group_preferences.delete()
@@ -75,7 +70,7 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                 project = Project.objects.filter(ProjectID=preference_id ).first()
                 if not project:
                     return JsonResponse({"errors": "Project not found"}, status=status.HTTP_400_BAD_REQUEST)
-                preference = GroupPreference.objects.create(Group=instance, Preference=project, Rank=item["Rank"], Lock=False)
+                preference = GroupPreference.objects.create(Group=instance, Preference=project, Rank=item["Rank"])
                 preferences.append(preference)
 
             # Return the created preferences
@@ -148,16 +143,6 @@ class GroupsAPIView(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         return JsonResponse(serializer.data, status=status.HTTP_200_OK, safe=False)
 
 
-    @action(detail=True, methods=['put'], url_path='preferences/submit', url_name='submit_preferences')
-    def submit_preferences(self, request, *args, **kwargs):
-        group_preferences = GroupPreference.objects.filter(Group_id=self.get_object().GroupID)
-        for item in group_preferences:
-            item.Lock = True
-            item.save()
-
-        serializers = group_seria.LgwGroupPreferenceSerializer(group_preferences, many=True)
-        return JsonResponse(serializers.data, status=status.HTTP_200_OK,safe=False)
-        
     
     @action(detail=True, methods=['get'], url_path='autocomplete-name', url_name='autocomplete_groups')
     def autocomplete_groups(self,request, *args, **kwargs):

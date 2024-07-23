@@ -6,6 +6,7 @@ import { getTimeRules, mapTimeRuleDTOToTimeRule } from '../../api/timeRuleAPI'
 import { TimeRule } from '../../types/timeRule'
 import { Course } from '../../types/course'
 import { getAllCourses, mapCourseDTOToCourse } from '../../api/courseAPI'
+import { isDue } from '../../utils/parse'
 
 interface GlobalConstantContextType {
   AREA_LIST: Area[] | null
@@ -14,6 +15,8 @@ interface GlobalConstantContextType {
   fetchTimeRules: () => Promise<void>
   timeRules: TimeRule[] | null
   COURSE_LIST: Course[] | null
+  isDueGroupFormation: boolean
+  isDueProject: boolean
 }
 
 const GlobalConstantContext = createContext({} as GlobalConstantContextType)
@@ -31,8 +34,14 @@ const GlobalConstantProvider = ({
   const [GROUP_FORMATION_DUE, setGroupFormationDue] = useState<string | null>(
     null
   )
+
   const [COURSE_LIST, setCourseList] = useState<Course[] | null>(null)
   const { msg } = useGlobalComponentsContext()
+  const isDueGroupFormation = GROUP_FORMATION_DUE
+    ? isDue(GROUP_FORMATION_DUE)
+    : false
+  const isDueProject = PROJECT_DUE ? isDue(PROJECT_DUE) : false
+
   const fetchAreas = async () => {
     try {
       const res = await getAreasList()
@@ -77,6 +86,8 @@ const GlobalConstantProvider = ({
     fetchTimeRules,
     timeRules,
     COURSE_LIST,
+    isDueGroupFormation,
+    isDueProject,
   }
   return (
     <GlobalConstantContext.Provider value={ctx}>

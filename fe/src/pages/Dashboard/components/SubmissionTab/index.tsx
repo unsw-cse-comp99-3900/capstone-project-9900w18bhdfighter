@@ -4,6 +4,8 @@ import { getThemeToken } from '../../../../utils/styles'
 import SubmissionTabProvider, {
   useSubmissionTabContext,
 } from '../../../../context/SubmissionTabContext'
+import { useGlobalConstantContext } from '../../../../context/GlobalConstantContext'
+import { daysFromTime, timeFormat } from '../../../../utils/parse'
 
 const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
@@ -15,16 +17,18 @@ const Wrapper = styled(Flex)`
   height: calc(100vh - 10rem);
 `
 const _SubmissionTab = () => {
-  const { undueProjects, participatedProject } = useSubmissionTabContext()
-
-  const project = undueProjects[0]
-  const _project = participatedProject?.[0]
-
+  const { participatedProject } = useSubmissionTabContext()
+  const { PROJECT_DUE } = useGlobalConstantContext()
   return (
     <Wrapper>
       <Typography.Title level={3}>Submission</Typography.Title>
-      <Typography.Title level={4}>{project?.name}</Typography.Title>
-      <Typography.Title level={4}>{_project?.name}</Typography.Title>
+      <Typography.Title level={4}>{participatedProject?.name}</Typography.Title>
+      <Typography.Text>
+        {PROJECT_DUE && timeFormat(PROJECT_DUE)}
+      </Typography.Text>
+      <Typography.Text>
+        {PROJECT_DUE && daysFromTime(PROJECT_DUE)} days left
+      </Typography.Text>
       <Upload>
         <Button>Click to Upload</Button>
       </Upload>

@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from .models import User as UserProfile, User
 from .models import User,Message
 from .models import Project
-from .permission import ForPartialRole, OnlyForAdmin,ForValidToken
+from .permission import ForPartialRole, GroupRegisterDeadlinePermission, OnlyForAdmin,ForValidToken
 from .serializers import ContactCreateSerializer, ContactSerializer, ContactUpdateSerializer, CourseSerializer, GroupContactSerializer, GroupFetchSerializer, GroupMessageSerializer, \
     GroupPreferenceSerializer, GroupPreferenceUpdateSerializer, GroupProjectLinkSerializer, GroupSerializer, GroupWithPreferencesSerializer, MessageSerializer, NotificationFetchSerializer, NotificationReceiverSerializer, \
     ProjectSerializer, TimeRuleSerializer, UserSlimSerializer, UserUpdateSerializer, UserWithAreaSerializer, NotificationSerializer
@@ -430,90 +430,91 @@ def group_creation(request):
 ############################################################################################
 
 # Join Group 
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([GroupRegisterDeadlinePermission])
 def group_join(request):
-    if request.method == 'POST':
-        data = JSONParser().parse(request)
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
-        
-        if result['status'] != 'success':
-            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
-        user_data = result['data']
-        student_id=data.get('student_id',None)
-        try:
-            user = User.objects.get(pk=student_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+    
+    data = JSONParser().parse(request)
+    token = request.headers.get('Authorization').split()[1]
+    result = decode_jwt(token)
+    
+    if result['status'] != 'success':
+        return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
+    user_data = result['data']
+    student_id=data.get('student_id',None)
+    try:
+        user = User.objects.get(pk=student_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User does not exist'}, status=404)
 
-        try:
-            add_user = User.objects.get(UserID=student_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
-        
-        if user_data['role'] not in [1, 3, 4, 5]:
-            return JsonResponse({'error': 'Permission denied'}, status=403)
-        
-        if user_data['role'] in [1]:
-            #如果学生。只能自己加入
-            if user.UserID!=add_user.UserID:
-                return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
-            #如果学生没有courseCode，不能加入
-            if not user.CourseCode:
-                return JsonResponse({'error': 'You need to select a course code before joining a group'}, status=403)
-            #如果学生和group的courseCode不一样，不能加入
-            try:
-                group = Group.objects.get(GroupID=data['group_id'])
-            except Group.DoesNotExist:
-                return JsonResponse({'error': 'Group does not exist'}, status=404)
-            if user.CourseCode!=group.CourseCode:
-                return JsonResponse({'error': 'Your course code does not match the group course code'}, status=403)
-                                   
-            
-            
+    try:
+        add_user = User.objects.get(UserID=student_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User does not exist'}, status=404)
+    
+    if user_data['role'] not in [1, 3, 4, 5]:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    if user_data['role'] in [1]:
+        #如果学生。只能自己加入
+        if user.UserID!=add_user.UserID:
+            return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
+        #如果学生没有courseCode，不能加入
+        if not user.CourseCode:
+            return JsonResponse({'error': 'You need to select a course code before joining a group'}, status=403)
+        #如果学生和group的courseCode不一样，不能加入
         try:
             group = Group.objects.get(GroupID=data['group_id'])
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
-
-        if GroupUsersLink.objects.filter(UserID=user).exists():
-            return JsonResponse({'error': 'Student is already in a group'}, status=400)
+        if user.CourseCode!=group.CourseCode:
+            return JsonResponse({'error': 'Your course code does not match the group course code'}, status=403)
+                                
         
         
-        current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+    try:
+        group = Group.objects.get(GroupID=data['group_id'])
+    except Group.DoesNotExist:
+        return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if current_group_number < group.MaxMemberNumber:
-             
-                # send notification to all other group members
-                group_members=group.GroupMembers.all()
-                group_name=group.GroupName
-                receivers_id_list=[]
-                for member in group_members:
-                        receivers_id_list.append(member.UserID)  
-                
-                msg=f'{user.FirstName} {user.LastName} has joined your group {group_name}'
-                sender_id=user.UserID
-                group_id=group.GroupID
-                if receivers_id_list:
-                    noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
-                    noti.save()
-                if not user_data["role"] in [1]:
-                        #如果不是学生自己加入的，msg通知当事人
-                        msg=f'You were added to group {group_name}'
-                        receivers_id_list=[user.UserID]
-                        GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id).save()
-                        
-                        
+    if GroupUsersLink.objects.filter(UserID=user).exists():
+        return JsonResponse({'error': 'Student is already in a group'}, status=400)
+    
+    
+    current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
+
+    if current_group_number < group.MaxMemberNumber:
+            
+            # send notification to all other group members
+            group_members=group.GroupMembers.all()
+            group_name=group.GroupName
+            receivers_id_list=[]
+            for member in group_members:
+                    receivers_id_list.append(member.UserID)  
+            
+            msg=f'{user.FirstName} {user.LastName} has joined your group {group_name}'
+            sender_id=user.UserID
+            group_id=group.GroupID
+            if receivers_id_list:
+                noti=GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id)
+                noti.save()
+            if not user_data["role"] in [1]:
+                    #如果不是学生自己加入的，msg通知当事人
+                    msg=f'You were added to group {group_name}'
+                    receivers_id_list=[user.UserID]
+                    GroupNotification(msg=msg,sender_id=sender_id,receivers=receivers_id_list,group_id=group_id).save()
+                    
                     
                 
-                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-                return JsonResponse({'message': 'Join group successfully!'}, status=201)
-        return JsonResponse({'error': 'Group is full'}, status=400)
+            
+            GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
+            return JsonResponse({'message': 'Join group successfully!'}, status=201)
+    return JsonResponse({'error': 'Group is full'}, status=400)
 
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 # Leave Group
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([GroupRegisterDeadlinePermission])
 def group_leave(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)

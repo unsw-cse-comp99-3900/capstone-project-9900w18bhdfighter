@@ -224,13 +224,20 @@ def assign_group_to_projects(apps, schema_editor):
 
 def add_time_rule(apps, schema_editor):
     timerule= [
-    "2024T2",
+    "Test All Due",
+    "Test All Active",
     ]
     TimeRule = apps.get_model('myapp', 'TimeRule')
     for t in timerule:
-        projectDeadline= timezone.now()+timezone.timedelta(days=90)
-        groupFreezeTime= timezone.now()+timezone.timedelta(days=10)
-        TimeRule.objects.create(RuleName=t,ProjectDeadline=projectDeadline,GroupFreezeTime=groupFreezeTime,IsActive=False)
+        if t=="Test All Active":
+            projectDeadline= timezone.now()+timezone.timedelta(days=300)
+            groupFreezeTime= timezone.now()+timezone.timedelta(days=300)
+            TimeRule.objects.create(RuleName=t,ProjectDeadline=projectDeadline,GroupFreezeTime=groupFreezeTime,IsActive=True)
+        
+        if t=="Test All Due":
+            projectDeadline= timezone.now()-timezone.timedelta(days=300)
+            groupFreezeTime= timezone.now()-timezone.timedelta(days=300)
+            TimeRule.objects.create(RuleName=t,ProjectDeadline=projectDeadline,GroupFreezeTime=groupFreezeTime,IsActive=False)
         
     print("=====================================")
     print("TimeRule created")

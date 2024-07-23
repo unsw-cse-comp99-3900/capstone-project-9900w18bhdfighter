@@ -119,7 +119,6 @@ class GroupRegisterDeadlinePermission(BasePermission):
             token = request.headers.get('Authorization').split()[1]
         except Exception:
             return False
-        
         result = decode_jwt(token)
         if result['status'] == 'success':
             user_data = result['data']
