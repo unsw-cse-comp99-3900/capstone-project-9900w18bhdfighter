@@ -12,12 +12,8 @@ import { Group, GroupPreferenceReqDTO, GroupReqDTO } from '../../types/group'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { errHandler } from '../../utils/parse'
 import { useAuthContext } from '../AuthContext'
-import { getUserById } from '../../api/userAPI'
-import { mapUserProfileDTOToUserInfo } from '../AccountManagementContext/mapper'
-import {
-  lockGroupPreference,
-  updateGroupPreference,
-} from '../../api/groupPreferenceAPI'
+import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
+import { updateGroupPreference } from '../../api/groupPreferenceAPI'
 
 interface GroupDetailContextType {
   fetchGroupDetail: () => Promise<void>
@@ -32,8 +28,6 @@ interface GroupDetailContextType {
     fullName: string
   } | null
   updatePreferences: (_preferences: GroupPreferenceReqDTO[]) => Promise<void>
-  lockPreferences: () => Promise<void>
-  isGroupPreferenceLocked: boolean
   isUserInThisGroup: boolean
   isThisGroupFull: boolean
 }
@@ -58,20 +52,13 @@ const GroupDetailContextProvider = ({
   const { msg } = useGlobalComponentsContext()
   const [groupDetail, setGroupDetail] = useState<Group | null>(null)
   const [myOwnGroup, setMyOwnGroup] = useState<Group | null>(null)
+
   const isUserInGroup = !!myOwnGroup
   const isUserInThisGroup = useMemo(() => {
     if (!groupDetail) return false
     if (!usrInfo) return false
     return groupDetail.groupMembers.some((member) => member.id === usrInfo.id)
   }, [groupDetail, usrInfo])
-  const isGroupPreferenceLocked = useMemo(() => {
-    if (!groupDetail) return false
-    if (groupDetail.preferences.length === 0) return false
-    const isLocked = groupDetail.preferences.some(
-      (preference) => preference.lock
-    )
-    return isLocked
-  }, [groupDetail])
 
   const isThisGroupFull = useMemo(() => {
     if (!groupDetail) return false
@@ -189,20 +176,7 @@ const GroupDetailContextProvider = ({
       )
     }
   }
-  const lockPreferences = async () => {
-    if (!groupDetail) return
-    try {
-      await lockGroupPreference(groupDetail.groupId)
-      await fetchGroupDetail()
-      msg.success('Preferences locked successfully')
-    } catch (e) {
-      errHandler(
-        e,
-        (str) => msg.err(str),
-        (str) => msg.err(str)
-      )
-    }
-  }
+
   const updatePreferences = async (preferences: GroupPreferenceReqDTO[]) => {
     if (!groupDetail) return
     try {
@@ -236,8 +210,6 @@ const GroupDetailContextProvider = ({
     isUserInGroup,
     creatorProfile,
     updatePreferences,
-    lockPreferences,
-    isGroupPreferenceLocked,
     isUserInThisGroup,
     isThisGroupFull,
   }

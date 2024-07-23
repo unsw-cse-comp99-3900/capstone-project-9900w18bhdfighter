@@ -1,9 +1,10 @@
-import { Form, Input, InputNumber, Modal } from 'antd'
+import { Form, Input, InputNumber, Modal, Select } from 'antd'
 import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
 import { GroupReqDTO } from '../../../types/group'
 import { useGroupDetailContext } from '../../../context/GroupDetailContext'
+import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -34,11 +35,19 @@ type FormValues = {
   skills: Skill[]
   email: string
   groupMaxMemberNumber: number
+  courseId: number
 }
 
 const ModalGroupForm = ({ title, isModalOpen, handleCancel }: Props) => {
   const [form] = Form.useForm<FormValues>()
   const { updateGroupMetaData, group } = useGroupDetailContext()
+  const { COURSE_LIST } = useGlobalConstantContext()
+
+  const options =
+    COURSE_LIST?.map((course) => ({
+      label: course.courseName,
+      value: course.id,
+    })) || []
   const handleFinish = async () => {
     try {
       await form.validateFields()
@@ -47,6 +56,7 @@ const ModalGroupForm = ({ title, isModalOpen, handleCancel }: Props) => {
         GroupName: values.projectName,
         GroupDescription: values.description,
         MaxMemberNumber: values.groupMaxMemberNumber,
+        CourseCode: values.courseId,
       }
 
       await updateGroupMetaData(mappedValues)
@@ -74,6 +84,7 @@ const ModalGroupForm = ({ title, isModalOpen, handleCancel }: Props) => {
           projectName: group?.groupName,
           description: group?.groupDescription,
           groupMaxMemberNumber: group?.maxMemberNum,
+          courseId: group?.course.id,
         }}
         form={form}
         style={{ width: '100%' }}
@@ -84,6 +95,13 @@ const ModalGroupForm = ({ title, isModalOpen, handleCancel }: Props) => {
           name="projectName"
         >
           <Input />
+        </Form.Item>
+        <Form.Item
+          label="Course"
+          name="courseId"
+          rules={[{ required: true, message: 'Group name is required' }]}
+        >
+          <Select options={options} />
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea />

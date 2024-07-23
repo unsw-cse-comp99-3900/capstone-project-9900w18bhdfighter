@@ -1,12 +1,24 @@
-import { ReactNode, createContext, useContext, useState } from 'react'
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
 import { errHandler } from '../../utils/parse'
-import { mapUserProfileDTOToUserInfo } from './mapper'
-import { getUserById } from '../../api/userAPI'
+import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
+import {
+  createTimeRule,
+  deleteTimeRule,
+  updateTimeRule,
+} from '../../api/timeRuleAPI'
+import { TimeRule, TimeRuleReqDTO } from '../../types/timeRule'
+import { useGlobalConstantContext } from '../GlobalConstantContext'
 
-interface AccountManagementContextType {
+interface ManagementContextType {
   deleteAccount: (_usrId: number) => Promise<void>
   updateAccount: (_usrId: number, _userUpdate: UserUpdate) => Promise<void>
   createAccount: () => Promise<void>
@@ -14,23 +26,25 @@ interface AccountManagementContextType {
   getAnUserProfile: (_usrId: number) => Promise<void>
   currProfileViewing: UserInfo | null
   accountList: UserInfo[]
+  timeRules: TimeRule[] | null
+  fetchTimeRules: () => Promise<void>
+  delTimeRule: (_id: number | string) => Promise<void>
+  addTimeRule: (_timeRule: TimeRuleReqDTO) => Promise<void>
+
+  enableTimeRule: (_id: number | string) => Promise<void>
 }
-const AccountManagementContext = createContext<AccountManagementContextType>(
-  {} as AccountManagementContextType
+const ManagementContext = createContext<ManagementContextType>(
+  {} as ManagementContextType
 )
 
-export const useAccountManagementContext = () =>
-  useContext(AccountManagementContext)
-const AccountManagementContextProvider = ({
-  children,
-}: {
-  children: ReactNode
-}) => {
+export const useManagementContext = () => useContext(ManagementContext)
+const ManagementContextProvider = ({ children }: { children: ReactNode }) => {
   const { msg } = useGlobalComponentsContext()
   const [accountList, setAccountList] = useState<UserInfo[]>([])
   const [currProfileViewing, setCurrProfileViewing] = useState<UserInfo | null>(
     null
   )
+  const { fetchTimeRules, timeRules } = useGlobalConstantContext()
   const deleteAccount = async (usrId: number) => {
     try {
       await api.delete(`api/users/${usrId}`)
@@ -78,8 +92,6 @@ const AccountManagementContextProvider = ({
       )
       setAccountList(_accountList)
     } catch (err) {
-      console.log(err)
-
       msg.err('Failed to get account list')
     }
   }
@@ -96,6 +108,49 @@ const AccountManagementContextProvider = ({
     }
   }
 
+  const delTimeRule = async (id: number | string) => {
+    try {
+      await deleteTimeRule(id)
+      await fetchTimeRules()
+      msg.success('Delete success')
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const addTimeRule = async (timeRule: TimeRuleReqDTO) => {
+    try {
+      await createTimeRule(timeRule)
+      await fetchTimeRules()
+      msg.success('Add success')
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const enableTimeRule = async (id: number | string) => {
+    try {
+      await updateTimeRule(id, true)
+      await fetchTimeRules()
+      msg.success('Enable success')
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  useEffect(() => {
+    getAccountList()
+    fetchTimeRules()
+  }, [])
   const ctx = {
     deleteAccount,
     updateAccount,
@@ -103,13 +158,18 @@ const AccountManagementContextProvider = ({
     getAccountList,
     getAnUserProfile,
     currProfileViewing,
+    fetchTimeRules,
     accountList,
+    timeRules,
+    delTimeRule,
+    addTimeRule,
+    enableTimeRule,
   }
   return (
-    <AccountManagementContext.Provider value={ctx}>
+    <ManagementContext.Provider value={ctx}>
       {children}
-    </AccountManagementContext.Provider>
+    </ManagementContext.Provider>
   )
 }
 
-export default AccountManagementContextProvider
+export default ManagementContextProvider

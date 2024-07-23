@@ -1,4 +1,4 @@
-from myapp.models import GroupUsersLink
+from myapp.models import GroupUsersLink, TimeRule
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
 
@@ -109,4 +109,69 @@ class ForGroupMemberOrManager(BasePermission):
             return True
         return False
     
+
+class GroupRegisterDeadlinePermission(BasePermission):
+    def has_permission(self, request, view):
+        from myapp.views import decode_jwt
+        from myapp.models import User
+        from django.utils.timezone import now
+        try:
+            token = request.headers.get('Authorization').split()[1]
+        except Exception:
+            return False
+        result = decode_jwt(token)
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return False
+            
+            request.user = user
+            if user.UserRole in [5]:  # Admin role
+                return True
     
+            #找到time rule 里面active的rule
+            rule = TimeRule.objects.filter(IsActive=True).first()
+            #如果没有active的rule那么deadline就是无穷大
+            if not rule:
+                return True
+            
+            if rule.GroupFreezeTime < now():
+                raise PermissionDenied('Deadline has passed. You cannot perform this action.')
+            return True
+        return False
+    
+class ProjectDeadlinePermission(BasePermission):
+    def has_permission(self, request, view):
+        from myapp.views import decode_jwt
+        from myapp.models import User
+        from django.utils.timezone import now
+        try:
+            token = request.headers.get('Authorization').split()[1]
+        except Exception:
+            return False
+        
+        result = decode_jwt(token)
+        if result['status'] == 'success':
+            user_data = result['data']
+            try:
+                user = User.objects.get(pk=user_data['user_id'])
+            except User.DoesNotExist:
+                return False
+            
+            request.user = user
+            if user.UserRole in [5]:  # Admin role
+                return True
+
+            #找到time rule 里面active的rule
+            rule = TimeRule.objects.filter(IsActive=True).first()
+            #如果没有active的rule那么deadline就是无穷大
+            if not rule:
+                return True
+
+                
+            if rule.ProjectDeadline < now():
+                raise PermissionDenied('Deadline has passed. You cannot perform this action.')
+            return True
+        return False

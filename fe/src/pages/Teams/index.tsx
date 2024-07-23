@@ -11,10 +11,9 @@ import {
 import styled from 'styled-components'
 import { useState, useEffect } from 'react'
 import NewGroupModal from './components/NewGroupDetailModal'
-import { Group, GroupCreate, GroupRspDTO } from '../../types/group'
+import { Group, GroupReqDTO, GroupRspDTO } from '../../types/group'
 import { UserProfileSlim } from '../../types/user'
 import GroupContextProvider from '../../context/GroupContext'
-import api from '../../api/config'
 import { getAllGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
 import { useAuthContext } from '../../context/AuthContext'
 import { getThemeToken } from '../../utils/styles'
@@ -71,10 +70,10 @@ const _Teams = () => {
     }
   }, [currentUserId])
 
-  const handleOk = async (groupCreateDto: GroupCreate) => {
+  const handleOk = async (groupCreateDto: GroupReqDTO) => {
     console.log('handleOk started with:', groupCreateDto)
     setIsModalOpen(false)
-    const response = await api.get<GroupRspDTO[]>('/groups')
+    const response = await getAllGroups()
     const allGroups = response.data.map(mapGroupDTOToGroup)
     const userGroups = allGroups.filter((group: Group) =>
       group.groupMembers.some(
@@ -88,7 +87,7 @@ const _Teams = () => {
     setIsModalOpen(false)
   }
   const Main = () => (
-    <CardContainer>
+    <CardContainer gutter={[16, 8]}>
       {groups.map((group) => (
         <Col key={group.groupId} xs={24} sm={12} md={8} lg={6}>
           <Card

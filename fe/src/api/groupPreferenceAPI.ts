@@ -12,8 +12,4 @@ const deleteGroupPreference = async (preferenceId: string | number) => {
   return api.put(`preferences/${preferenceId}`)
 }
 
-const lockGroupPreference = async (groupId: string | number) => {
-  return api.put(`api/groups/${groupId}/preferences/submit`)
-}
-
-export { updateGroupPreference, lockGroupPreference, deleteGroupPreference }
+export { updateGroupPreference, deleteGroupPreference }

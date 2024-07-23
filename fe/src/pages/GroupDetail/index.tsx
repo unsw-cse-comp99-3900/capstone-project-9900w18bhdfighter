@@ -4,7 +4,6 @@ import {
   Descriptions,
   Flex,
   List,
-  Modal,
   Spin,
   Typography,
   Input,
@@ -32,6 +31,7 @@ import GroupDetailContextProvider, {
   useGroupDetailContext,
 } from '../../context/GroupDetailContext'
 import PreferenceEditModal from './components/PreferenceEditModal'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 export type GroupDetailModalType = 'metaEdit' | 'preference' | 'confirm'
 
 const { TextArea } = Input
@@ -137,12 +137,10 @@ const _GroupDetail = () => {
     removeMember,
     isUserInGroup,
     creatorProfile,
-    lockPreferences,
-    isGroupPreferenceLocked,
     isUserInThisGroup,
     isThisGroupFull,
   } = useGroupDetailContext()
-
+  const { isDueGroupFormation } = useGlobalConstantContext()
   const [open, setOpen] = useState<Record<GroupDetailModalType, boolean>>({
     preference: false,
     metaEdit: false,
@@ -293,6 +291,9 @@ const _GroupDetail = () => {
                 {creatorProfile?.fullName}
               </Link>
             </Descriptions.Item>
+            <Descriptions.Item span={3} label="Course">
+              {group?.course.courseName}
+            </Descriptions.Item>
             <Descriptions.Item span={3} label="Description">
               {group?.groupDescription}
             </Descriptions.Item>
@@ -374,12 +375,12 @@ const _GroupDetail = () => {
             <Descriptions.Item
               span={3}
               label={`Project Preferences
-              ${isGroupPreferenceLocked ? '(Locked)' : ''}
+              ${isDueGroupFormation ? '(Locked)' : ''}
               `}
             >
               <FlexEditContainer
                 style={{
-                  display: isGroupPreferenceLocked ? 'none' : 'flex',
+                  display: isDueGroupFormation ? 'none' : 'flex',
                 }}
               >
                 <StyledEditButton

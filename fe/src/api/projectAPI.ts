@@ -1,4 +1,3 @@
-import dayjs from 'dayjs'
 import {
   Project,
   ProjectReqDTO,
@@ -89,7 +88,6 @@ const mapProjectDTOToProject: (_projectRespDTO: ProjectRespDTO) => Project = (
     ),
     projectOwnerId: projectRespDTO.projectOwner_id,
     createdBy: projectRespDTO.CreatedBy,
-    dueTime: dayjs(projectRespDTO.DueTime),
   }
 
   return project

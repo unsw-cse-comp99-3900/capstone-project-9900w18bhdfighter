@@ -1,9 +1,10 @@
-import { Form, Input, InputNumber, Modal, message } from 'antd'
+import { Form, Input, InputNumber, Modal, Select, message } from 'antd'
 import React from 'react'
 import styled from 'styled-components'
 import { GroupReqDTO } from '../../../types/group'
-import api from '../../../api/config'
 import { AxiosError } from 'axios'
+import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
+import { createGroup } from '../../../api/groupAPI'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -15,13 +16,17 @@ interface ErrorResponse {
   error: string
 }
 
-const _Modal = styled(Modal)`
-  width: 1000px;
-`
+const _Modal = styled(Modal)``
 
 const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   const [form] = Form.useForm()
+  const { COURSE_LIST } = useGlobalConstantContext()
 
+  const options =
+    COURSE_LIST?.map((course) => ({
+      label: course.courseName,
+      value: course.id,
+    })) || []
   const onSubmit = async () => {
     console.log('Form submission started')
     try {
@@ -32,11 +37,12 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
         GroupName: values.groupName,
         GroupDescription: values.description || '',
         MaxMemberNumber: values.groupMaxMemberNumber,
+        CourseCode: values.courseId,
       }
       console.log('Group Data to be sent:', groupData)
 
       try {
-        const response = await api.post('/api/group_creation/', groupData)
+        const response = await createGroup(groupData)
         console.log('Response:', response)
 
         if (response.status === 201) {
@@ -81,6 +87,13 @@ const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
           rules={[{ required: true, message: 'Group name is required' }]}
         >
           <Input />
+        </Form.Item>
+        <Form.Item
+          label="Course"
+          name="courseId"
+          rules={[{ required: true, message: 'Course is required' }]}
+        >
+          <Select options={options} />
         </Form.Item>
         <Form.Item
           label="Group Max Member Number"

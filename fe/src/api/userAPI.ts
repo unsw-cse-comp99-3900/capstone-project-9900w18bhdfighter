@@ -1,10 +1,12 @@
 import { RoleNumber } from '../constant/role'
 import {
+  UserInfo,
   UserProfileDTO,
   UserProfileSlim,
   UserProfileSlimDTO,
 } from '../types/user'
 import api from './config'
+import { mapCourseDTOToCourse } from './courseAPI'
 
 const getUserById = async (id: number) => {
   return api.get<{ data: UserProfileDTO }>(`api/users/${id}`)
@@ -39,8 +41,30 @@ const mapUserSlimProfileDTOUserProfileSlim: (
     role: userProfileDTO.UserRole,
   }
 }
+
+const mapUserProfileDTOToUserInfo: (
+  _userInfoDTO: UserProfileDTO
+) => UserInfo = (userInfoDTO) => {
+  return {
+    id: userInfoDTO.UserID,
+    firstName: userInfoDTO.FirstName,
+    lastName: userInfoDTO.LastName,
+    email: userInfoDTO.EmailAddress,
+    role: userInfoDTO.UserRole,
+    description: userInfoDTO.UserInformation,
+    interestAreas: userInfoDTO.Areas.map((area) => ({
+      id: area.AreaID,
+      name: area.AreaName,
+    })),
+    courseCode: userInfoDTO.CourseCode
+      ? mapCourseDTOToCourse(userInfoDTO.CourseCode)
+      : null,
+  }
+}
+
 export {
   getUserById,
   mapUserSlimProfileDTOUserProfileSlim,
   getAutoCompleteByParams,
+  mapUserProfileDTOToUserInfo,
 }
