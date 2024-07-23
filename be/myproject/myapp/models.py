@@ -232,5 +232,12 @@ class Contact(models.Model):
 
    
    
+class Allocation(models.Model):
+    AllocationID = models.AutoField(primary_key=True)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    Group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    
 
-        
+    
+    def __str__(self):
+        return f'{self.Project} - {self.Group}'

@@ -92,7 +92,7 @@ const NotificationContextProvider = ({
     fetchNotification()
     const interval = setInterval(() => {
       fetchNotification()
-    }, 5 * 1000)
+    }, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
   const ctx = {

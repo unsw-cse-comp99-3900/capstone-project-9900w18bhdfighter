@@ -1,4 +1,5 @@
 from . import views, groups_views
+from .allocation import allocation_views
 from rest_framework.routers import SimpleRouter
 from django.urls import path
 
@@ -12,6 +13,7 @@ url.register(r'api/groups', groups_views.GroupsAPIView)
 url.register(r'api/group-projects', views.GroupProjectsLinkAPIView)
 url.register(r'api/time-rules', views.TimeRuleAPIView)
 url.register(r'api/courses', views.CourseAPIView)
+url.register(r'api/allocations',allocation_views.AllocationAPIView)
 urlpatterns = [
     path("api/login", views.student_login, name="student_login"),
     path("api/project_creation/", views.project_creation, name="project_creation"),
@@ -37,7 +39,7 @@ urlpatterns = [
     path("api/groups/autocomplete-name", groups_views.GroupsAPIView.as_view({'get': 'autocomplete_groups'}), name="autocomplete_groups"),
     path("api/projects/autocomplete-name", views.autocomplete_projects, name="autocomplete_projects"),
     path("api/groups/<int:GroupID>/preferences/evaluation", groups_views.GroupsAPIView.as_view({'put':"skills_evaluation"}), name="skills_evaluation"),
-    path("api/groups/<int:GroupID>/preferences/evaluation-group", groups_views.GroupsAPIView.as_view({'get':"get_skills_evaluation_by_group"}), name="get_skills_evaluation_by_group"),
+    path("api/groups/<int:GroupID>/preferences/evaluation-group", groups_views.GroupsAPIView.as_view({'get':"get_skills_evaluation_by_group"}), name="get_skills_evaluation_by_group")
 
 ]
 
