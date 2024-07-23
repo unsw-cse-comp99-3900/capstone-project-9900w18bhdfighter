@@ -22,6 +22,11 @@ urlpatterns = [
     path("project_delete/<int:id>/", views.project_delete, name="project_delete"),
     path("group_join/", views.group_join, name="group_join"),
     path("group_leave/", views.group_leave, name="group_leave"),
+
+    path("generate_report/", views.generate_report, name='generate-report'),
+    path("download_report/", views.download_report, name='download-report'),
+    path("view_report/", views.view_report, name='view-report'),
+
     # path('test_db_connection/', views.test_db_connection, name='test_db_connection'),
     path('api/notifications', views.create_notification, name='create_notification'),
     path('api/notifications/<int:user_id>/', views.fetch_notifications, name='fetch_notifications'),

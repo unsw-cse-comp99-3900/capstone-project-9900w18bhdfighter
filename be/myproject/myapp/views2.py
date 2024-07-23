@@ -1,5 +1,4 @@
 
-import os
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, HttpResponse
 from rest_framework import status
@@ -32,7 +31,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from .report_utils import generate_group_report
+import logging
 # from .utils import generate_auth_token 
 
 
@@ -197,17 +196,15 @@ def project_creation(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found.'}, status=404)
             
-            if user_data['role'] not in [2, 4, 5]:
+            if user_data['role'] in [2, 4, 5]:
+                try:
+                    project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
+                    project_owner_email = project_owner.EmailAddress
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Project owner not found.'}, status=404)
+            else:
                 return JsonResponse({'error': 'Permission denied. Cannot create projects.'}, status=403)
-            try:
-                project_owner = User.objects.get(EmailAddress=data['ProjectOwner'])
-                project_owner_email = project_owner.EmailAddress
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Project owner not found.'}, status=404)
-            
-            if project_owner.UserRole not in [2, 4, 5]:  
-                return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
-    
+                
             data['ProjectOwner'] = project_owner_email  
 
             serializer = ProjectSerializer(data=data)
@@ -276,11 +273,7 @@ def project_update(request, id):
                     project_owner_email = project_owner.EmailAddress
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Project owner not found.'}, status=404)
-                
-                if project_owner.UserRole not in [2, 4]:  
-                    return JsonResponse({'error': 'Permission denied. Invalid project owner role.'}, status=403)
                 data['ProjectOwner'] = project_owner_email  
-
             elif user_data['role'] == 2:
                 if data['ProjectOwner'] != user_data['email']:
                     return JsonResponse({'error': 'Permission denied. Clients can only set their own email as ProjectOwner.'}, status=403)
@@ -289,21 +282,24 @@ def project_update(request, id):
             serializer = ProjectSerializer(project, data=data, partial=True)
             skill_objects=[]
             if serializer.is_valid():
+
                 serializer.save(CreatedBy=user)
                 required_skills = data.get('requiredSkills', [])
 
                 for skill_data in required_skills:
                     interest_area = skill_data.get('area_id')
                     skill_name = skill_data.get('skill')
-
-                    if not interest_area or not skill_name:
+                    print(interest_area, skill)    
+                    if not interest_area or not skill:
                         return JsonResponse({'error': 'Area and skill are needed.'}, status=400)
                     
                     try:
                         area = Area.objects.get(pk=interest_area)
                     except Area.DoesNotExist:
                         return JsonResponse({'error': 'Area not found.'}, status=404)
-                                        
+                    
+                    
+                    
                     skill=Skill.objects.filter(SkillName=skill_name,Area=area).first()
       
                     if not skill:
@@ -317,47 +313,18 @@ def project_update(request, id):
                 for skill_object in skill_objects:
                     SkillProject.objects.create(Skill=skill_object, Project=project)
                     
+                  
+                    
+                        
+                    
+
+                    
                 return JsonResponse({'message': 'Project updated successfully!', 'project': serializer.data}, status=200)
             return JsonResponse(serializer.errors, status=400)
         else:
             return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-############################################################################################
-#                                    Delete Project                                        #
-############################################################################################
-
-@csrf_exempt
-def project_delete(request, id):
-    try:
-        project = Project.objects.get(pk=id)
-    except Project.DoesNotExist:
-        return JsonResponse({'error': 'Project not found'}, status=404)
-
-    if request.method == 'DELETE':  
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
-
-        if result['status'] == 'success':
-            user_data = result['data']
-            try:
-                user = User.objects.get(pk=user_data['user_id'])
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Authentication failed'}, status=401)
-            
-            response_message = {'user_id': user_data['user_id'], 'role': user_data['role'], 'project_created_by': project.CreatedBy.pk}
-            if user_data['role'] in [1, 3]:
-                return JsonResponse({'error': 'Permission denied. Cannot delete projects.'}, status=403)
-            elif user_data['role'] == 2:
-                if project.CreatedBy.pk != user.pk:
-                    return JsonResponse({'error': 'Permission denied. Clients can only delete projects they created.'}, status=403)
-            elif user_data['role'] in [4, 5]:
-                Project.objects.filter(ProjectID=id).delete()
-            else:
-                return JsonResponse({'error': 'Permission denied.'}, status=403)
-            return JsonResponse({'message': 'Project deleted successfully!'}, status=200)
-
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 ############################################################################################
 #                                     Group Creation                                       #
@@ -402,6 +369,7 @@ def group_creation(request):
         return JsonResponse(serializer.errors, status=400)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
+
 ############################################################################################
 #                                     Group Operation                                      #
 ############################################################################################
@@ -436,24 +404,24 @@ def group_join(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if GroupUsersLink.objects.filter(UserID=add_user, GroupID=group).exists():
+        if GroupUsersLink.objects.filter(UserID=user).exists():
             return JsonResponse({'error': 'Student is already in a group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
-    
-        if user.UserRole in [3, 4, 5]:
-            GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
-            return JsonResponse({'message': 'Added student to the group successfully!'}, status=201)
+        if current_group_number >= group.MaxMemberNumber:
+            if user.UserRole in [3, 4, 5]:
+                GroupUsersLink.objects.create(GroupID=group, UserID=add_user)
+                return JsonResponse({'message': 'Added student to full group successfully!'}, status=201)
+            return JsonResponse({'error': 'Group is full'}, status=400)
         else:
             if user_data['role'] == 1:
-                if current_group_number >= group.MaxMemberNumber:
-                    if user == add_user:
-                        GroupUsersLink.objects.create(GroupID=group, UserID=user)
-                        return JsonResponse({'message': 'Joined group successfully!'}, status=201)
-                    else:
-                        return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
-                return JsonResponse({'error': 'Group is full'}, status=400)
+                if user == add_user:
+                    GroupUsersLink.objects.create(GroupID=group, UserID=user)
+                    return JsonResponse({'message': 'Joined group successfully!'}, status=201)
+                else:
+                    return JsonResponse({'error': 'You cannot add other students into a group'}, status=403)
+            return JsonResponse({'error': 'You cannot join a group'}, status=403)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 # Leave Group
@@ -486,19 +454,17 @@ def group_leave(request):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Group does not exist'}, status=404)
 
-        if not GroupUsersLink.objects.filter(UserID=leave_user).exists():
+        if not GroupUsersLink.objects.filter(UserID=user).exists():
             return JsonResponse({'error': 'Student is not in this group'}, status=400)
 
         current_group_number = GroupUsersLink.objects.filter(GroupID=group).count()
 
         if user.UserRole in [3, 4, 5]:
             if current_group_number > 0:
-                if GroupUsersLink.objects.filter(UserID=leave_user).exists():
-                    GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
-                    return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
-                return JsonResponse({'error': 'Student is not in this group'}, status=400)
+                GroupUsersLink.objects.filter(GroupID=group, UserID=leave_user).delete()
+                return JsonResponse({'message': 'Deleted user from the group successfully!'}, status=201)
             return JsonResponse({'error': 'Group is empty'}, status=400)
-        
+    
         if user_data['role'] == 1:
             if current_group_number > 1:
                 if user == leave_user:
@@ -581,92 +547,16 @@ def get_project_list_owner_creator(request, creator, owner):
         return JsonResponse(project_data, safe=False)
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-############################################################################################
-#                                     Report Generation                                    #
-############################################################################################
-
-@csrf_exempt
-def generate_report(request):
-    if request.method == 'POST':
-        data = JSONParser().parse(request)
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
-
-        if result['status'] != 'success':
-            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
-
-        user_data = result['data']
-        try:
-            user = User.objects.get(pk=user_data['user_id'])
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'Authentication failed'}, status=401)
-        
-        if user.UserRole not in [3, 4, 5]:
-            return JsonResponse({'error': 'Permission denied, you can not generate reports.'}, status=403)
-
-        group_id = data['group_id']
-        group = get_object_or_404(Group, pk=group_id)
-
-        report_path = generate_group_report(group)
-        report_url = request.build_absolute_uri(f'/media/reports/{os.path.basename(report_path)}')
-    return JsonResponse({'message': 'Report generated successfully', 'report_url': report_url}, status=201)
 
 
-@csrf_exempt
-def download_report(request):
-    if request.method == 'GET':
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
 
-        if result['status'] != 'success':
-            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
 
-        user_data = result['data']
-        try:
-            user = User.objects.get(pk=user_data['user_id'])
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'Authentication failed'}, status=401)
-        
-    if user.UserRole not in [3, 4, 5]:
-        return JsonResponse({'error': 'Permission denied, you can not generate reports.'}, status=403)
 
-    report_url = request.GET.get('report_url')
-    report_path = os.path.join(settings.MEDIA_ROOT, 'reports', os.path.basename(report_url))
-    if not os.path.exists(report_path):
-        return JsonResponse({'error': 'Report not found'}, status=404)
 
-    with open(report_path, 'rb') as report_file:
-        response = HttpResponse(report_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(report_path)}"'
-        return response
-    
 
-@csrf_exempt
-def view_report(request):
-    if request.method == 'GET':
-        token = request.headers.get('Authorization').split()[1]
-        result = decode_jwt(token)
 
-        if result['status'] != 'success':
-            return JsonResponse({'error': 'Invalid or Expired Token'}, status=401)
 
-        user_data = result['data']
-        try:
-            user = User.objects.get(pk=user_data['user_id'])
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'Authentication failed'}, status=401)
-        
-    if user.UserRole not in [3, 4, 5]:
-        return JsonResponse({'error': 'Permission denied, you can not generate reports.'}, status=403)
 
-    report_url = request.GET.get('report_url')
-    report_path = os.path.join(settings.MEDIA_ROOT, 'reports', os.path.basename(report_url))
-    if not os.path.exists(report_path):
-        return JsonResponse({'error': 'Report not found'}, status=404)
-
-    with open(report_path, 'rb') as report_file:
-        response = HttpResponse(report_file.read(), content_type='application/pdf')
-        return response
 
 
 
