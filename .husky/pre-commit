@@ -1,12 +1,42 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# get the list of staged files
+
+OS=$(uname)
+
+
+VENV_PATH="be/myenv" 
+if [ -d "$VENV_PATH" ]; then
+    if [ "$OS" = "Linux" ] || [ "$OS" = "Darwin" ]; then
+
+        . $VENV_PATH/bin/activate
+    elif echo "$OS" | grep -q "MINGW"; then
+
+        . $VENV_PATH/Scripts/activate
+    else
+        echo "Unsupported OS: $OS"
+        exit 1
+    fi
+else
+    echo "Virtual environment not found at $VENV_PATH"
+    exit 1
+fi
+
+
 STAGED_FILES=$(git diff --cached --name-only)
 
-# check if there are any files in the fe directory
+
 if echo "$STAGED_FILES" | grep -q "^fe/"; then
     cd fe
     npm run lint:fix
+fi
+
+
+if echo "$STAGED_FILES" | grep -q "^be/"; then
+    cd be
+    cd myproject
+    isort ./myapp
+    autoflake --remove-all-unused-imports --recursive --in-place . --exclude=__init__.py
 
 fi
+git add .
