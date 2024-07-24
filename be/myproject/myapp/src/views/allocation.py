@@ -1,6 +1,12 @@
 from django.http import JsonResponse
 from myapp.src.models.models import Allocation, Group, GroupProjectsLink, Project
 from myapp.src.serializers.allocation import AllocationSerializer
+from myapp.src.utils.notification import GroupNotification
+from myapp.src.utils.permission import (
+    AfterGroupFormationDeadline,
+    ForPartialRole,
+    ForValidToken,
+)
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
@@ -17,6 +23,17 @@ class AllocationAPIView(
 ):
     queryset = Allocation.objects.all()
     serializer_class = AllocationSerializer
+
+    def get_permissions(self):
+
+        if self.action in ["approve"]:
+            return [
+                ForValidToken(),
+                ForPartialRole([3, 4, 5]),
+                AfterGroupFormationDeadline(),
+            ]
+        else:
+            return []
 
     def create(self, request, *args, **kwargs):
         # 删除所有的allocation
@@ -67,6 +84,31 @@ class AllocationAPIView(
                 ProjectID=allocation.Project, GroupID=allocation.Group
             )
 
+        # send notification
+        sender_id = request.user_id
+        # 对于所有被分配的group，给group的所有成员发送通知
+        for allocation in allocations:
+            receivers = []
+            group = allocation.Group
+            project = allocation.Project
+
+            group_users = group.GroupMembers.all()
+            project_name = project.ProjectName
+            for user in group_users:
+                receivers.append(user.UserID)
+            print(receivers)
+            if not receivers:
+                continue
+            noti = GroupNotification(
+                sender_id=sender_id,
+                group_id=group.GroupID,
+                receivers=receivers,
+                msg=f"You are allocated to project {project_name} in group {group.GroupName}",
+            )
+
+            noti.save()
+            # 删除所有的allocation
+        Allocation.objects.all().delete()
         return JsonResponse(
             {"message": "Allocation is approved"}, status=status.HTTP_200_OK
         )

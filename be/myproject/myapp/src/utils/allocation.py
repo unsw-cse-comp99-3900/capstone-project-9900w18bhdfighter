@@ -182,6 +182,11 @@ def launch():
 
     allocation_result, group_allocation = allocate_groups(group_preferences)
 
+    # Remove allocated groups from remaining_groups
+    remaining_groups = [
+        group for group in remaining_groups if group.GroupID not in group_allocation
+    ]
+
     remaining_projects = {
         gp.project_id
         for gp in group_preferences

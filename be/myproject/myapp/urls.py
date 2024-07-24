@@ -30,6 +30,7 @@ from rest_framework.routers import SimpleRouter
 
 from .src.views.group import (
     GroupsAPIView,
+    get_groups_by_creator,
     get_groups_by_participant,
     get_groups_list_by_project,
     group_creation,
@@ -104,6 +105,11 @@ urlpatterns = [
         "api/groups/users/<int:id>/",
         get_groups_by_participant,
         name="get_groups_by_participant",
+    ),
+    path(
+        "api/groups/creators/<int:id>/",
+        get_groups_by_creator,
+        name="get_groups_by_creator",
     ),
     path(
         "api/groups/autocomplete-name",

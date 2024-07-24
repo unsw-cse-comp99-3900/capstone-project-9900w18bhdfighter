@@ -500,3 +500,14 @@ def get_groups_by_participant(request, id):
     groups = Group.objects.filter(groupuserslink__UserID=user)
     serializer = GroupFetchSerializer(groups, many=True)
     return JsonResponse(serializer.data, safe=False)
+
+
+@api_view(["GET"])
+def get_groups_by_creator(request, id):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
+    groups = Group.objects.filter(CreatedBy=user)
+    serializer = GroupFetchSerializer(groups, many=True)
+    return JsonResponse(serializer.data, safe=False)
