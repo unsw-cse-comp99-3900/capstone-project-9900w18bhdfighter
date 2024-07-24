@@ -2,6 +2,7 @@
 export type Allocation = {
   allocationId: number
   projectName: string
+  projectId: number
   groupName: string
-  groupDescription?: string // 可选字段
+  groupId: number
 }

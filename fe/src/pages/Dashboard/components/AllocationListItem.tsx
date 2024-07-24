@@ -7,12 +7,7 @@ type Props = {
 }
 
 const AllocationListItem: React.FC<Props> = ({ item }) => {
-  return (
-    <List.Item.Meta
-      title={`${item.projectName} - ${item.groupName}`}
-      description={`Description: ${item.groupDescription || 'No description'}`}
-    />
-  )
+  return <List.Item.Meta title={`${item.projectName}`} />
 }
 
 export default AllocationListItem

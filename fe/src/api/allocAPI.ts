@@ -16,7 +16,7 @@ const delOneAllocation = async (allocationId: number) => {
   return api.delete(`api/allocations/${allocationId}/delete`)
 }
 
-export default {
+export {
   getAllocations,
   approveAllocation,
   rejectAllocation,

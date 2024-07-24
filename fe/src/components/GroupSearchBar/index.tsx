@@ -65,7 +65,6 @@ const GroupSearchBar = ({
         return (
           <Flex vertical>
             <Text strong>{option.label}</Text>
-            <Text type="secondary">{option.data.description}</Text>
           </Flex>
         )
       }}
