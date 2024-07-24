@@ -365,6 +365,16 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
+            name='GroupScore',
+            fields=[
+                ('Id', models.AutoField(primary_key=True, serialize=False)),
+                ('score', models.FloatField(default=0)),
+                ('feedback', models.TextField(default='')),
+                ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.group')),
+                ('markers', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='myapp.user')),
+            ],
+        ),
+        migrations.CreateModel(
             name="GroupMessage",
             fields=[
                 ("GroupMessageID", models.AutoField(primary_key=True, serialize=False)),
