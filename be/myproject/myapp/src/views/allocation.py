@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from myapp.src.models.models import Allocation, Group, Project
+from myapp.src.models.models import Allocation, Group, GroupProjectsLink, Project
 from myapp.src.serializers.allocation import AllocationSerializer
 from rest_framework import mixins, status
 from rest_framework.decorators import action
@@ -64,10 +64,16 @@ class AllocationAPIView(
 
     @action(detail=False, methods=["post"])
     def approve(self, request):
-        Allocation.objects.all().delete()
+        # 将所有的allocation应用到groupProjectLink
+        allocations = Allocation.objects.all()
+        # 删除所有的groupProjectLink
+        GroupProjectsLink.objects.all().delete()
+        for allocation in allocations:
+            GroupProjectsLink.objects.create(
+                ProjectID=allocation.Project, GroupID=allocation.Group
+            )
         return JsonResponse(
-            {"message": "All allocations have been cleared upon approval"},
-            status=status.HTTP_200_OK,
+            {"message": "Allocation is approved"}, status=status.HTTP_200_OK
         )
 
     @action(detail=True, methods=["put"])

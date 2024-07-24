@@ -1,7 +1,6 @@
 from myapp.src.models.models import (
     Group,
     GroupPreference,
-    GroupProjectsLink,
     GroupSkillEvaluation,
     Project,
     Skill,
@@ -167,27 +166,12 @@ def launch():
 
     group_preferences = []
     project_areas = {}
-    already_allocated = {}  # Dictionary to track already allocated groups per project
 
-    # 获取已经分配好的组并移除
-    for proj in projects:
-        proj_id = proj.ProjectID
-        already_allocated[proj_id] = list(
-            GroupProjectsLink.objects.filter(ProjectID=proj).values_list(
-                "GroupID", flat=True
-            )
-        )
-
-    remaining_groups = [
-        group
-        for group in groups
-        if group.GroupID
-        not in [gid for gids in already_allocated.values() for gid in gids]
-    ]
+    remaining_groups = list(groups)
 
     for proj in projects:
         proj_id = proj.ProjectID
-        available_num = proj.MaxNumOfGroup - len(already_allocated[proj_id])
+        available_num = proj.MaxNumOfGroup
         areas_set = get_project_areas_set(proj)
         project_areas[proj_id] = areas_set
         as1 = get_match_scores(proj, 1)
@@ -212,11 +196,5 @@ def launch():
         allocation_result, remaining_groups, remaining_projects, group_preferences
     )
 
-    # 加入原本已经分配的小组信息
-    for proj_id, group_ids in already_allocated.items():
-        if proj_id in final_allocation:
-            final_allocation[proj_id].extend(group_ids)
-        else:
-            final_allocation[proj_id] = group_ids
-
+    print(final_allocation)
     return final_allocation
