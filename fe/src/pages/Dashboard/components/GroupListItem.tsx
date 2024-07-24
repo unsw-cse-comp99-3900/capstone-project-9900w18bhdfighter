@@ -1,4 +1,4 @@
-import { Flex, List, Typography } from 'antd'
+import { Flex, List, Tooltip, Typography } from 'antd'
 import React from 'react'
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
@@ -30,7 +30,19 @@ const GroupsListItem: React.FC<Props> = ({ item }) => {
           </CustomTitle>
         </Flex>
       }
-      description={`${item.groupDescription} `}
+      description={
+        <Tooltip title={item.groupDescription}>
+          <Typography.Paragraph
+            style={{
+              marginBottom: 0,
+            }}
+            type="secondary"
+            ellipsis={{ rows: 3 }}
+          >
+            {item.groupDescription}
+          </Typography.Paragraph>
+        </Tooltip>
+      }
     />
   )
 }

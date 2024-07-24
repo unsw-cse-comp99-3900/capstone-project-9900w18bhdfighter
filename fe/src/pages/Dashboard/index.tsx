@@ -1,9 +1,9 @@
 import { Flex, Tabs } from 'antd'
 import type { TabsProps } from 'antd/es/tabs'
+
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
-import { timeFormat } from '../../utils/parse'
+
 import { getThemeColor, getThemeToken } from '../../utils/styles'
 import AllocationList from './components/AllocationList'
 import GroupsAssessmentList from './components/GroupAssessmentList'
@@ -23,11 +23,7 @@ const _Tabs = styled(Tabs)`
     height: 3px !important;
   }
 `
-const DashboardHeader = styled(Flex)`
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-`
+
 const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
 const _GroupsAssessmentList = styled(GroupsAssessmentList)``
@@ -41,7 +37,6 @@ const Dashboard = () => {
     }
   }, [])
 
-  const { PROJECT_DUE, GROUP_FORMATION_DUE } = useGlobalConstantContext()
   const items: TabsProps['items'] = [
     {
       key: 'projectList',
@@ -75,10 +70,6 @@ const Dashboard = () => {
   }
   return (
     <Wrapper vertical gap={'large'}>
-      <DashboardHeader>
-        {PROJECT_DUE && timeFormat(PROJECT_DUE)}
-        {GROUP_FORMATION_DUE && timeFormat(GROUP_FORMATION_DUE)}
-      </DashboardHeader>
       <_Tabs
         activeKey={activeKey}
         onChange={handleTabChange}

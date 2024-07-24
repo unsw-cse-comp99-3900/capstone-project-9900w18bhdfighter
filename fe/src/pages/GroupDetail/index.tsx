@@ -26,11 +26,14 @@ import {
 } from '../../api/groupAPI'
 import { getProjectById } from '../../api/projectAPI'
 import route from '../../constant/route'
+
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
+import { useGlobalTheme } from '../../context/GlobalThemeContext'
 import GroupDetailContextProvider, {
   useGroupDetailContext,
 } from '../../context/GroupDetailContext'
 import { SkillEvalReqDTO } from '../../types/skillEval'
+import { timeFormat } from '../../utils/parse'
 import ModalGroupForm from './components/GroupEditModal'
 import PreferenceEditModal from './components/PreferenceEditModal'
 export type GroupDetailModalType = 'metaEdit' | 'preference' | 'confirm'
@@ -66,6 +69,15 @@ const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
 `
 
+const Title = styled(Typography.Text)`
+  font-size: 1.2rem;
+`
+const Header = styled(Flex)`
+  width: 100%;
+  justify-content: space-between;
+  align-items: end;
+  padding: ${getThemeToken('paddingMD', 'px')};
+`
 const FlexContainer = styled(Flex)`
   align-items: center;
 `
@@ -100,15 +112,10 @@ const ButtonContainer = styled.div`
   width: 100%;
 `
 
-const DescriptionsContainer = styled.div`
-  width: 100%;
-  padding-bottom: 2rem;
-  display: flex;
-  justify-content: center;
-`
-
-const InnerDescriptionsContainer = styled.div`
-  width: 100%;
+const DescriptionsContainer = styled(Descriptions)`
+  box-shadow: ${getThemeToken('boxShadow')};
+  overflow: auto;
+  max-height: 100%;
 `
 
 const EditWrapper = styled(Flex)`
@@ -138,17 +145,24 @@ const _GroupDetail = () => {
     isUserInThisGroup,
     isThisGroupFull,
   } = useGroupDetailContext()
-  const { isDueGroupFormation } = useGlobalConstantContext()
+  const { isDueGroupFormation, GROUP_FORMATION_DUE } =
+    useGlobalConstantContext()
   const [open, setOpen] = useState<Record<GroupDetailModalType, boolean>>({
     preference: false,
     metaEdit: false,
     confirm: false,
   })
+  const { onWidth } = useGlobalTheme()
+
   const showPreferenceEdit = useMemo(() => {
     if (isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])) {
       return true
     }
-    if (isUserInThisGroup) {
+    if (
+      isInRoleRange([role.STUDENT]) &&
+      isUserInThisGroup &&
+      !isDueGroupFormation
+    ) {
       return true
     }
     return false
@@ -275,181 +289,220 @@ const _GroupDetail = () => {
         isModalOpen={open.metaEdit}
         handleCancel={() => handleModal('metaEdit', false)}
       />
-      {userRole !== 'Student' && (
-        <EditWrapper gap={10}>
-          <Button
-            style={{
-              visibility: showMetaEdit ? 'visible' : 'hidden',
-            }}
-            type="primary"
-            onClick={() => handleModal('metaEdit', true)}
-          >
-            Edit Group Meta Data
-          </Button>
-        </EditWrapper>
-      )}
 
       <PreferenceEditModal
         open={open.preference}
         handleCancel={() => handleModal('preference', false)}
       />
-      <DescriptionsContainer>
-        <InnerDescriptionsContainer>
-          <Descriptions
-            bordered
-            title={`Group Detail ${isUserInThisGroup ? '(My Group)' : ''}`}
+      <Header>
+        <Flex
+          vertical
+          style={{
+            width: '100%',
+          }}
+        >
+          <Title strong>
+            Group Detail {isUserInThisGroup ? '(My Group)' : ''}
+          </Title>
+          <Typography.Text
+            style={{
+              display: isInRoleRange([role.STUDENT]) ? 'block' : 'none',
+              fontSize: '0.8rem',
+            }}
+            type="warning"
           >
-            <Descriptions.Item span={1} label="Group Name">
-              {group?.groupName}
-            </Descriptions.Item>
-            <Descriptions.Item span={2} label="Creator">
-              <Link to={`${route.PROFILE}/${creatorProfile?.id}`}>
-                {creatorProfile?.fullName}
-              </Link>
-            </Descriptions.Item>
-            <Descriptions.Item span={3} label="Course">
-              {group?.course.courseName}
-            </Descriptions.Item>
-            <Descriptions.Item span={3} label="Description">
-              {group?.groupDescription}
-            </Descriptions.Item>
-            <Descriptions.Item
-              span={3}
-              label={`Members (${group.groupMembers.length}/${
-                group.maxMemberNum
-              }) ${isDueGroupFormation ? '(Locked)' : ''}
-              `}
+            {GROUP_FORMATION_DUE && !isDueGroupFormation
+              ? `Note: Please form your group before ${timeFormat(GROUP_FORMATION_DUE)}`
+              : ''}
+          </Typography.Text>
+          <Typography.Text
+            style={{
+              display: isInRoleRange([role.STUDENT]) ? 'block' : 'none',
+              fontSize: '0.8rem',
+            }}
+            type="danger"
+          >
+            {isDueGroupFormation
+              ? `Note: Group formation is locked. No more changes allowed.
+                    `
+              : ''}
+          </Typography.Text>
+        </Flex>
+        {userRole !== 'Student' && (
+          <EditWrapper gap={10}>
+            <Button
+              style={{
+                visibility: showMetaEdit ? 'visible' : 'hidden',
+              }}
+              type="primary"
+              onClick={() => handleModal('metaEdit', true)}
             >
-              {showSearchBar && (
-                <FlexContainer>
-                  <CandidateSearchBar handleSelect={(val) => addMember(val)} />
-                </FlexContainer>
-              )}
-              <List
-                bordered
+              Edit Group Meta Data
+            </Button>
+          </EditWrapper>
+        )}
+      </Header>
+      <DescriptionsContainer
+        bordered
+        style={{
+          width: onWidth({
+            xs: 'unset',
+            defaultValue: '100%',
+          }),
+        }}
+        size={onWidth({
+          xs: 'small',
+          defaultValue: 'default',
+        })}
+      >
+        <Descriptions.Item span={1} label="Group Name">
+          {group?.groupName}
+        </Descriptions.Item>
+        <Descriptions.Item span={2} label="Creator">
+          <Link to={`${route.PROFILE}/${creatorProfile?.id}`}>
+            {creatorProfile?.fullName}
+          </Link>
+        </Descriptions.Item>
+        <Descriptions.Item span={3} label="Course">
+          {group?.course.courseName}
+        </Descriptions.Item>
+        <Descriptions.Item span={3} label="Description">
+          {group?.groupDescription}
+        </Descriptions.Item>
+        <Descriptions.Item
+          span={3}
+          label={`Members (${group.groupMembers.length}/${
+            group.maxMemberNum
+          }) ${isDueGroupFormation ? '(Locked)' : ''}
+              `}
+        >
+          {showSearchBar && (
+            <FlexContainer>
+              <CandidateSearchBar handleSelect={(val) => addMember(val)} />
+            </FlexContainer>
+          )}
+          <List
+            bordered
+            style={{
+              maxHeight: '15rem',
+              overflow: 'auto',
+              marginTop: '1rem',
+            }}
+            dataSource={group.groupMembers}
+            renderItem={(member: UserProfileSlim) => (
+              <List.Item
                 style={{
-                  maxHeight: '15rem',
-                  overflow: 'auto',
-                  marginTop: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
-                dataSource={group.groupMembers}
-                renderItem={(member: UserProfileSlim) => (
-                  <List.Item
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    actions={[
-                      userRole !== 'Student' && (
-                        <StyledButton
-                          key="1"
-                          size="small"
-                          type="text"
-                          danger
-                          onClick={() => removeMember(member.id)}
-                        >
-                          Remove
-                        </StyledButton>
-                      ),
-                    ]}
-                  >
-                    <Link to={`${route.PROFILE}/${member.id}`}>
-                      {member.firstName} {member.lastName}
-                    </Link>
-                  </List.Item>
-                )}
-              />
+                actions={[
+                  userRole !== 'Student' && (
+                    <StyledButton
+                      key="1"
+                      size="small"
+                      type="text"
+                      danger
+                      onClick={() => removeMember(member.id)}
+                    >
+                      Remove
+                    </StyledButton>
+                  ),
+                ]}
+              >
+                <Link to={`${route.PROFILE}/${member.id}`}>
+                  {member.firstName} {member.lastName}
+                </Link>
+              </List.Item>
+            )}
+          />
 
-              {!isDueGroupFormation && (
-                <ButtonContainer
-                  style={{
-                    display: userRole === 'Student' ? 'flex' : 'none',
-                  }}
-                >
-                  <StyledJoinButton
-                    style={{
-                      display:
-                        !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
-                          ? 'block'
-                          : 'none',
-                    }}
-                    type="primary"
-                    onClick={() => joinOrLeave('join')}
-                  >
-                    Join Group
-                  </StyledJoinButton>
-                  <StyleLeaveButton
-                    style={{
-                      display: isUserInThisGroup ? 'block' : 'none',
-                    }}
-                    type="primary"
-                    onClick={() => joinOrLeave('leave')}
-                  >
-                    Leave Group
-                  </StyleLeaveButton>
-                </ButtonContainer>
-              )}
-            </Descriptions.Item>
+          {!isDueGroupFormation && (
+            <ButtonContainer
+              style={{
+                display: userRole === 'Student' ? 'flex' : 'none',
+              }}
+            >
+              <StyledJoinButton
+                style={{
+                  display:
+                    !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
+                      ? 'block'
+                      : 'none',
+                }}
+                type="primary"
+                onClick={() => joinOrLeave('join')}
+              >
+                Join Group
+              </StyledJoinButton>
+              <StyleLeaveButton
+                style={{
+                  display: isUserInThisGroup ? 'block' : 'none',
+                }}
+                type="primary"
+                onClick={() => joinOrLeave('leave')}
+              >
+                Leave Group
+              </StyleLeaveButton>
+            </ButtonContainer>
+          )}
+        </Descriptions.Item>
 
-            <Descriptions.Item
-              span={3}
-              label={`Project Preferences
+        <Descriptions.Item
+          span={3}
+          label={`Project Preferences
               ${isDueGroupFormation ? '(Locked)' : ''}
               `}
-            >
-              <FlexEditContainer
-                style={{
-                  display: showPreferenceEdit ? 'flex' : 'none',
-                }}
-              >
-                <StyledEditButton
-                  onClick={() => handleModal('preference', true)}
-                >
-                  Edit Preferences
-                </StyledEditButton>
-              </FlexEditContainer>
+        >
+          <FlexEditContainer
+            style={{
+              display: showPreferenceEdit ? 'flex' : 'none',
+            }}
+          >
+            <StyledEditButton onClick={() => handleModal('preference', true)}>
+              Edit Preferences
+            </StyledEditButton>
+          </FlexEditContainer>
 
-              <List
-                bordered
+          <List
+            bordered
+            style={{
+              maxHeight: '15rem',
+              overflow: 'auto',
+              marginTop: '1rem',
+            }}
+            dataSource={group.preferences}
+            renderItem={(pre) => (
+              <List.Item
+                key={pre.preferenceId}
                 style={{
-                  maxHeight: '15rem',
-                  overflow: 'auto',
-                  marginTop: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
-                dataSource={group.preferences}
-                renderItem={(pre) => (
-                  <List.Item
-                    key={pre.preferenceId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    actions={[
-                      isUserInThisGroup && (
-                        // Hide button if evaluation is submitted
-                        <StyledButton
-                          key="1"
-                          size="small"
-                          type="link"
-                          onClick={() =>
-                            handleSkillEvaluationModal(true, pre.preference.id)
-                          }
-                        >
-                          Skill Evaluation
-                        </StyledButton>
-                      ),
-                    ]}
-                  >
-                    <Link to={`${route.PROJECTS}/${pre.preference.id}`}>
-                      {pre.preference.name}
-                    </Link>
-                  </List.Item>
-                )}
-              />
-            </Descriptions.Item>
-          </Descriptions>
-        </InnerDescriptionsContainer>
+                actions={[
+                  isUserInThisGroup && (
+                    // Hide button if evaluation is submitted
+                    <StyledButton
+                      key="1"
+                      size="small"
+                      type="link"
+                      onClick={() =>
+                        handleSkillEvaluationModal(true, pre.preference.id)
+                      }
+                    >
+                      Skill Evaluation
+                    </StyledButton>
+                  ),
+                ]}
+              >
+                <Link to={`${route.PROJECTS}/${pre.preference.id}`}>
+                  {pre.preference.name}
+                </Link>
+              </List.Item>
+            )}
+          />
+        </Descriptions.Item>
       </DescriptionsContainer>
+
       <Modal
         title={`Skill Evaluation for ${skillEvaluationData?.ProjectName}`}
         open={isSkillEvaluationModalOpen}
@@ -467,7 +520,14 @@ const _GroupDetail = () => {
           >
             Cancel
           </Button>,
-          <Button key="submit" type="primary" onClick={handleSubmitEvaluation}>
+          <Button
+            style={{
+              display: isDueGroupFormation ? 'none' : 'block',
+            }}
+            key="submit"
+            type="primary"
+            onClick={handleSubmitEvaluation}
+          >
             Submit
           </Button>,
         ]}
@@ -497,6 +557,7 @@ const _GroupDetail = () => {
                     <StyledInput
                       type="number"
                       min={0}
+                      disabled={isDueGroupFormation}
                       max={10}
                       value={score}
                       onChange={(e) =>
@@ -508,6 +569,7 @@ const _GroupDetail = () => {
                       maxLength={255}
                       showCount
                       rows={3}
+                      disabled={isDueGroupFormation}
                       value={comment}
                       onChange={(e) =>
                         handleCommentChange(Skill.SkillID, e.target.value)
