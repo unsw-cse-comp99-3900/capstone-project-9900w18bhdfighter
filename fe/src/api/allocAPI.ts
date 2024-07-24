@@ -2,7 +2,7 @@ import { AllocationReqDTO, AllocationRspDTO } from '../types/allocation'
 import api from './config'
 
 const getAllocations = async () =>
-  api.get<AllocationRspDTO[]>('api//allocations')
+  api.get<AllocationRspDTO[]>('api/allocations')
 
 const approveAllocation = async () => api.post('api/allocations/approve')
 
