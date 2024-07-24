@@ -36,18 +36,12 @@ class AllocationAPIView(
         )
 
     def list(self, request, *args, **kwargs):
-
-        launch()
-
-        return JsonResponse({"message": "This is the allocation list"})
-
-    @action(detail=False, methods=["get"])
-    def get_allocations(self, request):
         allocations = Allocation.objects.select_related("Project", "Group").all()
         results = []
         for allocation in allocations:
             results.append(
                 {
+                    "allocationId": allocation.AllocationID,
                     "group": {
                         "groupId": allocation.Group.GroupID,
                         "groupName": allocation.Group.GroupName,
@@ -62,7 +56,7 @@ class AllocationAPIView(
             )
         return JsonResponse(results, safe=False, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="approve", url_name="approve")
     def approve(self, request):
         # 将所有的allocation应用到groupProjectLink
         allocations = Allocation.objects.all()
@@ -72,12 +66,12 @@ class AllocationAPIView(
             GroupProjectsLink.objects.create(
                 ProjectID=allocation.Project, GroupID=allocation.Group
             )
+
         return JsonResponse(
             {"message": "Allocation is approved"}, status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=["put"])
-    def update_allocation(self, request, pk=None):
+    def update(self, request, pk=None):
         try:
             allocation = Allocation.objects.get(pk=pk)
         except Allocation.DoesNotExist:
@@ -109,4 +103,11 @@ class AllocationAPIView(
         allocation.save()
         return JsonResponse(
             {"message": "Allocation updated successfully"}, status=status.HTTP_200_OK
+        )
+
+    def destroy(self, request, pk=None):
+        Allocation.objects.all().delete()
+
+        return JsonResponse(
+            {"message": "Allocation rejected"}, status=status.HTTP_200_OK
         )
