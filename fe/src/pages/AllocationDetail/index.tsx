@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { ReactNode, useState } from 'react'
 import { Button, Descriptions, List, Modal, Form } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
+import GroupSearchBar from '../../components/GroupSearchBar'
+import { mapGroupDTOToGroup, getAutoCompleteGroups } from '../../api/groupAPI'
+import { Group } from '../../types/group'
 
 const Wrapper = styled.div`
   width: 100%;
@@ -31,17 +34,18 @@ const ListItemWrapper = styled.div`
   justify-content: space-between;
   width: 100%;
 `
-// interface GroupValue {
-//   label: ReactNode
-//   value: number
-//   title: string
-//   description: string
-// }
+
+interface GroupValue {
+  label: ReactNode
+  value: number
+  title: string
+  description: string
+}
 
 const AllocationDetail: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
-  // const [autoCompGroupList, setAutoCompGroupList] = useState<Group[]>([])
-  // const [selectedGroup, setSelectedGroup] = useState<GroupValue | null>(null) // Add state to store selected group
+  const [autoCompGroupList, setAutoCompGroupList] = useState<Group[]>([])
+  const [selectedGroup, setSelectedGroup] = useState<GroupValue | null>(null)
 
   const showModal = () => {
     setIsModalVisible(true)
@@ -61,6 +65,7 @@ const AllocationDetail: React.FC = () => {
       content: `You are about to remove ${item}. This action cannot be undone.`,
       onOk: () => {
         console.log(`Removing item: ${item}`)
+        console.log(selectedGroup)
         // Here you would handle the removal logic
       },
       onCancel: () => {
@@ -69,21 +74,15 @@ const AllocationDetail: React.FC = () => {
     })
   }
 
-  // const getAutoCompleteGroups = async (val: GroupValue) => {
-  //   const fetchedGroups = await getAutoCompleteGroups(val, true)
-  //   console.log('selected group', selectedGroup)
-  //   setAutoCompGroupList(fetchedGroups)
-  // }
+  const fetchAutoCompleteGroups = async (val: string) => {
+    const res = await getAutoCompleteGroups(val)
+    setAutoCompGroupList(res.data.data.map(mapGroupDTOToGroup))
+  }
 
-  // const handleChange = async (val: GroupValue) => {
-  //   // Implement the logic to handle the selected group
-  //   console.log(`Selected group: ${val.label}`)
-  //   console.log('selected group', selectedGroup)
-  // }
-
-  // const addGroupMember = (val: GroupValue) => {
-  //   setSelectedGroup(val)
-  // }
+  const handleChange = async (val: GroupValue) => {
+    console.log(`Selected group: ${val.label}`)
+    setSelectedGroup(val)
+  }
 
   return (
     <Wrapper>
@@ -126,13 +125,12 @@ const AllocationDetail: React.FC = () => {
         <Form>
           <Form.Item label="Group Name">
             <FlexContainer>
-              {/* <GroupSearchBar
-                getAutoCompleteGroups={getAutoCompleteGroups}
+              <GroupSearchBar
+                getAutoCompleteGroups={fetchAutoCompleteGroups}
                 handleChange={handleChange}
                 setCurrAutoCompleteGroup={setAutoCompGroupList}
                 autoCompGroupList={autoCompGroupList}
-                handleSelect={addGroupMember} // Pass the handleSelect prop
-              /> */}
+              />
             </FlexContainer>
           </Form.Item>
           <Form.Item>

@@ -62,6 +62,12 @@ interface Group {
   course: Course
 }
 
+export interface GroupSlim {
+  groupId: number
+  groupName: string
+  groupDescription: string
+}
+
 type GroupPreferenceSlim = Pick<
   GroupPreference,
   'preferenceId' | 'preference' | 'groupId' | 'rank'

@@ -12,7 +12,7 @@ import styled from 'styled-components'
 import { useState, useEffect } from 'react'
 import NewGroupModal from './components/NewGroupDetailModal'
 import { Group, GroupReqDTO, GroupRspDTO } from '../../types/group'
-import { UserProfileSlim } from '../../types/user'
+// import { UserProfileSlim } from '../../types/user'
 import GroupContextProvider from '../../context/GroupContext'
 import { getAllGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
 import { useAuthContext } from '../../context/AuthContext'
@@ -21,7 +21,7 @@ import { Link } from 'react-router-dom'
 import route from '../../constant/route'
 import NoDataView from '../../components/NoDataView'
 import { getUserById } from '../../api/userAPI'
-
+import { roleNames } from '../../constant/role'
 const Wrapper = styled.div`
   width: 100%;
   height: 100%;
@@ -37,52 +37,71 @@ const Header = styled.div`
 `
 
 const CardContainer = styled(Row)``
-
+const roleMap = roleNames
 const _Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [groups, setGroups] = useState<Group[]>([])
   const { usrInfo } = useAuthContext()
   const currentUserId = usrInfo?.id
+  const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
+
+  const fetchGroups = async () => {
+    if (!currentUserId) {
+      return
+    }
+    try {
+      const response = await getAllGroups()
+      const user_response = await getUserById(currentUserId)
+      console.log('user', user_response)
+      console.log(response)
+      console.log(currentUserId)
+      const allGroups = response.data
+      const userCreatedGroups = allGroups.filter(
+        (group: GroupRspDTO) => group.CreatedBy === currentUserId
+      )
+      console.log('用户创建的组', userCreatedGroups)
+      const userJoinedGroups = allGroups.filter((group: GroupRspDTO) =>
+        group.GroupMembers.some((member) => member.UserID === currentUserId)
+      )
+      console.log('用户参与的组', userJoinedGroups)
+      if (userRole === 'Student') {
+        setGroups(userJoinedGroups.map(mapGroupDTOToGroup))
+      } else {
+        setGroups(userCreatedGroups.map(mapGroupDTOToGroup))
+      }
+    } catch (error) {
+      message.error('Failed to fetch groups.')
+    }
+  }
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      if (!currentUserId) {
-        return
-      }
-      try {
-        const response = await getAllGroups()
-        const user_response = await getUserById(currentUserId)
-        console.log('user', user_response)
-        console.log(response)
-        console.log(currentUserId)
-        const allGroups = response.data
-        const userCreatedGroups = allGroups.filter(
-          (group: GroupRspDTO) => group.CreatedBy === currentUserId
-        )
-        setGroups(userCreatedGroups.map(mapGroupDTOToGroup))
-      } catch (error) {
-        message.error('Failed to fetch groups.')
-      }
-    }
-
     if (currentUserId) {
       fetchGroups()
     }
-  }, [currentUserId])
+  }, [currentUserId, userRole])
 
+  // const handleOk = async (groupCreateDto: GroupReqDTO) => {
+  //   console.log('handleOk started with:', groupCreateDto)
+  //   setIsModalOpen(false)
+  //   await fetchGroups()
+  //   const response = await getAllGroups()
+  //   const allGroups = response.data.map(mapGroupDTOToGroup)
+  //   const userGroups = allGroups.filter((group: Group) =>
+  //     group.groupMembers.some(
+  //       (member: UserProfileSlim) => member.id === currentUserId
+  //     )
+  //   )
+  //   setGroups(userGroups)
+  // }
   const handleOk = async (groupCreateDto: GroupReqDTO) => {
     console.log('handleOk started with:', groupCreateDto)
     setIsModalOpen(false)
-    const response = await getAllGroups()
-    const allGroups = response.data.map(mapGroupDTOToGroup)
-    const userGroups = allGroups.filter((group: Group) =>
-      group.groupMembers.some(
-        (member: UserProfileSlim) => member.id === currentUserId
-      )
-    )
-    setGroups(userGroups)
+    try {
+      await fetchGroups() // 在这里调用 fetchGroups 函数以更新组列表
+    } catch (error) {
+      message.error('Failed to update groups.')
+    }
   }
-
   const handleCancel = () => {
     setIsModalOpen(false)
   }

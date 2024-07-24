@@ -4,6 +4,7 @@ import {
   GroupReqDTO,
   GroupJoinDTO,
   GroupLeaveDTO,
+  GroupSlim,
 } from '../types/group'
 import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
 import api from './config'
@@ -129,6 +130,13 @@ const mapSkillEvalDTOToSkillEval = (skillEval: SkillEvalRspDTO) => {
     skill: skillEval.Skill,
   }
 }
+
+const mapGroupRspDTOToGroupSlim = (groupRspDTO: GroupRspDTO): GroupSlim => ({
+  groupId: groupRspDTO.GroupID,
+  groupName: groupRspDTO.GroupName,
+  groupDescription: groupRspDTO.GroupDescription,
+})
+
 export {
   getAllGroups,
   mapGroupDTOToGroup,
@@ -148,4 +156,5 @@ export {
   createOrUpdateSkillEval,
   getSkillEvalByGroup,
   mapSkillEvalDTOToSkillEval,
+  mapGroupRspDTOToGroupSlim,
 }

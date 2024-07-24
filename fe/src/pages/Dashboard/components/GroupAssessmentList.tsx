@@ -11,6 +11,7 @@ import { Group } from '../../../types/group'
 import GroupFilter from './GroupFilter'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
 
 type Props = {
   className?: string
@@ -28,10 +29,13 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
   const [list, setList] = useState<Group[]>([])
   const [filteredLists, setFilteredLists] = useState<Group[]>([])
   const { msg } = useGlobalComponentsContext()
+  const { isDueProject } = useGlobalConstantContext()
+
   const toFetch = async () => {
     try {
       const res = await getAllGroups()
       const groups = res.data.map(mapGroupDTOToGroup)
+      console.log('Due:', isDueProject)
       setList(groups)
       setFilteredLists(groups)
     } catch (e) {
@@ -42,6 +46,7 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
   }
   useEffect(() => {
     toFetch()
+    console.log('Due:', isDueProject)
   }, [msg])
   return (
     <Wrapper className={className}>
@@ -57,14 +62,17 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
         renderItem={(item) => (
           <List.Item
             actions={[
-              <LinkButton
-                size="small"
-                to={`${route.ASSESSMENT}/${(item as Group).groupId}`}
-                key={(item as Group).groupId}
-              >
-                Mark
-              </LinkButton>,
-            ]}
+              // only due project/group can mark
+              !isDueProject && (
+                <LinkButton
+                  size="small"
+                  to={`${route.ASSESSMENT}/${(item as Group).groupId}`}
+                  key={(item as Group).groupId}
+                >
+                  Mark
+                </LinkButton>
+              ),
+            ].filter(Boolean)}
           >
             <GroupsAssessmentListItem item={item as Group} />
           </List.Item>

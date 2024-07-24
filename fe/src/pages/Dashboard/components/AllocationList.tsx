@@ -8,6 +8,7 @@ import { useGlobalComponentsContext } from '../../../context/GlobalComponentsCon
 import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
 import { Project } from '../../../types/proj'
+import api from '../../../api/config'
 
 const mockData: Allocation[] = [
   {
@@ -53,16 +54,19 @@ const AllocationList = ({ className = '' }: Props) => {
     toFetch()
   }, [msg])
 
-  // const handleEdit = (allocationId: number) => {
-  //   // Handle approve button click
-  //   console.log(`Edit allocation with ID: ${allocationId}`)
-  //   // msg.success(` allocation with ID: ${allocationId}`)
-  // }
-  const handleAutoAllocate = () => {
+  const handleAutoAllocate = async () => {
     // Handle auto allocate button click
-    console.log('Auto Allocate button clicked')
-    msg.success('Auto Allocate initiated')
+    try {
+      // 这里API有问题
+      const response = await api.post('/api/allocations')
+      console.log('Response from auto allocate:', response.data)
+      msg.success('Auto Allocate initiated')
+    } catch (error) {
+      console.error('Error during auto allocate:', error)
+      msg.err('Auto Allocate failed')
+    }
   }
+
   return (
     <Wrapper className={className}>
       <_AllocationList

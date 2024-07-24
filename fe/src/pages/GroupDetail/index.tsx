@@ -251,7 +251,7 @@ const _GroupDetail = () => {
 
         const skillEvalResponse = await getSkillEvalByGroup(group.groupId)
         console.log('Skill evaluation data by group:', skillEvalResponse.data)
-
+        console.log('DUE', isDueGroupFormation)
         setSkillEvaluations(skillEvalResponse.data)
       } catch (error) {
         console.error('Error fetching skill evaluation data:', error)
@@ -344,33 +344,35 @@ const _GroupDetail = () => {
                 )}
               />
 
-              <ButtonContainer
-                style={{
-                  display: userRole === 'Student' ? 'flex' : 'none',
-                }}
-              >
-                <StyledJoinButton
+              {!isDueGroupFormation && (
+                <ButtonContainer
                   style={{
-                    display:
-                      !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
-                        ? 'block'
-                        : 'none',
+                    display: userRole === 'Student' ? 'flex' : 'none',
                   }}
-                  type="primary"
-                  onClick={joinOrLeave}
                 >
-                  Join Group
-                </StyledJoinButton>
-                <StyleLeaveButton
-                  style={{
-                    display: isUserInThisGroup ? 'block' : 'none',
-                  }}
-                  type="primary"
-                  onClick={joinOrLeave}
-                >
-                  Leave Group
-                </StyleLeaveButton>
-              </ButtonContainer>
+                  <StyledJoinButton
+                    style={{
+                      display:
+                        !isUserInThisGroup && !isUserInGroup && !isThisGroupFull
+                          ? 'block'
+                          : 'none',
+                    }}
+                    type="primary"
+                    onClick={joinOrLeave}
+                  >
+                    Join Group
+                  </StyledJoinButton>
+                  <StyleLeaveButton
+                    style={{
+                      display: isUserInThisGroup ? 'block' : 'none',
+                    }}
+                    type="primary"
+                    onClick={joinOrLeave}
+                  >
+                    Leave Group
+                  </StyleLeaveButton>
+                </ButtonContainer>
+              )}
             </Descriptions.Item>
 
             <Descriptions.Item
