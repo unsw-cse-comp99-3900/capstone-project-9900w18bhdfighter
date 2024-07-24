@@ -1,9 +1,9 @@
 import os
-import django
-from django.core.management import call_command
-from django.conf import settings
-import MySQLdb
 
+import django
+import MySQLdb
+from django.conf import settings
+from django.core.management import call_command
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 django.setup()
