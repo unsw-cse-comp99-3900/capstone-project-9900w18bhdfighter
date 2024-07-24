@@ -1,3 +1,4 @@
+import { Group, GroupRspDTO } from './group'
 import { UserProfileSlim, UserProfileSlimDTO } from './user'
 
 interface MsgReqDTO {
@@ -16,7 +17,11 @@ interface Contact {
   isFixed: boolean
   unreadMsgsCount: number
 }
+
 interface Conversation extends Contact {
+  messages: Msg[]
+}
+interface GroupConversation extends Group {
   messages: Msg[]
 }
 interface ContactReqDTO {
@@ -55,21 +60,48 @@ interface Msg {
   isRead: boolean
   ChannelId: string
 }
+
 interface MsgGrouped {
   [key: string]: Msg[]
 }
-interface GroupContact {
-  groupId: number
-  members: UserProfileSlim[]
+interface GroupContact extends Group {
   unreadMsgsCount: number
-  msg: GroupMsg
+}
+interface GroupContactRspDTO extends GroupRspDTO {
+  UnreadMsgsCount: number
+}
+interface GroupMsgDTO {
+  GroupMessageID: number
+  Content: string
+  Sender: number
+  ReceiverGroup: number
+  CreatedAt: string
+  ReadBy: number[]
+  ChannelId: string
 }
 interface GroupMsg {
   content: string
-  createdAt: string
   senderId: number
-  isRead: boolean
+  receiverGroupId: number
+  createdAt: string
+  readBy: number[]
+  ChannelId: string
 }
+
+interface WSMsgReqDTO {
+  action: 'CHANGE_WINDOW' | 'NEW_MESSAGE' | 'LEAVE'
+  type?: 'user' | 'group'
+  currWindow?: number
+  payload?: MsgReqDTO
+}
+
+interface WSMsgRspDTO {
+  status_code: number
+  message: string
+  type: 'user' | 'group'
+  data: MsgRspDTO | GroupMsgDTO
+}
+
 export {
   Msg,
   MsgReqDTO,
@@ -83,4 +115,10 @@ export {
   Conversation,
   MsgWSRspDTO,
   GroupContact,
+  GroupMsg,
+  GroupMsgDTO,
+  GroupConversation,
+  WSMsgReqDTO,
+  WSMsgRspDTO,
+  GroupContactRspDTO,
 }

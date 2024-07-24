@@ -1,14 +1,18 @@
 version: '3.9'
 
 services:
-
   frontend:
     build:
       context: ./fe
+      args:
+        REACT_APP_API_URL: http://localhost
     ports:
       - "80:80"
     volumes:
       - ./fe:/app-fe
+    depends_on:
+      web:
+        condition: service_healthy
 
   db:
     container_name: mysql-container
@@ -21,9 +25,12 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_PASSWORD: root
       MYSQL_DATABASE: mydb
-
-    ports:
-      - 3306:3306
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -31,18 +38,21 @@ services:
     environment:
       PMA_HOST: db
       MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
 
   web:
     build: ./be
-    ports:
-      - "8000:8000"
     volumes:
       - ./be:/app-be
     environment:
       MODE: "PROD"
     depends_on:
       - db
-      
-    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

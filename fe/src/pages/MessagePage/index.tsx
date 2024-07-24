@@ -1,9 +1,11 @@
 import { Flex } from 'antd'
 import styled from 'styled-components'
-import { getThemeToken } from '../../utils/styles'
+import { getThemeColor, getThemeToken } from '../../utils/styles'
 import _MessageSider from './components/MessageSider'
-import MessageContextProvider from '../../context/MessageContext'
+
 import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useMessageContext } from '../../context/MessageContext'
 
 const Wrapper = styled(Flex)`
   padding: ${getThemeToken('paddingLG', 'px')};
@@ -16,17 +18,21 @@ const Container = styled(Flex)`
   box-shadow: ${getThemeToken('boxShadow')};
   width: 100%;
   height: 100%;
+  position: relative;
 `
 
 const MsgSider = styled(_MessageSider)`
-  padding: ${getThemeToken('paddingLG', 'px')};
-  width: 20rem;
+  border: 1px solid ${getThemeColor('grayscalePalette', 2)};
 
   height: 100%;
   flex-direction: column;
   align-items: center;
 `
 const _MessagePage = () => {
+  const { getAllGroupContacts } = useMessageContext()
+  useEffect(() => {
+    getAllGroupContacts()
+  }, [])
   return (
     <Wrapper>
       <Container>
@@ -38,11 +44,7 @@ const _MessagePage = () => {
 }
 
 const MessagePage = () => {
-  return (
-    <MessageContextProvider>
-      <_MessagePage />
-    </MessageContextProvider>
-  )
+  return <_MessagePage />
 }
 
 export default MessagePage

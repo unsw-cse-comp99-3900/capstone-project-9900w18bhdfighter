@@ -36,23 +36,20 @@ export const useGlobalTheme = () => useContext(GlobalThemeContext)
 const GlobalAntdThemeProvider = ({ children }: Props) => {
   const { token } = _theme.useToken()
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-
+  //when the window width is less than the breakpoint, return the value of the breakpoint
   const onWidth: OnWidth = (bp) => {
-    const keysWithoutDefault = Object.keys(breakPoint).filter(
+    const keysWithoutDefault = Object.keys(bp).filter(
       (k) => k !== 'defaultValue'
     ) as BreakPointKey[]
 
     const defaultValue = bp.defaultValue
-
-    const key = keysWithoutDefault.find((k) => {
-      const value = breakPoint[k]
-      return windowWidth < value
-    })
-
-    if (key) {
-      return bp[key]
+    console.log(keysWithoutDefault)
+    keysWithoutDefault.sort((a, b) => breakPoint[a] - breakPoint[b])
+    for (const key of keysWithoutDefault) {
+      if (windowWidth < breakPoint[key]) {
+        return bp[key]
+      }
     }
-
     return defaultValue
   }
   useEffect(() => {
@@ -81,6 +78,14 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
         triggerHeight: 48,
         headerHeight: 64,
       },
+      DatePicker: {
+        colorBgTextActive: _themeColor.highlight,
+        colorBgTextHover: _themeColor.highlight,
+        colorBgBase: _themeColor.grayscalePalette[0] as string,
+        colorBgSpotlight: _themeColor.highlight,
+        colorFillContent: _themeColor.highlight,
+      },
+
       Menu: {
         itemSelectedColor: _themeColor.grayscalePalette[0] as string,
       },

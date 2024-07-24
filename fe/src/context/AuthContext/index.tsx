@@ -13,6 +13,7 @@ import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import route from '../../constant/route'
 import type { NavigateFunction } from 'react-router-dom'
 import { errHandler } from '../../utils/parse'
+import { RoleNumber } from '../../constant/role'
 
 interface AuthContextType {
   usrInfo: UserInfo | null
@@ -22,6 +23,7 @@ interface AuthContextType {
   haveLoggedIn: () => boolean
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>
   role: number | undefined
+  isInRoleRange: (_roles: RoleNumber[]) => boolean
 }
 const GlobalAuthContext = createContext({} as AuthContextType)
 export const useAuthContext = () => useContext(GlobalAuthContext)
@@ -45,7 +47,7 @@ const AuthContextProvider = ({ children }: Props) => {
 
   const login = async (user: UserLogin, navigate: NavigateFunction) => {
     try {
-      const res = await api.post('login/', user)
+      const res = await api.post('api/login', user)
       const _usrInfo = {
         id: res.data.user_profile.UserID,
         firstName: res.data.user_profile.FirstName,
@@ -54,6 +56,7 @@ const AuthContextProvider = ({ children }: Props) => {
         role: res.data.user_profile.role,
         description: res.data.user_profile.description,
         interestAreas: res.data.user_profile.interestAreas,
+        courseCode: res.data.user_profile.courseCode,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
@@ -71,6 +74,7 @@ const AuthContextProvider = ({ children }: Props) => {
   const logout = (navigate: NavigateFunction) => {
     localStorage.removeItem('token')
     localStorage.removeItem('user_info')
+    sessionStorage.clear()
     setUserInfo(null)
     msg.info('Logout success')
     navigate(route.ROOT)
@@ -78,7 +82,7 @@ const AuthContextProvider = ({ children }: Props) => {
 
   const signup = async (user: UserSignup, navigate: NavigateFunction) => {
     try {
-      const res = await api.post('/student_signup/', user)
+      const res = await api.post('/api/student_signup/', user)
       const _usrInfo = {
         id: res.data.user.UserID,
         firstName: res.data.user.FirstName,
@@ -87,6 +91,7 @@ const AuthContextProvider = ({ children }: Props) => {
         role: res.data.user.role,
         description: res.data.user.description,
         interestAreas: res.data.user.interestAreas,
+        courseCode: res.data.user.courseCode,
       }
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user_info', JSON.stringify(_usrInfo))
@@ -107,7 +112,9 @@ const AuthContextProvider = ({ children }: Props) => {
   const haveLoggedIn = () => {
     return !!localStorage.getItem('token')
   }
-
+  const isInRoleRange = (roles: RoleNumber[]) => {
+    return roles.includes(role as RoleNumber)
+  }
   const ctx = {
     usrInfo,
     role,
@@ -116,6 +123,7 @@ const AuthContextProvider = ({ children }: Props) => {
     logout,
     signup,
     haveLoggedIn,
+    isInRoleRange,
   }
   return (
     <GlobalAuthContext.Provider value={ctx}>

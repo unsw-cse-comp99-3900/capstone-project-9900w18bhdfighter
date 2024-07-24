@@ -5,13 +5,14 @@ import { ReactNode, createContext, useContext } from 'react'
 type Props = {
   children: ReactNode
 }
+export interface MsgHandler {
+  success: ReturnType<typeof useMessageHandler>
+  err: ReturnType<typeof useMessageHandler>
+  warn: ReturnType<typeof useMessageHandler>
+  info: ReturnType<typeof useMessageHandler>
+}
 interface GlobalComponentsContextType {
-  msg: {
-    success: ReturnType<typeof useMessageHandler>
-    err: ReturnType<typeof useMessageHandler>
-    warn: ReturnType<typeof useMessageHandler>
-    info: ReturnType<typeof useMessageHandler>
-  }
+  msg: MsgHandler
 }
 const GlobalComponentsContext = createContext<GlobalComponentsContextType>(
   {} as GlobalComponentsContextType

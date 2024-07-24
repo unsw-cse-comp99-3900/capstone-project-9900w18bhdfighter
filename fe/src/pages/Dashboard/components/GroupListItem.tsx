@@ -1,37 +1,33 @@
-import { Avatar, List, Skeleton } from 'antd'
-import { Link } from 'react-router-dom'
-
-export interface DataType {
-  gender?: string
-  name: {
-    title?: string
-    first?: string
-    last?: string
-  }
-  email?: string
-  picture: {
-    large?: string
-    medium?: string
-    thumbnail?: string
-  }
-  nat?: string
-  loading: boolean
-}
+import React from 'react'
+import { Flex, List, Typography } from 'antd'
+import { Group } from '../../../types/group'
+import styled from 'styled-components'
 
 type Props = {
-  item: DataType
+  item: Group
 }
-const GroupsListItem = ({ item }: Props) => {
+export const CustomTitle = styled(Flex)`
+  font-weight: 500;
+`
+const GroupsListItem: React.FC<Props> = ({ item }) => {
   return (
-    <Skeleton avatar title={false} loading={(item as DataType).loading} active>
-      <List.Item.Meta
-        avatar={<Avatar src={(item as DataType).picture.large} />}
-        title={
-          <Link to="https://ant.design">{(item as DataType).name?.last}</Link>
-        }
-        description="Lorem ipsum dolor sit amet consectetur, adipisicing elit. "
-      />
-    </Skeleton>
+    <List.Item.Meta
+      title={
+        <Flex vertical>
+          <Typography.Text ellipsis>{item.groupName}</Typography.Text>
+          <CustomTitle>
+            <Typography.Text
+              style={{
+                fontSize: '0.85rem',
+              }}
+            >
+              ({item.groupMembers.length}/{item.maxMemberNum})
+            </Typography.Text>
+          </CustomTitle>
+        </Flex>
+      }
+      description={`${item.groupDescription} `}
+    />
   )
 }
 

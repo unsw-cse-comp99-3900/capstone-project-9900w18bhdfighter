@@ -7,7 +7,10 @@ const route = {
   PROJECTS: '/projects',
   TEAMS: '/teams',
   ADMIN: '/admin',
+  GROUPS: '/groups',
   MESSAGE: '/message',
+  ALLOCATION: '/allocation',
+  ASSESSMENT: '/assessment',
 }
 
 export default route

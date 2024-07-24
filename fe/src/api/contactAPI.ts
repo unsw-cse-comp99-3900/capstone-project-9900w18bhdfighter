@@ -1,6 +1,7 @@
 import { ContactPostDTO, ContactRspDTO } from '../types/msg'
 import { UserProfileSlimDTO } from '../types/user'
 import api from './config'
+import { ProjectProfileSlimDTO } from '../types/proj'
 
 const getMyContactList = () => {
   return api.get<{
@@ -10,7 +11,7 @@ const getMyContactList = () => {
 const getAutoCompleteContacts = (emailSubstring: string) => {
   return api.get<{
     data: UserProfileSlimDTO[]
-  }>('api/users/autocomplete-email', {
+  }>('api/users/autocomplete', {
     params: {
       email_substring: emailSubstring,
     },
@@ -25,4 +26,32 @@ const addOneContact = (
     ...body,
   })
 }
-export { getMyContactList, getAutoCompleteContacts, addOneContact }
+
+const getAutoCompleteProjects = (nameSubstring: string) => {
+  return api.get<{
+    data: ProjectProfileSlimDTO[]
+  }>('api/projects/autocomplete-name', {
+    params: {
+      name_substring: nameSubstring,
+    },
+  })
+}
+
+// const getAutoCompleteProjects = async (nameSubstring: string) => {
+//   const response = await api.get<{
+//     data: ProjectProfileSlimDTO[]
+//   }>('api/projects/autocomplete-name', {
+//     params: {
+//       name_substring: nameSubstring,
+//     },
+//   })
+//   console.log(response.data) // Add this line to log the response
+//   return response
+// }
+
+export {
+  getMyContactList,
+  getAutoCompleteContacts,
+  addOneContact,
+  getAutoCompleteProjects,
+}

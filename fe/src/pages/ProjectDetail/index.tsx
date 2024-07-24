@@ -1,7 +1,32 @@
-import { Button, Descriptions, Flex, List, Tag } from 'antd'
+import {
+  Button,
+  Descriptions,
+  Flex,
+  List,
+  Modal,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import styled from 'styled-components'
+import type { DescriptionsProps } from 'antd/es/descriptions'
 import { getThemeToken } from '../../utils/styles'
-import Link from 'antd/es/typography/Link'
+import { nanoid } from 'nanoid'
+import route from '../../constant/route'
+import GroupSearchBar from './components/GroupSearchBar'
+import ProjectDetailContextProvider, {
+  useProjectDetailContext,
+} from '../../context/ProjectDetailContext'
+import { useMemo, useState } from 'react'
+import { ProjectReqDTO } from '../../types/proj'
+import ModalProjectForm from '../../components/ModalProjectForm'
+import { role } from '../../constant/role'
+import { useAuthContext } from '../../context/AuthContext'
+import { useGlobalTheme } from '../../context/GlobalThemeContext'
+import { Link, useNavigate } from 'react-router-dom'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
+import { timeFormat } from '../../utils/parse'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -10,83 +35,271 @@ const Wrapper = styled(Flex)`
   align-items: center;
   padding: ${getThemeToken('paddingLG', 'px')};
 `
+const Title = styled(Typography.Text)`
+  font-size: 1.2rem;
+`
+const Header = styled(Flex)`
+  width: 100%;
+  justify-content: space-between;
+  align-items: end;
+  padding: ${getThemeToken('paddingMD', 'px')};
+`
+const EditButton = styled(Button)``
+const Description = styled(Descriptions)`
+  box-shadow: ${getThemeToken('boxShadow')};
+  overflow: auto;
+  max-height: 100%;
+`
+const _ProjectDetail = () => {
+  const {
+    project,
+    ownerName,
+    creatorName,
+    groupsList,
+    removeGroup,
+    updateCurrentGroup,
+    deleteProject,
+  } = useProjectDetailContext()
 
-const ProjectDetail = () => {
-  return (
-    <Wrapper>
-      <Descriptions bordered title="Project Detail">
-        <Descriptions.Item span={3} label="Project Name">
-          Mock Name
-        </Descriptions.Item>
-        <Descriptions.Item span={2} label="Owner">
-          <Link href="/">Client</Link>
-        </Descriptions.Item>
-        <Descriptions.Item span={2} label="Creator">
-          <Link href="/">TUT</Link>
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Description">
-          123
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Expected Skills">
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
+  const [isOpened, setIsOpened] = useState(false)
+  const { usrInfo, isInRoleRange } = useAuthContext()
+  const { PROJECT_DUE } = useGlobalConstantContext()
+  const { onWidth } = useGlobalTheme()
+  const navigate = useNavigate()
+  const handleOk = async (projectUpdateDTO: ProjectReqDTO) => {
+    updateCurrentGroup(projectUpdateDTO)
+    setIsOpened(false)
+  }
+
+  const handleCancel = () => {
+    setIsOpened(false)
+  }
+  const initialData = useMemo(() => {
+    if (!project) return undefined
+    return {
+      projectName: project.name,
+      description: project.description,
+      skills: project.requiredSkills.map((skill) => ({
+        area: skill.area.id,
+        skill: skill.skillName,
+      })),
+      email: project.owner,
+      maxGroupNumber: project.maxNumOfGroup,
+    }
+  }, [project])
+
+  const isCreator = () => {
+    return project?.createdBy === usrInfo?.id
+  }
+
+  const accessToEditProjectMeta = () => {
+    return isInRoleRange([role.ADMIN, role.CORD]) || isCreator()
+  }
+  const accessToAssignGroup = () => {
+    return isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
+  }
+
+  if (!project || !ownerName || !creatorName || !groupsList)
+    return (
+      <Wrapper>
+        <Spin></Spin>
+      </Wrapper>
+    )
+  const items: DescriptionsProps['items'] = [
+    {
+      span: 2,
+      label: 'Project Name',
+      children: project?.name,
+    },
+    {
+      span: 2,
+      label: 'Due',
+      children: (
+        <Space>
+          {
+            <Typography.Text ellipsis>
+              {PROJECT_DUE ? timeFormat(PROJECT_DUE) : 'Not set'}
+            </Typography.Text>
+          }
+        </Space>
+      ),
+    },
+    {
+      span: 2,
+      label: 'Owner',
+      children: (
+        <Link to={`${route.PROFILE}/${project?.projectOwnerId}`}>
+          {ownerName}
+        </Link>
+      ),
+    },
+    {
+      span: 2,
+      label: 'Creator',
+      children: (
+        <Link to={`${route.PROFILE}/${project?.createdBy}`}>{creatorName}</Link>
+      ),
+    },
+    {
+      span: 3,
+
+      label: 'Description',
+      children: project?.description ? (
+        <Typography.Text>{project?.description}</Typography.Text>
+      ) : (
+        <Typography.Text type="secondary">
+          No description provided.
+        </Typography.Text>
+      ),
+    },
+    {
+      span: 3,
+      label: 'Expected Skills',
+      children: project?.requiredSkills.length ? (
+        project?.requiredSkills.map((skill) => (
+          <Tag style={{ margin: '0.1rem' }} color="orange" key={nanoid()}>
+            {skill.skillName}
           </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-          <Tag style={{ margin: '0.1rem' }} color="magenta">
-            magenta
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item span={3} label="Paticipating Gorups">
-          <Button size="small" type="primary">
-            Assign Groups
-          </Button>
+        ))
+      ) : (
+        <Typography.Text type="secondary">
+          No expected skills provided.
+        </Typography.Text>
+      ),
+    },
+    {
+      span: 3,
+      label: `Involved Groups (${groupsList.length}/${project.maxNumOfGroup})`,
+      children: (
+        <Flex vertical>
+          <Flex>
+            <GroupSearchBar
+              style={{
+                display: accessToAssignGroup() ? 'block' : 'none',
+              }}
+            />
+          </Flex>
+
           <List
             bordered
+            itemLayout={onWidth({
+              sm: 'vertical',
+              defaultValue: 'horizontal',
+            })}
+            size={onWidth({
+              sm: 'small',
+              defaultValue: 'default',
+            })}
             style={{
               maxHeight: '15rem',
               overflow: 'auto',
               marginTop: '1rem',
             }}
           >
-            <List.Item
-              actions={[
-                <Button key="1" size="small" type="primary">
-                  Remove
-                </Button>,
-              ]}
-            >
-              Group 1
-            </List.Item>
-            <List.Item>Group 2</List.Item>
-            <List.Item>Group 3</List.Item>
+            {Boolean(groupsList.length) &&
+              groupsList?.map((group) => (
+                <List.Item key={group.groupId}>
+                  <Typography.Text>
+                    <Link to={`${route.GROUPS}/${group.groupId}`}>
+                      {group.groupName}
+                    </Link>
+                  </Typography.Text>
+                  <Button
+                    size={onWidth({
+                      sm: 'small',
+                      defaultValue: 'default',
+                    })}
+                    onClick={() => removeGroup(group.groupId)}
+                    key={group.groupId}
+                    type="text"
+                    style={{
+                      display: accessToAssignGroup() ? 'block' : 'none',
+                      width: onWidth({
+                        sm: '100%',
+                        defaultValue: 'unset',
+                      }),
+                    }}
+                    danger
+                  >
+                    Remove
+                  </Button>
+                </List.Item>
+              ))}
           </List>
-        </Descriptions.Item>
-      </Descriptions>
+        </Flex>
+      ),
+    },
+  ]
+  return (
+    <Wrapper>
+      <ModalProjectForm
+        title="Edit Project"
+        initialData={initialData}
+        isModalOpen={isOpened}
+        handleOk={handleOk}
+        handleCancel={handleCancel}
+      />
+      <Header>
+        <Title strong>Project Detail</Title>
+
+        <Space align="center">
+          <EditButton
+            style={{
+              display: accessToEditProjectMeta() ? 'block' : 'none',
+            }}
+            type="primary"
+            onClick={() => setIsOpened(true)}
+          >
+            Edit
+          </EditButton>
+          <Button
+            style={{
+              display: accessToEditProjectMeta() ? 'block' : 'none',
+            }}
+            danger
+            type="primary"
+            onClick={() => {
+              Modal.confirm({
+                title: 'Do you want to delete this project?',
+                content:
+                  'When clicked the OK button, this project will be deleted.',
+                onOk: async () => {
+                  await deleteProject(project.id)
+                  navigate(route.DASHBOARD, {
+                    replace: true,
+                  })
+                },
+              })
+            }}
+          >
+            Delete
+          </Button>
+        </Space>
+      </Header>
+
+      <Description
+        style={{
+          width: onWidth({
+            xs: 'unset',
+            defaultValue: '100%',
+          }),
+        }}
+        size={onWidth({
+          xs: 'small',
+          defaultValue: 'default',
+        })}
+        bordered
+        items={items}
+      ></Description>
     </Wrapper>
   )
 }
 
+const ProjectDetail = () => {
+  return (
+    <ProjectDetailContextProvider>
+      <_ProjectDetail />
+    </ProjectDetailContextProvider>
+  )
+}
 export default ProjectDetail

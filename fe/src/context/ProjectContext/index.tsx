@@ -1,14 +1,28 @@
-import { ReactNode, createContext, useContext } from 'react'
-import { ProjectCreate } from '../../types/proj'
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
+import { Project, ProjectCreate } from '../../types/proj'
 import api from '../../api/config'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { isAxiosError } from 'axios'
+import { errHandler } from '../../utils/parse'
+import {
+  getProjectByParticipant,
+  getProjectsByCreator,
+  mapProjectDTOToProject,
+} from '../../api/projectAPI'
 
+import { useAuthContext } from '../AuthContext'
+import { role } from '../../constant/role'
 interface ProjectContextType {
-  createProject: (_project: ProjectCreate) => void
+  createProject: (_project: ProjectCreate) => Promise<void>
   updateProject: () => void
-  deleteProject: () => void
-  getProjectsList: () => void
+  getProjList: () => Promise<void>
+  projectList: Project[] | null
 }
 
 const ProjectContext = createContext({} as ProjectContextType)
@@ -17,36 +31,71 @@ export const useProjectContext = () =>
 
 const ProjectContextProvider = ({ children }: { children: ReactNode }) => {
   const { msg } = useGlobalComponentsContext()
-  const createProject = async (project: ProjectCreate) => {
-    try {
-      const res = await api.post('project_creation/', project)
-      msg.success('Project created successfully!')
-      console.log(res)
-    } catch (err) {
-      if (isAxiosError(err)) {
-        msg.err(err.response?.data.error)
-      } else {
-        msg.err('Something went wrong')
-      }
-    }
+  const [projectList, setProjectList] = useState<Project[] | null>(null)
+  const { usrInfo, isInRoleRange } = useAuthContext()
 
-    //todo: implement create project
-  }
   const updateProject = () => {
     //todo: implement update project
   }
-  const deleteProject = () => {
-    //todo: implement delete project
-  }
-  const getProjectsList = () => {
-    //todo: implement get projects list
-  }
 
+  const getProjectsList = async (email: string) => {
+    try {
+      const res = await getProjectsByCreator(email)
+      setProjectList(res.data.map(mapProjectDTOToProject))
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const getParticipatedProjects = async () => {
+    if (!usrInfo) return
+    try {
+      const res = await getProjectByParticipant(usrInfo?.id)
+      setProjectList(res.data.map(mapProjectDTOToProject))
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const createProject = async (project: ProjectCreate) => {
+    try {
+      await api.post('api/project_creation/', project)
+      msg.success('Project created successfully!')
+      await getProjectsList(usrInfo?.email as string)
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  //get project list based on user role
+  const getProjList = useCallback(() => {
+    if (!usrInfo) return Promise.resolve()
+    if (isInRoleRange([role.STUDENT])) {
+      return getParticipatedProjects()
+    } else {
+      return getProjectsList(usrInfo.email)
+    }
+  }, [usrInfo?.id])
+
+  useEffect(() => {
+    if (!usrInfo) return
+    getProjList()
+  }, [usrInfo?.id])
   const ctx = {
     createProject,
     updateProject,
-    deleteProject,
-    getProjectsList,
+    getParticipatedProjects,
+    getProjList,
+    projectList,
   }
 
   return (

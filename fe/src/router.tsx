@@ -16,7 +16,9 @@ import ProjectDetail from './pages/ProjectDetail'
 import MessagePage from './pages/MessagePage'
 import MessageLanding from './pages/MessagePage/components/MessageLanding'
 import { MessageMain } from './pages/MessagePage/components/MessageMain'
-
+import GroupDetail from './pages/GroupDetail'
+import AllocationDetail from './pages/AllocationDetail'
+import AssessmentDetail from './pages/AssessmentPage'
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
@@ -77,6 +79,10 @@ const routerConfig = [
         path: route.TEAMS,
       },
       {
+        element: <GroupDetail />,
+        path: `${route.GROUPS}/:id`,
+      },
+      {
         element: <MessagePage />,
         children: [
           {
@@ -85,14 +91,22 @@ const routerConfig = [
           },
           {
             element: <MessageMain />,
-            path: `${route.MESSAGE}/user/:receiverId`,
+            path: `${route.MESSAGE}/:type/:receiverId`,
           },
         ],
+      },
+      {
+        element: <AllocationDetail />,
+        path: `${route.ALLOCATION}/:id`,
       },
 
       {
         element: <AdminManagement />,
         path: route.ADMIN,
+      },
+      {
+        element: <AssessmentDetail />,
+        path: `${route.ASSESSMENT}/:id`,
       },
     ],
   },

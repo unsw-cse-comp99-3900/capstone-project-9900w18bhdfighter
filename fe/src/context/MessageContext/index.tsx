@@ -3,46 +3,52 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from 'react'
 import { UserProfileSlim } from '../../types/user'
 import api from '../../api/config'
-import {
-  channel_id_to_ids,
-  errHandler,
-  ids_to_channel_id,
-} from '../../utils/parse'
+import { channel_id_to_ids, errHandler } from '../../utils/parse'
 import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { useAuthContext } from '../AuthContext'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import {
   Contact,
   ContactPostDTO,
   ContactUpdateDTO,
   Conversation,
+  GroupContact,
+  GroupConversation,
   MsgGrouped,
-  MsgRspDTO,
-  MsgWSRspDTO,
+  WSMsgReqDTO,
 } from '../../types/msg'
 import {
   getMyContactList,
   getAutoCompleteContacts as getACC,
   addOneContact,
 } from '../../api/contactAPI'
-import { getAllMsgsMine, markMsgsFromOneContactAsRead } from '../../api/msgAPI'
 import {
-  MsgRespDTOMapper,
+  getAllGroupContactMine,
+  getAllGroupMsgsMine,
+  getAllMsgsMine,
+  mapGroupContactDTOToGroupContact,
+  mapGroupMsgDTOToMsgGrouped,
+  markMsgsFromOneContactAsRead,
+  markMsgsFromOneGroupAsRead,
+} from '../../api/msgAPI'
+import {
   getAllMessagesMapper,
   getAutoCompleteContactsMapper,
   getContactsMapper,
 } from './mapper'
+import useCurrConversation from './hooks/useCurrConversation'
+import useCurrGroupConversation from './hooks/useGroupConversation'
+import useContactsDiff from './hooks/useContactsDiff'
+import useChatSocket from './hooks/useChatSocket'
 type RouteParams = {
   receiverId: string
-  type: string
+  type: 'group' | 'user'
 }
-interface MessageContextType {
+export interface MessageContextType {
   getAutoCompleteContacts: (_email: string) => Promise<void>
   currAutoCompleteContacts: UserProfileSlim[]
   setCurrAutoCompleteContacts: React.Dispatch<
@@ -58,6 +64,17 @@ interface MessageContextType {
   params: Readonly<Partial<RouteParams>>
   contactList: Contact[] | null
   currConversation: Conversation | null
+  groupContactList: GroupContact[] | null
+  currGroupConversation: GroupConversation | null
+  conversationType: 'group' | 'user' | undefined
+  groupMsgMap: MsgGrouped | null
+  msgMap: MsgGrouped | null
+  sendWSMsg: (_data: WSMsgReqDTO) => void
+  setGroupContactList: React.Dispatch<
+    React.SetStateAction<GroupContact[] | null>
+  >
+  unreadMsgs: number
+  getAllGroupContacts: () => Promise<void>
 }
 
 const MessageContext = createContext({} as MessageContextType)
@@ -65,53 +82,64 @@ export const useMessageContext = () => useContext(MessageContext)
 
 type Props = {
   children: ReactNode
+  msgRoute: string
 }
 
-export const MessageContextProvider = ({ children }: Props) => {
+export const MessageContextProvider = ({ children, msgRoute }: Props) => {
   const [currAutoCompleteContacts, setCurrAutoCompleteContacts] = useState<
     UserProfileSlim[]
   >([])
   const [contactList, setContactList] = useState<Contact[] | null>(null)
-  // const [groupContactList, setGroupContactList] = useState<Contact[] | null>(
-  //   null
-  // )
+  const [groupContactList, setGroupContactList] = useState<
+    GroupContact[] | null
+  >(null)
   const [msgMap, setMsgMap] = useState<MsgGrouped | null>(null)
+  const [groupMsgMap, setGroupMsgMap] = useState<MsgGrouped | null>(null)
   const { msg } = useGlobalComponentsContext()
-  const socketRef = useRef<WebSocket | null>(null)
   const { usrInfo } = useAuthContext()
+  const socketRef = useChatSocket({
+    id: usrInfo?.id,
+    setMsgMap,
+    setContactList,
+    msg,
+    setGroupMsgMap,
+    setGroupContactList,
+  })
   const id = usrInfo?.id
   const params = useParams<RouteParams>()
-
+  const unreadGroupMsgs =
+    contactList?.reduce((acc, contact) => acc + contact.unreadMsgsCount, 0) || 0
+  const unreadUserMsgs =
+    groupContactList?.reduce(
+      (acc, groupContact) => acc + groupContact.unreadMsgsCount,
+      0
+    ) || 0
+  const unreadMsgs = unreadGroupMsgs + unreadUserMsgs
+  const location = useLocation()
+  const [isLeaveMsgPage, setIsLeaveMsgPage] = useState(false)
   //currConversation is a contact with messages
-  const currConversation = useMemo(() => {
-    if (!contactList || !params.receiverId || !id || !msgMap) return null
-    const currContact = contactList.find(
-      (contact) => contact.contact.id === Number(params.receiverId)
-    )
-    if (!currContact) return null
+  const currConversation = useCurrConversation({
+    contactList,
+    receiverId: params.receiverId,
+    msgMap,
+    id: id,
+    type: params.type,
+  })
 
-    const channelKey = ids_to_channel_id([id, currContact.contact.id])
-    return {
-      ...currContact,
-      messages: msgMap[channelKey] || [],
-    }
-  }, [contactList, params.receiverId, msgMap, id])
+  //currGroupConversation is a group with messages
+  const currGroupConversation = useCurrGroupConversation({
+    groupsList: groupContactList,
+    receiverId: params.receiverId,
+    msgMap: groupMsgMap,
+    id: id as number,
+    type: params.type,
+  })
 
-  const contactsDiff = useMemo(() => {
-    if (!contactList || !id || !msgMap) {
-      //if contactList is not ready or id is not ready, return empty array
-      return null
-    }
-    const contactIds = contactList.map((contact) => contact.contact.id).sort()
-    const channelKeys = Object.keys(msgMap)
-    const currChannelKeys = contactIds.map((contact_id) =>
-      ids_to_channel_id([id, contact_id])
-    )
-    //return the difference between channelKeys and currChannelKeys
-    const res = channelKeys.filter((key) => !currChannelKeys.includes(key))
-    //return the unique values
-    return Array.from(new Set(res)).sort()
-  }, [contactList, msgMap, id])
+  const contactsDiff = useContactsDiff({
+    contactList,
+    msgMap,
+    id,
+  })
 
   const getAutoCompleteContacts = async (email: string) => {
     try {
@@ -193,14 +221,73 @@ export const MessageContextProvider = ({ children }: Props) => {
       )
     }
   }
-  //get all contacts and messages
-  useEffect(() => {
-    getAllMessages()
-    getContacts()
-  }, [])
+  const markAsReadGroup = async (groupId: number) => {
+    try {
+      await markMsgsFromOneGroupAsRead(groupId)
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const getAllGroupContacts = async () => {
+    if (!id) return
+    try {
+      const res = await getAllGroupContactMine()
+      setGroupContactList(
+        res.data.data.map((groupContact) =>
+          mapGroupContactDTOToGroupContact(groupContact)
+        )
+      )
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const getAllGroupMsgs = async () => {
+    if (!id) return
+    try {
+      const res = await getAllGroupMsgsMine()
+      setGroupMsgMap(mapGroupMsgDTOToMsgGrouped(res.data.data, id))
+    } catch (err) {
+      errHandler(
+        err,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    }
+  }
+  const sendWSMsg = (data: WSMsgReqDTO) => {
+    try {
+      if (
+        !socketRef.current ||
+        socketRef.current.readyState !== WebSocket.OPEN
+      ) {
+        throw new Error('WebSocket is not open')
+      }
 
+      socketRef.current.send(JSON.stringify(data))
+    } catch (err) {
+      msg.err('Lost connection to server.')
+    }
+  }
+  //handle user messages
   useEffect(() => {
-    // 如果当前的receiverId不在contactList里面，就添加到contactList里面
+    getContacts()
+    getAllMessages()
+  }, [])
+  //handle group messages
+  useEffect(() => {
+    getAllGroupContacts()
+    getAllGroupMsgs()
+  }, [id])
+  //add contact if receiverId is in params but not in contactList
+  useEffect(() => {
     if (!contactList) return
     if (!params.receiverId) return
     console.log(contactList)
@@ -210,75 +297,41 @@ export const MessageContextProvider = ({ children }: Props) => {
         (contact) => contact.contact.id === Number(params.receiverId)
       )
     ) {
-      console.log('adding contact')
-
       addContact({ Contact: Number(params.receiverId) }, false).then(() =>
         getContacts()
       )
     }
   }, [JSON.stringify(contactList)])
 
-  //init socket when id is ready
-  useEffect(() => {
-    if (!id) return
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/user/${id}`)
-    socketRef.current = socket
-    socket.onopen = () => {
-      console.log('Connected to the chat server')
-    }
-    socket.onmessage = (event) => {
-      const res = JSON.parse(event.data) as MsgWSRspDTO
-      if (res.status_code === 201) {
-        // a msg is sent
-      }
-      // a msg is received or a msg is sent
-      if (res.status_code >= 200 && res.status_code < 300) {
-        const msgDto = res.data as MsgRspDTO
-        const new_msg = MsgRespDTOMapper(msgDto)
-        setMsgMap((prev) => {
-          const key = new_msg.ChannelId
-          const updatedMap = { ...prev }
-          updatedMap[key] = [...(updatedMap[key] || []), new_msg]
-          return updatedMap
-        })
-        // if new_msg is not read, increment unreadMsgsCount
-        if (new_msg.isRead === false) {
-          setContactList((prev) => {
-            if (!prev) return prev
-            const updatedList = prev.map((contact) => {
-              if (contact.contact.id === new_msg.senderId) {
-                return {
-                  ...contact,
-                  unreadMsgsCount: contact.unreadMsgsCount + 1,
-                }
-              }
-              return contact
-            })
-            return updatedList
-          })
-        }
-      } else if (res.status_code >= 400) {
-        msg.err(res.message)
-      } else {
-        msg.err('Unknown error')
-      }
-    }
-    return () => {
-      console.log('closing socket')
-      socketRef.current?.close()
-      socketRef.current = null
-    }
-  }, [id])
   //send currWindow to server
   useEffect(() => {
+    if (!params.receiverId || !params.type) return
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
       return
 
-    socketRef.current.send(
-      JSON.stringify({ currWindow: params.receiverId || -1 })
-    )
-  }, [params.receiverId])
+    sendWSMsg({
+      type: params.type,
+      currWindow: parseInt(params.receiverId),
+      action: 'CHANGE_WINDOW',
+    })
+  }, [params, socketRef.current])
 
+  //set isLeaveMsgPage
+  useEffect(() => {
+    if (!location.pathname.includes(msgRoute)) setIsLeaveMsgPage(true)
+    else setIsLeaveMsgPage(false)
+    console.log(location.pathname)
+  }, [location])
+  //send leave msg to server when leaving msg page
+  useEffect(() => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)
+      return
+    if (isLeaveMsgPage) {
+      sendWSMsg({
+        action: 'LEAVE',
+      })
+    }
+  }, [isLeaveMsgPage, socketRef.current])
   //mark as read when conversation is opened
   useEffect(() => {
     if (!params.receiverId) return
@@ -287,8 +340,21 @@ export const MessageContextProvider = ({ children }: Props) => {
       await markAsRead(Number(params.receiverId))
       await getContacts()
     }
+
     if (currConversation?.unreadMsgsCount > 0) todo()
-  }, [params.receiverId, currConversation])
+  }, [params, currConversation])
+
+  //mark as read when group conversation is opened
+  useEffect(() => {
+    if (!params.receiverId) return
+    if (!currGroupConversation) return
+    const todoGroup = async () => {
+      await markAsReadGroup(Number(params.receiverId))
+      await getAllGroupContacts()
+    }
+    if (currGroupConversation?.unreadMsgsCount > 0) todoGroup()
+  }, [params.receiverId, currGroupConversation])
+
   // if someone not in contactList but in msgMap, add to contactList
   useEffect(() => {
     if (!contactsDiff) return
@@ -318,6 +384,15 @@ export const MessageContextProvider = ({ children }: Props) => {
     contactList,
     currConversation,
     msgMap,
+    currGroupConversation,
+    conversationType: params.type,
+    groupMsgMap,
+    sendWSMsg,
+    setGroupContactList,
+    groupContactList,
+    markAsReadGroup,
+    unreadMsgs,
+    getAllGroupContacts,
   }
 
   return (

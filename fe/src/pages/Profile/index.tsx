@@ -1,4 +1,11 @@
-import { Button, Descriptions as _Descriptions, Flex, Tag } from 'antd'
+import {
+  Button,
+  Descriptions as _Descriptions,
+  Flex,
+  Tag,
+  Typography,
+  Spin,
+} from 'antd'
 import type { FormInstance } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
@@ -7,8 +14,8 @@ import Avatar from '../../components/Avatar'
 import { roleNames } from '../../constant/role'
 import { useEffect, useState } from 'react'
 import AccountManagementContextProvider, {
-  useAccountManagementContext,
-} from '../../context/AccountManagementContext'
+  useManagementContext,
+} from '../../context/ManagementContext'
 import { UserUpdate } from '../../types/user'
 import { useParams } from 'react-router-dom'
 import ModalProfileEdit from '../../components/ModalProfileEdit'
@@ -51,7 +58,7 @@ const _Profile = () => {
   }
   const isMyProfile = !usrId
   const { updateAccount, getAnUserProfile, currProfileViewing } =
-    useAccountManagementContext()
+    useManagementContext()
   // when user id is changed, get the user profile
   useEffect(() => {
     usrId
@@ -75,6 +82,7 @@ const _Profile = () => {
         UserRole: values.role,
         Passwd: values.password,
         EmailAddress: values.email,
+        CourseCode: values.courseCode,
       }
       Object.keys(updateInfo).forEach(
         (key) =>
@@ -93,15 +101,22 @@ const _Profile = () => {
   const handleCancel = () => {
     setIsModalOpen(false)
   }
-  const { role, email, firstName, lastName, description, interestAreas } =
-    currProfileViewing || {
-      email: '',
-      role: 1,
-      firstName: '',
-      lastName: '',
-      description: '',
-      interestAreas: [],
-    }
+
+  if (!currProfileViewing)
+    return (
+      <Wrapper>
+        <Spin></Spin>
+      </Wrapper>
+    )
+  const {
+    role,
+    email,
+    firstName,
+    lastName,
+    description,
+    interestAreas,
+    courseCode,
+  } = currProfileViewing
   return (
     <Wrapper>
       <ModalProfileEdit
@@ -130,24 +145,45 @@ const _Profile = () => {
         ></_Avatar>
       </Header>
       <Descriptions bordered>
-        <Descriptions.Item span={1} label="First Name">
-          {firstName}
+        <Descriptions.Item span={2} label="Full Name">
+          {`${firstName} ${lastName}`}
         </Descriptions.Item>
-        <Descriptions.Item span={1} label="Last Name">
-          {lastName}
+        <Descriptions.Item span={2} label="Course">
+          {courseCode ? (
+            courseCode.courseName
+          ) : (
+            <Typography.Text type="secondary">
+              No course provided
+            </Typography.Text>
+          )}
         </Descriptions.Item>
-        <Descriptions.Item span={1} label="Role">
+        <Descriptions.Item span={2} label="Email">
+          {email}
+        </Descriptions.Item>
+        <Descriptions.Item span={2} label="Role">
           {roleNames[role]}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
-          {description}
+          {description ? (
+            <Typography.Text>{description}</Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">
+              No description provided
+            </Typography.Text>
+          )}
         </Descriptions.Item>
         <Descriptions.Item span={3} label="Interest Areas">
-          {interestAreas.map((area) => (
-            <Tag key={area.id} style={{ margin: '0.1rem' }} color="magenta">
-              {area.name}
-            </Tag>
-          ))}
+          {interestAreas.length === 0 ? (
+            <Typography.Text type="secondary">
+              No interest areas provided
+            </Typography.Text>
+          ) : (
+            interestAreas.map((area) => (
+              <Tag key={area.id} style={{ margin: '0.1rem' }} color="magenta">
+                {area.name}
+              </Tag>
+            ))
+          )}
         </Descriptions.Item>
       </Descriptions>
     </Wrapper>

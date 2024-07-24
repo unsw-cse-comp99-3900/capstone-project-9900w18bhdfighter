@@ -1,4 +1,5 @@
 import { AxiosError, isAxiosError } from 'axios'
+import dayjs from 'dayjs'
 
 const shortName = (firstName = '', lastName = '') => {
   console.log('firstName:', firstName)
@@ -54,8 +55,13 @@ const errHandler = (
   if (isAxiosError(err)) {
     const error = err as AxiosError<{ error: string; errors: string }>
     const data = error.response?.data
+
+    if (error.status === 500) {
+      axiosErrDo('Something went wrong')
+      return
+    }
     if (data) {
-      axiosErrDo(data.error || data.errors)
+      axiosErrDo(data.error || data.errors || JSON.stringify(data))
     }
   } else {
     console.log('err:', err)
@@ -63,10 +69,24 @@ const errHandler = (
   }
 }
 const ids_to_channel_id = (ids: [number, number]) => {
-  return ids.sort().join('_')
+  return ids.sort((a, b) => a - b).join('_')
 }
 const channel_id_to_ids = (channel_id: string) => {
   return channel_id.split('_').map(Number) as [number, number]
+}
+const timeFormat = (iso: string, time = true) => {
+  if (!time) return dayjs(iso).format('DD/MM/YYYY')
+  return dayjs(iso).format('DD/MM/YY HH:mm')
+}
+const daysFromTime = (dueTime: string) => {
+  return dayjs(dueTime).diff(dayjs(), 'day')
+}
+
+const isDue = (dueTime: string) => {
+  console.log('dueTime:', dueTime)
+  console.log('dayjs(dueTime):', dayjs().format('YYYY-MM-DD HH:mm:ss'))
+
+  return dayjs(dueTime) <= dayjs()
 }
 export {
   shortName,
@@ -75,4 +95,7 @@ export {
   errHandler,
   ids_to_channel_id,
   channel_id_to_ids,
+  timeFormat,
+  isDue,
+  daysFromTime,
 }

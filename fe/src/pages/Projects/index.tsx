@@ -2,11 +2,14 @@ import { Button, Divider, Flex, Typography } from 'antd'
 import styled from 'styled-components'
 import { getThemeToken } from '../../utils/styles'
 import { useState } from 'react'
-import NewProjectModal from './components/NewProjectModal'
-import { ProjectCreate } from '../../types/proj'
+import { ProjectReqDTO } from '../../types/proj'
 import ProjectContextProvider, {
   useProjectContext,
 } from '../../context/ProjectContext'
+import ModalProjectForm from '../../components/ModalProjectForm'
+import ProjectList from './components/ProjectList'
+import { useAuthContext } from '../../context/AuthContext'
+import { role } from '../../constant/role'
 
 const Wrapper = styled(Flex)`
   width: 100%;
@@ -18,33 +21,45 @@ const Header = styled(Flex)`
   justify-content: space-between;
   align-items: center;
 `
-
+const NewProjectButton = styled(Button)<{
+  display: boolean
+}>`
+  display: ${(props) => (props.display ? 'block' : 'none')};
+`
 const _Projects = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { createProject } = useProjectContext()
+  const { isInRoleRange } = useAuthContext()
+  const handleOk = async (projectCreateDto: ProjectReqDTO) => {
+    await createProject(projectCreateDto)
 
-  const handleOk = async (projectCreateDto: ProjectCreate) => {
-    createProject(projectCreateDto)
     setIsModalOpen(false)
   }
 
   const handleCancel = () => {
     setIsModalOpen(false)
   }
+
   return (
     <Wrapper>
-      <NewProjectModal
+      <ModalProjectForm
+        title="New Project"
         isModalOpen={isModalOpen}
         handleOk={handleOk}
         handleCancel={handleCancel}
-      ></NewProjectModal>
+      ></ModalProjectForm>
       <Header>
         <Typography.Title level={3}>My Projects</Typography.Title>
-        <Button onClick={() => setIsModalOpen(true)} type="primary">
+        <NewProjectButton
+          display={!isInRoleRange([role.STUDENT])}
+          onClick={() => setIsModalOpen(true)}
+          type="primary"
+        >
           New Project
-        </Button>
+        </NewProjectButton>
       </Header>
       <Divider />
+      <ProjectList />
     </Wrapper>
   )
 }
