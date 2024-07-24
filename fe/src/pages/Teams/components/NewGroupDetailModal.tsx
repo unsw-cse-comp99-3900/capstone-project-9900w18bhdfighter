@@ -1,10 +1,12 @@
 import { Form, Input, InputNumber, Modal, Select, message } from 'antd'
+import { AxiosError } from 'axios'
 import React from 'react'
 import styled from 'styled-components'
-import { GroupReqDTO } from '../../../types/group'
-import { AxiosError } from 'axios'
-import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
 import { createGroup } from '../../../api/groupAPI'
+import { role } from '../../../constant/role'
+import { useAuthContext } from '../../../context/AuthContext'
+import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
+import { GroupReqDTO } from '../../../types/group'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -21,12 +23,16 @@ const _Modal = styled(Modal)``
 const NewGroupModal = ({ isModalOpen, handleOk, handleCancel }: Props) => {
   const [form] = Form.useForm()
   const { COURSE_LIST } = useGlobalConstantContext()
-
-  const options =
+  const { isInRoleRange, usrInfo } = useAuthContext()
+  const _options =
     COURSE_LIST?.map((course) => ({
       label: course.courseName,
       value: course.id,
     })) || []
+
+  const options = !isInRoleRange([role.STUDENT])
+    ? _options
+    : _options.filter((option) => option.value === usrInfo?.courseCode?.id)
   const onSubmit = async () => {
     console.log('Form submission started')
     try {

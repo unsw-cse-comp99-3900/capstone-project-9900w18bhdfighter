@@ -4,6 +4,8 @@ import {
   GroupReqDTO,
   GroupJoinDTO,
   GroupLeaveDTO,
+  GroupReqDTO,
+  GroupRspDTO,
   GroupSlim,
 } from '../types/group'
 import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
@@ -71,6 +73,9 @@ const getGroupDetailByGroupId = async (groupId: number) => {
   return api.get<GroupRspDTO>(`api/groups/${groupId}`)
 }
 
+const getGroupByCreatorId = async (creatorId: number) => {
+  return api.get<GroupRspDTO[]>(`api/groups/creators/${creatorId}`)
+}
 const updateGroupMeta = async (groupId: number, groupReqDTO: GroupReqDTO) => {
   return api.put<GroupRspDTO>(`api/groups/${groupId}`, groupReqDTO)
 }
@@ -138,23 +143,24 @@ const mapGroupRspDTOToGroupSlim = (groupRspDTO: GroupRspDTO): GroupSlim => ({
 })
 
 export {
-  getAllGroups,
-  mapGroupDTOToGroup,
-  getGroupByProjectId,
   assignGroupToProject,
-  removeGroupFromProject,
-  getAutoCompleteGroups,
-  getGroupByParticipant,
   createGroup,
+  createOrUpdateSkillEval,
+  getAllGroups,
+  getAutoCompleteGroups,
+  getGroupByCreatorId,
+  getGroupByParticipant,
+  getGroupByProjectId,
+  getGroupDetailByGroupId,
+  getGroupListByUserId,
   getGroupPreferencesById,
+  getSkillEvalByGroup,
   joinGroup,
   leaveGroup,
-  getGroupListByUserId,
-  getGroupDetailByGroupId,
-  updateGroupMeta,
+  mapGroupDTOToGroup,
   mapGroupPreferenceDTOToGroupPreference,
-  createOrUpdateSkillEval,
-  getSkillEvalByGroup,
   mapSkillEvalDTOToSkillEval,
+  removeGroupFromProject,
+  updateGroupMeta,
   mapGroupRspDTOToGroupSlim,
 }
