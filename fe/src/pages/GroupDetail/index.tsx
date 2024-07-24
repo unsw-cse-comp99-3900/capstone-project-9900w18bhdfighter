@@ -9,13 +9,13 @@ import {
   Spin,
   Typography,
 } from 'antd'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 import { useAuthContext } from '../../context/AuthContext'
 import { getThemeToken } from '../../utils/styles'
 
-import { roleNames } from '../../constant/role'
+import { role, roleNames } from '../../constant/role'
 
 import { UserProfileSlim } from '../../types/user'
 import CandidateSearchBar from './components/CandidateSearchBar'
@@ -127,7 +127,7 @@ const StyledTextArea = styled(TextArea)`
 const roleMap = roleNames
 
 const _GroupDetail = () => {
-  const { usrInfo } = useAuthContext()
+  const { usrInfo, isInRoleRange } = useAuthContext()
   const {
     group,
     joinOrLeave,
@@ -144,6 +144,17 @@ const _GroupDetail = () => {
     metaEdit: false,
     confirm: false,
   })
+  const showPreferenceEdit = useMemo(() => {
+    if (isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])) {
+      return true
+    }
+    if (isUserInThisGroup) {
+      return true
+    }
+    return false
+  }, [isUserInThisGroup, isInRoleRange])
+  const showMetaEdit = isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
+  const showSearchBar = isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
   const [skillEvaluationData, setSkillEvaluationData] =
     useState<SkillEvaluationData | null>(null)
   const userRole = usrInfo ? roleMap[usrInfo.role] : undefined
@@ -266,7 +277,13 @@ const _GroupDetail = () => {
       />
       {userRole !== 'Student' && (
         <EditWrapper gap={10}>
-          <Button type="primary" onClick={() => handleModal('metaEdit', true)}>
+          <Button
+            style={{
+              visibility: showMetaEdit ? 'visible' : 'hidden',
+            }}
+            type="primary"
+            onClick={() => handleModal('metaEdit', true)}
+          >
             Edit Group Meta Data
           </Button>
         </EditWrapper>
@@ -278,7 +295,10 @@ const _GroupDetail = () => {
       />
       <DescriptionsContainer>
         <InnerDescriptionsContainer>
-          <Descriptions bordered title="Group Detail">
+          <Descriptions
+            bordered
+            title={`Group Detail ${isUserInThisGroup ? '(My Group)' : ''}`}
+          >
             <Descriptions.Item span={1} label="Group Name">
               {group?.groupName}
             </Descriptions.Item>
@@ -297,9 +317,10 @@ const _GroupDetail = () => {
               span={3}
               label={`Members (${group.groupMembers.length}/${
                 group.maxMemberNum
-              })`}
+              }) ${isDueGroupFormation ? '(Locked)' : ''}
+              `}
             >
-              {userRole !== 'Student' && (
+              {showSearchBar && (
                 <FlexContainer>
                   <CandidateSearchBar handleSelect={(val) => addMember(val)} />
                 </FlexContainer>
@@ -378,7 +399,7 @@ const _GroupDetail = () => {
             >
               <FlexEditContainer
                 style={{
-                  display: isDueGroupFormation ? 'none' : 'flex',
+                  display: showPreferenceEdit ? 'flex' : 'none',
                 }}
               >
                 <StyledEditButton
