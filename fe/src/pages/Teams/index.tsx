@@ -33,7 +33,6 @@ const Header = styled.div`
 `
 
 const CardContainer = styled(Row)``
-const roleMap = roleNames
 const _Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [createdGroups, setCreatedGroups] = useState<Group[] | null>(null)

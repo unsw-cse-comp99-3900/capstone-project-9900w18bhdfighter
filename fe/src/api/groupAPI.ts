@@ -1,11 +1,9 @@
 import {
   Group,
   GroupRspDTO,
-  GroupReqDTO,
   GroupJoinDTO,
   GroupLeaveDTO,
   GroupReqDTO,
-  GroupRspDTO,
   GroupSlim,
 } from '../types/group'
 import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
