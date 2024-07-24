@@ -319,6 +319,31 @@ def add_time_rule(apps, schema_editor):
     print("=====================================")
     print("TimeRule created")
 
+def add_group_score(apps, schema_editor):
+    User = apps.get_model("myapp", "User")
+    GroupScore = apps.get_model("myapp", "GroupScore")
+    Group = apps.get_model("myapp", "Group")
+
+    cord = User.objects.get(EmailAddress="cord@cord.com")
+    admin = User.objects.get(EmailAddress="admin@admin.com")
+    tut = User.objects.get(EmailAddress="tut@tut.com")
+    users = [cord, admin, tut]
+    for g_obj in Group.objects.all():
+        for user in users:
+            score = float(random.randint(0, 100))
+            if score == 0:
+                feedback="C"
+            elif score <= 30:
+                feedback="D"
+            elif score <= 60:
+                feedback="B"
+            elif score <= 99:
+                feedback="A"
+            else:
+                feedback="S"
+            GroupScore.objects.create(markers_id=user.UserID, group_id=g_obj.GroupID, score=score, feedback=feedback)
+
+
 
 class Migration(migrations.Migration):
 
@@ -337,4 +362,6 @@ class Migration(migrations.Migration):
         migrations.RunPython(assign_users_to_groups),
         migrations.RunPython(add_group_preferences),
         migrations.RunPython(assign_group_to_projects),
+        migrations.RunPython(assign_group_to_projects),
+        migrations.RunPython(add_group_score),
     ]
