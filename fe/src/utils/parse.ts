@@ -83,6 +83,9 @@ const daysFromTime = (dueTime: string) => {
 }
 
 const isDue = (dueTime: string) => {
+  console.log('dueTime:', dueTime)
+  console.log('dayjs(dueTime):', dayjs().format('YYYY-MM-DD HH:mm:ss'))
+
   return dayjs(dueTime) <= dayjs()
 }
 export {

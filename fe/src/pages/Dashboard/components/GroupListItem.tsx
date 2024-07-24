@@ -6,7 +6,7 @@ import styled from 'styled-components'
 type Props = {
   item: Group
 }
-const CustomTitle = styled(Flex)`
+export const CustomTitle = styled(Flex)`
   font-weight: 500;
 `
 const GroupsListItem: React.FC<Props> = ({ item }) => {

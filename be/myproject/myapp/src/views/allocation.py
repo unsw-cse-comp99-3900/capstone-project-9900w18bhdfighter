@@ -149,7 +149,53 @@ class AllocationAPIView(
 
     def destroy(self, request, pk=None):
         Allocation.objects.all().delete()
-
         return JsonResponse(
             {"message": "Allocation rejected"}, status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=["delete"], url_path="delete", url_name="delete")
+    def delete_one(self, request, pk=None):
+        try:
+            allocation = Allocation.objects.get(pk=pk)
+        except Allocation.DoesNotExist:
+            return JsonResponse(
+                {"message": "Allocation not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        allocation.delete()
+        return JsonResponse(
+            {"message": "Allocation removed"}, status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=["post"], url_path="add", url_name="add")
+    def add_one(self, request):
+        data = request.data
+        group_id = data.get("groupId")
+        project_id = data.get("projectId")
+        if not group_id or not project_id:
+            return JsonResponse(
+                {"message": "Group ID and Project ID are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            group = Group.objects.get(pk=group_id)
+        except Group.DoesNotExist:
+            return JsonResponse(
+                {"message": "Group not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return JsonResponse(
+                {"message": "Project not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # if the group exists in the allocation table, delete it
+        if Allocation.objects.filter(Group=group).exists():
+            Allocation.objects.filter(Group=group).delete()
+
+        Allocation.objects.create(Project=project, Group=group)
+        return JsonResponse(
+            {"message": "Allocation added successfully"}, status=status.HTTP_201_CREATED
         )

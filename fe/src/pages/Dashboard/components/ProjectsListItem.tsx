@@ -1,15 +1,30 @@
 import { Flex, List, Tag, Tooltip, Typography } from 'antd'
 import { Link } from 'react-router-dom'
-import { Project } from '../../../types/proj'
 import route from '../../../constant/route'
+import { Project } from '../../../types/proj'
+import { CustomTitle } from './GroupListItem'
 
 type Props = {
   item: Project
 }
+
 const ProjectsListItem = ({ item }: Props) => {
   return (
     <List.Item.Meta
-      title={<Link to={`${route.PROJECTS}/${item.id}`}>{item.name}</Link>}
+      title={
+        <Flex vertical>
+          <Link to={`${route.PROJECTS}/${item.id}`}>{item.name}</Link>
+          <CustomTitle>
+            <Typography.Text
+              style={{
+                fontSize: '0.85rem',
+              }}
+            >
+              ({item.involvedGroups.length}/{item.maxNumOfGroup})
+            </Typography.Text>
+          </CustomTitle>
+        </Flex>
+      }
       description={
         <Flex vertical>
           <Flex>

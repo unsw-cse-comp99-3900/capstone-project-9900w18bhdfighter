@@ -9,6 +9,7 @@ interface Project {
   requiredSkills: Skill[]
   projectOwnerId: number
   createdBy: number
+  involvedGroups: number[]
 }
 interface ProjectInfo {
   id: number
@@ -55,6 +56,7 @@ interface ProjectRespDTO {
   RequiredSkills: Record<'Skill', SkillRspDTO>[]
   CreatedBy: number
   MaxNumOfGroup: number
+  InvolvedGroups: number[]
   projectOwner_id: number
 }
 

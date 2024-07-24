@@ -372,6 +372,7 @@ def group_join(request):
         group_members = group.GroupMembers.all()
         group_name = group.GroupName
         receivers_id_list = []
+
         for member in group_members:
             receivers_id_list.append(member.UserID)
 

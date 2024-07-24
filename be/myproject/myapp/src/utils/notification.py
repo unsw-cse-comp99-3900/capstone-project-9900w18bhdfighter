@@ -16,6 +16,8 @@ def save_notification(
     print("msg", msg)
     print("sender_id", sender_id)
     print("receivers", receivers)
+    if not receivers:
+        return None
     try:
         sender = User.objects.get(UserID=sender_id)
     except User.DoesNotExist:

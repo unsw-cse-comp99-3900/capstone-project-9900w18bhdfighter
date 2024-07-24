@@ -41,13 +41,6 @@ const getProjectById = async (id: number | string) => {
 const getProjectByParticipant = async (participantId: string | number) => {
   return api.get<ProjectRespDTO[]>(`api/projects/users/${participantId}/`)
 }
-// const getAutoCompleteProjectsByName = async (projectName: string) => {
-//   return api.get<{ data: ProjectRespDTO[] }>('api/projects/autocomplete-name', {
-//     params: {
-//       name_substring: projectName,
-//     },
-//   })
-// }
 
 const getAutoCompleteProjectsByName = async (projectName: string) => {
   return api.get<{ data: ProjectRespDTO[] }>('api/projects/autocomplete-name', {
@@ -88,6 +81,7 @@ const mapProjectDTOToProject: (_projectRespDTO: ProjectRespDTO) => Project = (
     ),
     projectOwnerId: projectRespDTO.projectOwner_id,
     createdBy: projectRespDTO.CreatedBy,
+    involvedGroups: projectRespDTO.InvolvedGroups,
   }
 
   return project

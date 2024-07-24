@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   getGroupByParticipant,
   getGroupDetailByGroupId,
@@ -7,18 +8,17 @@ import {
   mapGroupDTOToGroup,
   updateGroupMeta,
 } from '../../api/groupAPI'
-import { useParams } from 'react-router-dom'
+import { updateGroupPreference } from '../../api/groupPreferenceAPI'
+import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
 import { Group, GroupPreferenceReqDTO, GroupReqDTO } from '../../types/group'
-import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { errHandler } from '../../utils/parse'
 import { useAuthContext } from '../AuthContext'
-import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
-import { updateGroupPreference } from '../../api/groupPreferenceAPI'
+import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 
 interface GroupDetailContextType {
   fetchGroupDetail: () => Promise<void>
   group: Group | null
-  joinOrLeave: () => Promise<void>
+  joinOrLeave: (_type: 'join' | 'leave') => Promise<void>
   updateGroupMetaData: (_groupReqDTO: GroupReqDTO) => Promise<void>
   addMember: (_studentId: number) => Promise<void>
   removeMember: (_studentId: number) => Promise<void>
@@ -106,17 +106,17 @@ const GroupDetailContextProvider = ({
     }
   }
 
-  const joinOrLeave = async () => {
+  const joinOrLeave = async (type: 'join' | 'leave') => {
     if (!id) return
     if (!usrInfo) return
-    const api = isUserInGroup ? leaveGroup : joinGroup
+    const api = type === 'join' ? joinGroup : leaveGroup
     try {
       await api({
         group_id: Number(id),
         student_id: usrInfo.id,
       })
       await fetchGroupDetail()
-      msg.success(`${isUserInGroup ? 'Left' : 'Joined'} group successfully!`)
+      msg.success(`${type === 'leave' ? 'Left' : 'Joined'} group successfully!`)
     } catch (e) {
       errHandler(
         e,

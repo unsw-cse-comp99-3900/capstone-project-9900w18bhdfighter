@@ -7,6 +7,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     RequiredSkills = serializers.SerializerMethodField()
     projectOwner_id = serializers.SerializerMethodField()
     ProjectDescription = serializers.CharField(allow_blank=True)
+    InvolvedGroups = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -19,6 +20,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "RequiredSkills",
             "CreatedBy",
             "projectOwner_id",
+            "InvolvedGroups",
         ]
         read_only_fields = ["CreatedBy"]
 
@@ -34,3 +36,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             except User.DoesNotExist:
                 return None
         return None
+
+    def get_InvolvedGroups(self, obj):
+        # 返回项目的所有小组的id
+        groups = obj.Groups.all()
+        return [group.GroupID for group in groups]

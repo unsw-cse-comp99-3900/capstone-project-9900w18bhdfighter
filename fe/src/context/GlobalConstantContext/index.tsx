@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { Area } from '../../types/user'
 import { getAreasList, mapAreaDTOToArea } from '../../api/areaAPI'
-import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { getTimeRules, mapTimeRuleDTOToTimeRule } from '../../api/timeRuleAPI'
-import { TimeRule } from '../../types/timeRule'
-import { Course } from '../../types/course'
 import { getAllCourses, mapCourseDTOToCourse } from '../../api/courseAPI'
+import { getTimeRules, mapTimeRuleDTOToTimeRule } from '../../api/timeRuleAPI'
+import { Course } from '../../types/course'
+import { TimeRule } from '../../types/timeRule'
+import { Area } from '../../types/user'
 import { isDue } from '../../utils/parse'
+import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 
 interface GlobalConstantContextType {
   AREA_LIST: Area[] | null
@@ -34,9 +34,12 @@ const GlobalConstantProvider = ({
   const [GROUP_FORMATION_DUE, setGroupFormationDue] = useState<string | null>(
     null
   )
+  console.log(GROUP_FORMATION_DUE)
 
   const [COURSE_LIST, setCourseList] = useState<Course[] | null>(null)
   const { msg } = useGlobalComponentsContext()
+  console.log(PROJECT_DUE)
+
   const isDueGroupFormation = GROUP_FORMATION_DUE
     ? isDue(GROUP_FORMATION_DUE)
     : false
