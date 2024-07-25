@@ -1,13 +1,15 @@
 import { Flex, Tabs } from 'antd'
 import type { TabsProps } from 'antd/es/tabs'
+
+import { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import ProjectsList from './components/ProjectsList'
+
 import { getThemeColor, getThemeToken } from '../../utils/styles'
-import GroupsList from './components/GroupsList'
-import SubmissionTab from './components/SubmissionTab'
 import AllocationList from './components/AllocationList'
 import GroupsAssessmentList from './components/GroupAssessmentList'
-import { useEffect, useState } from 'react'
+import GroupsList from './components/GroupsList'
+import ProjectsList from './components/ProjectsList'
+import SubmissionTab from './components/SubmissionTab'
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -21,6 +23,7 @@ const _Tabs = styled(Tabs)`
     height: 3px !important;
   }
 `
+
 const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
 const _GroupsAssessmentList = styled(GroupsAssessmentList)``
@@ -66,7 +69,7 @@ const Dashboard = () => {
     sessionStorage.setItem('activeTabKey', key)
   }
   return (
-    <Wrapper justify="center" align="start" gap={'large'}>
+    <Wrapper vertical gap={'large'}>
       <_Tabs
         activeKey={activeKey}
         onChange={handleTabChange}

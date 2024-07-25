@@ -14,7 +14,6 @@ import { ThemeColor, themeColor as _themeColor } from './themeConfig'
 
 import breakPoint, { BreakPointKey } from '../../constant/breakPoint'
 
-//https://ant.design/docs/spec/colors-cn
 type Props = {
   children: ReactNode
 }
@@ -24,7 +23,6 @@ type OnWidth = (
 interface GlobalThemeContextType {
   setThemeColor: Dispatch<ThemeColor>
   windowWidth: number
-
   onWidth: OnWidth
 }
 
@@ -43,7 +41,6 @@ const GlobalAntdThemeProvider = ({ children }: Props) => {
     ) as BreakPointKey[]
 
     const defaultValue = bp.defaultValue
-    console.log(keysWithoutDefault)
     keysWithoutDefault.sort((a, b) => breakPoint[a] - breakPoint[b])
     for (const key of keysWithoutDefault) {
       if (windowWidth < breakPoint[key]) {

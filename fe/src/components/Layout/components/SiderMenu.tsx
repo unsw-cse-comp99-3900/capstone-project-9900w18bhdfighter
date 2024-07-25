@@ -56,6 +56,16 @@ const SiderMenu = ({ setCollapsed }: Props) => {
           key: route.TEAMS,
           icon: <FaUserGroup />,
           label: 'Teams',
+          style: {
+            display: isInRoleRange([
+              role.STUDENT,
+              role.CORD,
+              role.ADMIN,
+              role.TUTOR,
+            ])
+              ? 'block'
+              : 'none',
+          },
         },
 
         {

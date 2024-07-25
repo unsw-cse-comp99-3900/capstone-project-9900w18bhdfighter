@@ -195,7 +195,7 @@ const GroupDetailContextProvider = ({
   useEffect(() => {
     fetchGroupDetail()
     getMyOwnGroup()
-  }, [])
+  }, [id])
 
   useEffect(() => {
     getCreatorProfile()

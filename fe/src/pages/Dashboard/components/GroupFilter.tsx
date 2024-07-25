@@ -1,13 +1,13 @@
 import { Select as _Select } from 'antd'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { Group } from '../../../types/group'
-import { Dispatch, SetStateAction, useState, useEffect } from 'react'
-import { useAuthContext } from '../../../context/AuthContext'
 import {
   getGroupByParticipant,
   mapGroupDTOToGroup,
 } from '../../../api/groupAPI'
+import { useAuthContext } from '../../../context/AuthContext'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import { Group } from '../../../types/group'
 import { errHandler } from '../../../utils/parse'
 
 const Select = styled(_Select)`

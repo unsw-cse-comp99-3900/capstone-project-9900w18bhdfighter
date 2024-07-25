@@ -1,15 +1,15 @@
 import { Flex, List } from 'antd'
 import styled from 'styled-components'
 
-import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
-import GroupsListItem from './GroupListItem'
-import { getThemeToken } from '../../../utils/styles'
 import { getAllGroups, mapGroupDTOToGroup } from '../../../api/groupAPI'
-import { Group } from '../../../types/group'
-import GroupFilter from './GroupFilter'
+import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import { Group } from '../../../types/group'
+import { getThemeToken } from '../../../utils/styles'
+import GroupFilter from './GroupFilter'
+import GroupsListItem from './GroupListItem'
 
 type Props = {
   className?: string

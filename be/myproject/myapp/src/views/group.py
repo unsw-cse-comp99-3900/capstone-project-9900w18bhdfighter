@@ -25,9 +25,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from ..utils.permission import (
     ForGroupMemberOrManager,
+    ForPartialRole,
     ForValidToken,
     GroupRegisterDeadlinePermission,
-    OnlyForAdmin,
 )
 
 
@@ -61,7 +61,7 @@ class GroupsAPIView(
         ]:
             return base + []
         elif self.action in ["update"]:
-            return base + [OnlyForAdmin()]
+            return base + [ForPartialRole([3, 4, 5])]
         else:
             return base + []
 
