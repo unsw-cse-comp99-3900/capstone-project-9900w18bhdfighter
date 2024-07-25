@@ -1,6 +1,6 @@
 import jwt
 from django.conf import settings
-
+from myapp.src.models.models import User
 
 def decode_jwt(token):
     try:
@@ -26,3 +26,17 @@ def get_user_friendly_errors(serializer_errors):
             for _, value in dic.items():
                 errors["errors"] += f"{_}: {value}\n"
     return errors
+
+
+def clean_duplicate_users():
+    unique_users = set()
+    duplicates = []
+
+    for user in User.objects.all():
+        if user.EmailAddress in unique_users:
+            duplicates.append(user)
+        else:
+            unique_users.add(user.EmailAddress)
+    for duplicate in duplicates:
+        duplicate.delete()
+    return len(duplicates)

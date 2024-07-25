@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+Xvfb :99 -screen 0 640x480x8 &
+XVFB_PID=$!
+
+
+export DISPLAY=:99
+
+
+"$@"
+
+
+kill $XVFB_PID
