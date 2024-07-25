@@ -1,30 +1,20 @@
 import { Flex, List, Button } from 'antd'
 import styled from 'styled-components'
 import { useEffect, useState } from 'react'
-import AllocationListItem from './AllocationListItem'
+// import AllocationListItem from './AllocationListItem'
 import { getThemeToken } from '../../../utils/styles'
 import { Allocation } from '../../../types/proj_grp'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
-import { Project } from '../../../types/proj'
-import api from '../../../api/config'
-
-const mockData: Allocation[] = [
-  {
-    allocationId: 1,
-    projectName: 'Project 1',
-    groupName: 'Group A',
-    groupDescription: 'Description A',
-  },
-  {
-    allocationId: 2,
-    projectName: 'Project 2',
-    groupName: 'Group B',
-    groupDescription: 'Description B',
-  },
-]
-
+import { AllocationRspDTO } from '../../../types/allocation'
+import AllocationListItem from './AllocationListItem'
+import {
+  getAllocations,
+  approveAllocation,
+  rejectAllocation,
+  createAllocation,
+} from '../../../api/allocAPI'
 type Props = {
   className?: string
 }
@@ -38,15 +28,52 @@ const _AllocationList = styled(List)`
   overflow-y: auto;
 `
 
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px; /* Optional: Add some space between buttons */
+`
+
+const StyledButton = styled(Button)`
+  height: 32px;
+  background-color: black;
+  color: white;
+  border: none;
+  text-align: center;
+`
+
+const Title = styled.span`
+  font-size: 16px;
+  font-weight: bold;
+`
+
 const AllocationList = ({ className = '' }: Props) => {
   const [filteredLists, setFilteredLists] = useState<Allocation[]>([])
   const { msg } = useGlobalComponentsContext()
 
+  const transformData = (data: AllocationRspDTO[]): Allocation[] => {
+    const projectMap = new Map<number, Allocation>()
+    data.forEach((item) => {
+      const allocation: Allocation = {
+        allocationId: item.allocationId, // assuming this is required
+        projectId: item.project.projectId,
+        projectName: item.project.projectName || 'Default Project Name',
+        groupName: item.group.groupName || 'Default Group Name',
+        groupId: item.group.groupId || 0,
+      }
+      if (!projectMap.has(allocation.projectId)) {
+        projectMap.set(allocation.projectId, allocation)
+      }
+    })
+    return Array.from(projectMap.values())
+  }
   useEffect(() => {
     const toFetch = async () => {
       try {
-        // Simulate an API call
-        setFilteredLists(mockData)
+        const response = await getAllocations()
+        console.log('allocation result', response)
+        const transformedData = transformData(response.data)
+        setFilteredLists(transformedData)
       } catch (e) {
         msg.err('Network error')
       }
@@ -55,15 +82,35 @@ const AllocationList = ({ className = '' }: Props) => {
   }, [msg])
 
   const handleAutoAllocate = async () => {
-    // Handle auto allocate button click
     try {
-      // 这里API有问题
-      const response = await api.post('/api/allocations')
+      const response = await createAllocation()
       console.log('Response from auto allocate:', response.data)
       msg.success('Auto Allocate initiated')
     } catch (error) {
       console.error('Error during auto allocate:', error)
       msg.err('Auto Allocate failed')
+    }
+  }
+
+  const handleApproveAll = async () => {
+    try {
+      const response = await approveAllocation()
+      console.log('Approve all:', response.data)
+      msg.success('Approve all Allocations!')
+    } catch (error) {
+      console.error('Error during auto allocate:', error)
+      msg.err('Auto Allocate failed')
+    }
+  }
+
+  const handleRejectAll = async () => {
+    try {
+      const response = await rejectAllocation()
+      console.log('Reject all:', response.data)
+      msg.success('Reject all Allocations!')
+    } catch (error) {
+      console.error('Error during auto allocate:', error)
+      msg.err('Allocation Reject failed')
     }
   }
 
@@ -74,10 +121,26 @@ const AllocationList = ({ className = '' }: Props) => {
         bordered
         header={
           <Flex justify="space-between" align="center">
-            Allocation List
-            <Button size="small" onClick={handleAutoAllocate}>
-              Auto Allocate
-            </Button>
+            <Title>Allocation List</Title>
+            <ButtonContainer>
+              <StyledButton
+                size="small"
+                color="green"
+                onClick={handleApproveAll}
+              >
+                Approve
+              </StyledButton>
+              <StyledButton
+                size="small"
+                color="green"
+                onClick={handleRejectAll}
+              >
+                Reject
+              </StyledButton>
+              <StyledButton size="small" onClick={handleAutoAllocate}>
+                Auto Allocate
+              </StyledButton>
+            </ButtonContainer>
           </Flex>
         }
         dataSource={filteredLists}
@@ -86,8 +149,8 @@ const AllocationList = ({ className = '' }: Props) => {
             actions={[
               <LinkButton
                 size="small"
-                to={`${route.ALLOCATION}/${(item as Project).id}`}
-                key={(item as Project).id}
+                to={`${route.ALLOCATION}/${(item as Allocation).projectId}`}
+                key={(item as Allocation).projectId}
               >
                 Edit
               </LinkButton>,
