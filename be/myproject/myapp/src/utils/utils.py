@@ -2,6 +2,7 @@ import jwt
 from django.conf import settings
 from myapp.src.models.models import User
 
+
 def decode_jwt(token):
     try:
         # Decode the token

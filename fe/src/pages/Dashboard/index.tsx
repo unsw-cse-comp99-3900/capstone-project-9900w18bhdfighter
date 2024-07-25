@@ -1,15 +1,18 @@
 import { Flex, Tabs } from 'antd'
 import type { TabsProps } from 'antd/es/tabs'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 
+import { role } from '../../constant/role'
+import { useAuthContext } from '../../context/AuthContext'
 import { getThemeColor, getThemeToken } from '../../utils/styles'
 import AllocationList from './components/AllocationList'
 import GroupsAssessmentList from './components/GroupAssessmentList'
 import GroupsList from './components/GroupsList'
 import ProjectsList from './components/ProjectsList'
 import SubmissionTab from './components/SubmissionTab'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -27,9 +30,19 @@ const _Tabs = styled(Tabs)`
 const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
 const _GroupsAssessmentList = styled(GroupsAssessmentList)``
+const _AllocationList = styled(AllocationList)``
 const Dashboard = () => {
   const [activeKey, setActiveKey] = useState('projectList')
-  const _AllocationList = styled(AllocationList)``
+  const { isInRoleRange } = useAuthContext()
+  const { isDueGroupFormation } = useGlobalConstantContext()
+  const showSubmission = useMemo(() => {
+    if (isInRoleRange([role.STUDENT])) {
+      if (isDueGroupFormation) {
+        return true
+      }
+    }
+    return false
+  }, [isDueGroupFormation, isInRoleRange])
   useEffect(() => {
     const savedActiveKey = sessionStorage.getItem('activeTabKey')
     if (savedActiveKey) {
@@ -48,22 +61,35 @@ const Dashboard = () => {
       label: 'Groups',
       children: <_GroupsList />,
     },
-    {
-      key: 'allocation',
-      label: 'Allocation',
-      children: <_AllocationList />,
-    },
-    {
-      key: 'submission',
-      label: 'Submission',
-      children: <SubmissionTab />,
-    },
-    {
-      key: 'assessment',
-      label: 'Assessment',
-      children: <_GroupsAssessmentList />,
-    },
+    ...(isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
+      ? [
+          {
+            key: 'allocation',
+            label: 'Allocation',
+            children: <_AllocationList />,
+          },
+        ]
+      : []),
+    ...(showSubmission
+      ? [
+          {
+            key: 'submission',
+            label: 'Submission',
+            children: <SubmissionTab />,
+          },
+        ]
+      : []),
+    ...(isInRoleRange([role.ADMIN, role.CORD, role.TUTOR])
+      ? [
+          {
+            key: 'assessment',
+            label: 'Assessment',
+            children: <_GroupsAssessmentList />,
+          },
+        ]
+      : []),
   ]
+
   const handleTabChange = (key: string) => {
     setActiveKey(key)
     sessionStorage.setItem('activeTabKey', key)

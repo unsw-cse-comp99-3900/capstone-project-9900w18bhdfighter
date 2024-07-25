@@ -26,7 +26,7 @@ class AllocationAPIView(
 
     def get_permissions(self):
 
-        if self.action in ["approve"]:
+        if self.action in ["approve", "create", "add_one", "delete_all"]:
             return [
                 ForValidToken(),
                 ForPartialRole([3, 4, 5]),
@@ -147,25 +147,6 @@ class AllocationAPIView(
             {"message": "Allocation updated successfully"}, status=status.HTTP_200_OK
         )
 
-    def destroy(self, request, pk=None):
-        Allocation.objects.all().delete()
-        return JsonResponse(
-            {"message": "Allocation rejected"}, status=status.HTTP_200_OK
-        )
-
-    @action(detail=True, methods=["delete"], url_path="delete", url_name="delete")
-    def delete_one(self, request, pk=None):
-        try:
-            allocation = Allocation.objects.get(pk=pk)
-        except Allocation.DoesNotExist:
-            return JsonResponse(
-                {"message": "Allocation not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        allocation.delete()
-        return JsonResponse(
-            {"message": "Allocation removed"}, status=status.HTTP_200_OK
-        )
-
     @action(detail=False, methods=["post"], url_path="add", url_name="add")
     def add_one(self, request):
         data = request.data
@@ -198,4 +179,23 @@ class AllocationAPIView(
         Allocation.objects.create(Project=project, Group=group)
         return JsonResponse(
             {"message": "Allocation added successfully"}, status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=False, methods=["delete"], url_path="reject", url_name="reject")
+    def delete_all(self, request):
+        Allocation.objects.all().delete()
+        return JsonResponse(
+            {"message": "All allocations are deleted"}, status=status.HTTP_200_OK
+        )
+
+    def destroy(self, request, pk=None):
+        try:
+            allocation = Allocation.objects.get(pk=pk)
+        except Allocation.DoesNotExist:
+            return JsonResponse(
+                {"error": "Allocation not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        allocation.delete()
+        return JsonResponse(
+            {"message": "Allocation removed"}, status=status.HTTP_200_OK
         )

@@ -25,6 +25,7 @@ from myapp.src.views.project import (
     project_update,
 )
 from myapp.src.views.report import download_report, generate_report, view_report
+from myapp.src.views.submition import SubmissionViewSet
 from myapp.src.views.time_rule import TimeRuleAPIView
 from myapp.src.views.user import UserAPIView
 from rest_framework.routers import SimpleRouter
@@ -50,6 +51,7 @@ url.register(r"api/group-projects", GroupProjectsLinkAPIView)
 url.register(r"api/time-rules", TimeRuleAPIView)
 url.register(r"api/courses", CourseAPIView)
 url.register(r"api/allocations", AllocationAPIView)
+url.register(r"api/submissions", SubmissionViewSet)
 urlpatterns = [
     path("api/login", student_login, name="student_login"),
     path("api/project_creation/", project_creation, name="project_creation"),

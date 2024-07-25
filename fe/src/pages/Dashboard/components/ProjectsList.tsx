@@ -1,16 +1,18 @@
-import { Flex, List } from 'antd'
+import { Flex, List, Popover } from 'antd'
 import styled from 'styled-components'
 
-import LinkButton from '../../../components/LinkButton'
 import { useEffect, useState } from 'react'
-import ProjectsListItem from './ProjectsListItem'
-import { getThemeToken } from '../../../utils/styles'
-import Filter from './Filter'
 import { getAllProjects, mapProjectDTOToProject } from '../../../api/projectAPI'
+import LinkButton from '../../../components/LinkButton'
 import { Project } from '../../../types/proj'
+import { getThemeToken } from '../../../utils/styles'
+import ProjectsListItem from './ProjectsListItem'
 
+import { FaSearch } from 'react-icons/fa'
+import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import Filter from './Filter'
 
 type Props = {
   className?: string
@@ -40,13 +42,35 @@ const ProjectsList = ({ className = '' }: Props) => {
     }
     toFetch()
   }, [])
+  const handleSearchChange = (val: string) => {
+    setFilteredLists(
+      list.filter((item) => {
+        return (item as Project).name.toLowerCase().includes(val.toLowerCase())
+      })
+    )
+  }
   return (
     <Wrapper className={className}>
       <_ProjectsList
         bordered
         header={
           <Flex justify="space-between" align="center">
-            Projects List
+            <Flex align="center" gap={10}>
+              Projects List
+              <Popover
+                trigger={['click']}
+                placement="top"
+                content={
+                  <DebounceSimpleSearcher
+                    placeholder="Search by project name"
+                    handleChange={handleSearchChange}
+                  />
+                }
+              >
+                <FaSearch style={{ cursor: 'pointer' }} />
+              </Popover>
+            </Flex>
+
             <Filter list={list} setFilteredLists={setFilteredLists} />
           </Flex>
         }

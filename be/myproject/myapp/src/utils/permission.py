@@ -211,8 +211,8 @@ class AfterGroupFormationDeadline(BasePermission):
                 return False
 
             request.user = user
-            # if user.UserRole in [5]:  # Admin role
-            #     return True
+            if user.UserRole in [5]:  # Admin role
+                return True
 
             # 找到time rule 里面active的rule
             rule = TimeRule.objects.filter(IsActive=True).first()

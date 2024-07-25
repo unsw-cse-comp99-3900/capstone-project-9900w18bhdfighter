@@ -313,3 +313,17 @@ class Allocation(models.Model):
 
     def __str__(self):
         return f"{self.Project} - {self.Group}"
+
+
+class Submission(models.Model):
+    SubmissionID = models.AutoField(primary_key=True)
+    Group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    Project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    SubmissionTime = models.DateTimeField(default=timezone.now)
+    SubmissionDemoVideo = models.FileField(upload_to="demos/", blank=True, null=True)
+    SubmissionReport = models.FileField(upload_to="reports/", blank=True, null=True)
+    GithubLink = models.URLField(blank=True, null=True)
+    SubmitBy = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.Group} - {self.Project}"

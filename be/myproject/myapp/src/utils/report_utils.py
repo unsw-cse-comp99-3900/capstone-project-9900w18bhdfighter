@@ -1,16 +1,17 @@
-from django.conf import settings
-from myapp.src.models.models import Group, GroupScore
 import os
-from pyvirtualdisplay import Display
 import subprocess
+
+from django.conf import settings
+from myapp.src.models.models import GroupScore
+
 
 def generate_pdf_from_html(html_content, output_path):
     temp_dir = settings.MEDIA_ROOT
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
 
-    html_file = os.path.join(temp_dir, 'temp.html')
-    with open(html_file, 'w') as f:
+    html_file = os.path.join(temp_dir, "temp.html")
+    with open(html_file, "w") as f:
         f.write(html_content)
 
     output_dir = os.path.dirname(output_path)
@@ -18,12 +19,14 @@ def generate_pdf_from_html(html_content, output_path):
         os.makedirs(output_dir)
 
     try:
-        command = ['wkhtmltopdf', html_file, output_path]
+        command = ["wkhtmltopdf", html_file, output_path]
         result = subprocess.run(command, capture_output=True, text=True)
 
         if result.returncode != 0:
             print(f"Error generating PDF: {result.stderr}")
-            raise IOError(f"wkhtmltopdf exited with non-zero code {result.returncode}. error:\n{result.stderr}")
+            raise IOError(
+                f"wkhtmltopdf exited with non-zero code {result.returncode}. error:\n{result.stderr}"
+            )
 
     finally:
         if os.path.exists(html_file):
@@ -31,13 +34,18 @@ def generate_pdf_from_html(html_content, output_path):
 
     return output_path
 
+
 def generate_group_report(group):
     group_members = group.groupuserslink_set.all()
-    assigned_project = group.grouppreference_set.first().Preference if group.grouppreference_set.exists() else None
+    assigned_project = (
+        group.grouppreference_set.first().Preference
+        if group.grouppreference_set.exists()
+        else None
+    )
     group_score = GroupScore.objects.filter(group=group).first()
-    score = group_score.score if group_score else 'N/A'
-    feedback = group_score.feedback if group_score else 'N/A'
-    marker = group_score.markers if group_score else 'N/A'
+    score = group_score.score if group_score else "N/A"
+    feedback = group_score.feedback if group_score else "N/A"
+    marker = group_score.markers if group_score else "N/A"
 
     html_content = f"""
     <html>
@@ -63,6 +71,8 @@ def generate_group_report(group):
     </html>
     """
 
-    output_path = os.path.join(settings.MEDIA_ROOT, 'reports', f'report_group_{group.GroupID}.pdf')
-    
+    output_path = os.path.join(
+        settings.MEDIA_ROOT, "reports", f"report_group_{group.GroupID}.pdf"
+    )
+
     return generate_pdf_from_html(html_content, output_path)

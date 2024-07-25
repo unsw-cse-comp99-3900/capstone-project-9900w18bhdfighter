@@ -59,7 +59,14 @@ interface ProjectRespDTO {
   InvolvedGroups: number[]
   projectOwner_id: number
 }
-
+interface ProjectSlimSlimDTO {
+  ProjectID: number
+  ProjectName: string
+}
+interface ProjectSlimSlim {
+  projectId: number
+  projectName: string
+}
 type ProjectProfileSlim = Pick<Project, 'id' | 'name' | 'owner'>
 type ProjectProfileSlimDTO = Pick<Project, 'id' | 'name' | 'owner'>
 export {
@@ -72,4 +79,6 @@ export {
   ProjectProfileSlim,
   ProjectProfileSlimDTO,
   ProjectInfo,
+  ProjectSlimSlimDTO,
+  ProjectSlimSlim,
 }

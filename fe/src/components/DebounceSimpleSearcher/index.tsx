@@ -1,10 +1,17 @@
 import { Input } from 'antd'
 import React from 'react'
 
-type Props = React.ComponentProps<typeof Input.Search>
+import { debounce } from '../../utils/optimize'
 
-const DebounceSimpleSearcher = (props: Props) => {
-  return <Input.Search {...props}></Input.Search>
+type Props = React.ComponentProps<typeof Input.Search> & {
+  handleChange: (_value: string) => void
+}
+
+const DebounceSimpleSearcher = ({ handleChange, ...props }: Props) => {
+  const debounceSearch = debounce((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange(e.target.value)
+  }, 500)
+  return <Input {...props} onChange={debounceSearch}></Input>
 }
 
 export default DebounceSimpleSearcher

@@ -1,8 +1,10 @@
-import { Flex, List } from 'antd'
+import { Flex, List, Popover } from 'antd'
 import styled from 'styled-components'
 
 import { useEffect, useState } from 'react'
+import { FaSearch } from 'react-icons/fa'
 import { getAllGroups, mapGroupDTOToGroup } from '../../../api/groupAPI'
+import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
 import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
@@ -42,13 +44,37 @@ const GroupsList = ({ className = '' }: Props) => {
   useEffect(() => {
     toFetch()
   }, [msg])
+  const handleSearchChange = (val: string) => {
+    setFilteredLists(
+      list.filter((item) => {
+        return (item as Group).groupName
+          .toLowerCase()
+          .includes(val.toLowerCase())
+      })
+    )
+  }
+
   return (
     <Wrapper className={className}>
       <_GroupsList
         bordered
         header={
           <Flex justify="space-between" align="center">
-            Groups List
+            <Flex align="center" gap={10}>
+              Groups List
+              <Popover
+                trigger={['click']}
+                placement="top"
+                content={
+                  <DebounceSimpleSearcher
+                    placeholder="Search by group name"
+                    handleChange={handleSearchChange}
+                  />
+                }
+              >
+                <FaSearch style={{ cursor: 'pointer' }} />
+              </Popover>
+            </Flex>
             <GroupFilter list={list} setFilteredLists={setFilteredLists} />
           </Flex>
         }

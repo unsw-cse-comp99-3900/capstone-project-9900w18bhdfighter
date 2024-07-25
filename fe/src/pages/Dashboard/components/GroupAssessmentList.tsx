@@ -1,17 +1,18 @@
-import { Flex, List } from 'antd'
-import styled from 'styled-components'
-
-import LinkButton from '../../../components/LinkButton'
+import { Flex, List, Popover } from 'antd'
 import { useEffect, useState } from 'react'
+import { FaSearch } from 'react-icons/fa'
+import styled from 'styled-components'
+import LinkButton from '../../../components/LinkButton'
 // import GroupsListItem from './GroupListItem'
-import GroupsAssessmentListItem from './GroupAssessmentItem'
-import { getThemeToken } from '../../../utils/styles'
 import { getAllGroups, mapGroupDTOToGroup } from '../../../api/groupAPI'
-import { Group } from '../../../types/group'
-import GroupFilter from './GroupFilter'
+import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
+import { Group } from '../../../types/group'
+import { getThemeToken } from '../../../utils/styles'
+import GroupsAssessmentListItem from './GroupAssessmentItem'
+import GroupFilter from './GroupFilter'
 
 type Props = {
   className?: string
@@ -44,6 +45,16 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
       msg.err('Network error')
     }
   }
+  const handleSearchChange = (val: string) => {
+    setFilteredLists(
+      list.filter((item) => {
+        return (item as Group).groupName
+          .toLowerCase()
+          .includes(val.toLowerCase())
+      })
+    )
+  }
+
   useEffect(() => {
     toFetch()
     console.log('Due:', isDueProject)
@@ -54,7 +65,22 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
         bordered
         header={
           <Flex justify="space-between" align="center">
-            Groups Assessment List
+            <Flex align="center" gap={10}>
+              Groups Assessment List{' '}
+              <Popover
+                trigger={['click']}
+                placement="top"
+                content={
+                  <DebounceSimpleSearcher
+                    placeholder="Search by group name"
+                    handleChange={handleSearchChange}
+                  />
+                }
+              >
+                <FaSearch style={{ cursor: 'pointer' }} />
+              </Popover>
+            </Flex>
+
             <GroupFilter list={list} setFilteredLists={setFilteredLists} />
           </Flex>
         }

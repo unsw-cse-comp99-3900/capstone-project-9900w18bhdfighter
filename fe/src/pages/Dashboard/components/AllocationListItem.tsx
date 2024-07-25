@@ -1,13 +1,45 @@
+import { Collapse, List, Typography } from 'antd'
+
+import { CollapseProps } from 'antd/lib'
 import React from 'react'
-import { List } from 'antd'
-import { Allocation } from '../../../types/proj_grp'
+import { Link } from 'react-router-dom'
+import styled from 'styled-components'
+import route from '../../../constant/route'
+import { AllocationGrouped } from './AllocationList'
 
 type Props = {
-  item: Allocation
+  item: AllocationGrouped
 }
+const _Collapse = styled(Collapse)`
+  flex: 1;
+`
 
 const AllocationListItem: React.FC<Props> = ({ item }) => {
-  return <List.Item.Meta title={`${item.projectName}`} />
+  const items: CollapseProps['items'] = [
+    {
+      key: item.projectId,
+      label: item.projectName,
+      children: (
+        <List
+          size="small"
+          style={{
+            padding: 0,
+          }}
+        >
+          {item.group.map((group) => (
+            <List.Item key={group.groupId}>
+              <Link to={`${route.GROUPS}/${group.groupId}`}>
+                <Typography.Link>{group.groupName}</Typography.Link>
+              </Link>
+            </List.Item>
+          ))}
+        </List>
+      ),
+      style: { padding: 0 },
+    },
+  ]
+
+  return <_Collapse ghost bordered={false} items={items}></_Collapse>
 }
 
 export default AllocationListItem

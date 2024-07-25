@@ -222,13 +222,14 @@ class GroupsAPIView(
         print("autocomplete groups")
         group_substring = request.query_params.get("name_substring", None)
         only_groups_with_no_proj = request.query_params.get(
-            "only_groups_with_no_proj", None
+            "only_groups_with_no_proj", "false"
         )
         queryset = Group.objects.all()
-        if only_groups_with_no_proj:
+        if only_groups_with_no_proj == "true":
             # Get all groups with no projects
-            queryset = GroupProjectsLink.objects.all().values_list("GroupID", flat=True)
-            queryset = Group.objects.exclude(GroupID__in=queryset)
+            groupprojects = GroupProjectsLink.objects.all()
+            group_ids_with_proj = [gp.GroupID.GroupID for gp in groupprojects]
+            queryset = queryset.exclude(GroupID__in=group_ids_with_proj)
 
         if group_substring:
             queryset = queryset.filter(GroupName__icontains=group_substring)

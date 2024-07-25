@@ -61,8 +61,15 @@ interface Group {
   preferences: GroupPreference[]
   course: Course
 }
-
-export interface GroupSlim {
+interface GroupSlimSlimRspDTO {
+  GroupID: number
+  GroupName: string
+}
+interface GroupSlimSlim {
+  groupId: number
+  groupName: string
+}
+interface GroupSlim {
   groupId: number
   groupName: string
   groupDescription: string
@@ -83,4 +90,7 @@ export {
   GroupPreferenceReqDTO,
   GroupPreference,
   GroupPreferenceSlim,
+  GroupSlim,
+  GroupSlimSlim,
+  GroupSlimSlimRspDTO,
 }

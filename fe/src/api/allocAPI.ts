@@ -6,14 +6,14 @@ const getAllocations = async () =>
 
 const approveAllocation = async () => api.post('api/allocations/approve')
 
-const rejectAllocation = async () => api.delete('api/allocations')
+const rejectAllocation = async () => api.delete('api/allocations/reject')
 
 const createAllocation = async () => api.post('api/allocations')
 const addOneAllocation = async (allocation: AllocationReqDTO) => {
   return api.post<AllocationRspDTO>('api/allocations/add', allocation)
 }
 const delOneAllocation = async (allocationId: number) => {
-  return api.delete(`api/allocations/${allocationId}/delete`)
+  return api.delete(`api/allocations/${allocationId}`)
 }
 
 export {

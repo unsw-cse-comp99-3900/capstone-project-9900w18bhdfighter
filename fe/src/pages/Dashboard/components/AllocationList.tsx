@@ -1,20 +1,22 @@
-import { Flex, List, Button } from 'antd'
-import styled from 'styled-components'
+import { Button, Flex, List, Popover, Space, Spin } from 'antd'
 import { useEffect, useState } from 'react'
+import styled from 'styled-components'
 // import AllocationListItem from './AllocationListItem'
-import { getThemeToken } from '../../../utils/styles'
-import { Allocation } from '../../../types/proj_grp'
-import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
+import {
+  approveAllocation,
+  createAllocation,
+  getAllocations,
+  rejectAllocation,
+} from '../../../api/allocAPI'
 import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
+import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import { AllocationRspDTO } from '../../../types/allocation'
+import { errHandler } from '../../../utils/parse'
+import { getThemeToken } from '../../../utils/styles'
 import AllocationListItem from './AllocationListItem'
-import {
-  getAllocations,
-  approveAllocation,
-  rejectAllocation,
-  createAllocation,
-} from '../../../api/allocAPI'
+import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
+import { FaSearch } from 'react-icons/fa'
 type Props = {
   className?: string
 }
@@ -28,135 +30,224 @@ const _AllocationList = styled(List)`
   overflow-y: auto;
 `
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px; /* Optional: Add some space between buttons */
+const StyledButton = styled(Button)<{ visible: boolean }>`
+  display: ${(props) => (props.visible ? 'block' : 'none')};
 `
 
-const StyledButton = styled(Button)`
-  height: 32px;
-  background-color: black;
-  color: white;
-  border: none;
-  text-align: center;
+const Mask = styled.div`
+  background-color: rgba(0, 0, 0, 0);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
 `
-
-const Title = styled.span`
-  font-size: 16px;
-  font-weight: bold;
+const _Spin = styled(Spin)`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
 `
-
-const AllocationList = ({ className = '' }: Props) => {
-  const [filteredLists, setFilteredLists] = useState<Allocation[]>([])
-  const { msg } = useGlobalComponentsContext()
-
-  const transformData = (data: AllocationRspDTO[]): Allocation[] => {
-    const projectMap = new Map<number, Allocation>()
-    data.forEach((item) => {
-      const allocation: Allocation = {
-        allocationId: item.allocationId, // assuming this is required
+export type AllocationGrouped = {
+  projectId: number
+  projectName: string
+  group: {
+    groupId: number
+    groupName: string
+  }[]
+}
+const transformData = (data: AllocationRspDTO[]) => {
+  const transformedData: AllocationGrouped[] = []
+  data.forEach((item) => {
+    const projectIndex = transformedData.findIndex(
+      (project) => project.projectId === item.project.projectId
+    )
+    if (projectIndex === -1) {
+      transformedData.push({
         projectId: item.project.projectId,
-        projectName: item.project.projectName || 'Default Project Name',
-        groupName: item.group.groupName || 'Default Group Name',
-        groupId: item.group.groupId || 0,
-      }
-      if (!projectMap.has(allocation.projectId)) {
-        projectMap.set(allocation.projectId, allocation)
-      }
-    })
-    return Array.from(projectMap.values())
+        projectName: item.project.projectName,
+        group: [
+          {
+            groupId: item.group.groupId,
+            groupName: item.group.groupName,
+          },
+        ],
+      })
+    } else {
+      ;(transformedData[projectIndex] as AllocationGrouped).group.push({
+        groupId: item.group.groupId,
+        groupName: item.group.groupName,
+      })
+    }
+  })
+  console.log('transformedData', transformedData)
+
+  return transformedData
+}
+const AllocationList = ({ className = '' }: Props) => {
+  const [allocListGroupedByProj, setAllocListGroupedByProj] = useState<
+    AllocationGrouped[]
+  >([])
+  const [filteredLists, setFilteredLists] = useState<AllocationGrouped[]>([])
+  const [loading, setLoading] = useState(false)
+  const { msg } = useGlobalComponentsContext()
+  console.log(allocListGroupedByProj)
+
+  const shouldDisplayRejectButton = allocListGroupedByProj.length > 0
+
+  const shouldDisplayApproveButton = allocListGroupedByProj.length > 0
+  const shouldDisplayAutoAllocateButton = allocListGroupedByProj.length === 0
+  const toFetch = async () => {
+    try {
+      const response = await getAllocations()
+      console.log('allocation result', response)
+      const transformedData = transformData(response.data)
+      setAllocListGroupedByProj(transformedData)
+      setFilteredLists(transformedData)
+    } catch (e) {
+      msg.err('Network error')
+    }
   }
   useEffect(() => {
-    const toFetch = async () => {
-      try {
-        const response = await getAllocations()
-        console.log('allocation result', response)
-        const transformedData = transformData(response.data)
-        setFilteredLists(transformedData)
-      } catch (e) {
-        msg.err('Network error')
-      }
-    }
     toFetch()
-  }, [msg])
+  }, [])
 
   const handleAutoAllocate = async () => {
     try {
-      const response = await createAllocation()
-      console.log('Response from auto allocate:', response.data)
+      setLoading(true)
+      await createAllocation()
+      await toFetch()
       msg.success('Auto Allocate initiated')
     } catch (error) {
-      console.error('Error during auto allocate:', error)
-      msg.err('Auto Allocate failed')
+      errHandler(
+        error,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleApproveAll = async () => {
     try {
+      setLoading(true)
       const response = await approveAllocation()
       console.log('Approve all:', response.data)
       msg.success('Approve all Allocations!')
+
+      await toFetch()
     } catch (error) {
       console.error('Error during auto allocate:', error)
-      msg.err('Auto Allocate failed')
+      errHandler(
+        error,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleRejectAll = async () => {
     try {
-      const response = await rejectAllocation()
-      console.log('Reject all:', response.data)
+      await rejectAllocation()
+      await toFetch()
       msg.success('Reject all Allocations!')
     } catch (error) {
       console.error('Error during auto allocate:', error)
       msg.err('Allocation Reject failed')
     }
   }
-
+  const handleSearchChange = (val: string) => {
+    setFilteredLists(
+      allocListGroupedByProj.filter((item) => {
+        return (item as AllocationGrouped).projectName
+          .toLowerCase()
+          .includes(val.toLowerCase())
+      })
+    )
+  }
   return (
     <Wrapper className={className}>
+      {loading && <Mask />}
+      {loading && <_Spin />}
       <_AllocationList
         itemLayout="horizontal"
         bordered
         header={
-          <Flex justify="space-between" align="center">
-            <Title>Allocation List</Title>
-            <ButtonContainer>
+          <Flex
+            style={{
+              height: '2rem',
+            }}
+            justify="space-between"
+            align="center"
+          >
+            <Flex align="center" gap={10}>
+              Allocation List
+              <Popover
+                trigger={['click']}
+                placement="top"
+                content={
+                  <DebounceSimpleSearcher
+                    placeholder="Search by project name"
+                    handleChange={handleSearchChange}
+                  />
+                }
+              >
+                <FaSearch style={{ cursor: 'pointer' }} />
+              </Popover>
+            </Flex>
+            <Space>
               <StyledButton
+                visible={shouldDisplayApproveButton}
                 size="small"
-                color="green"
+                type="primary"
                 onClick={handleApproveAll}
               >
                 Approve
               </StyledButton>
               <StyledButton
+                visible={shouldDisplayRejectButton}
                 size="small"
-                color="green"
+                type="primary"
+                danger
                 onClick={handleRejectAll}
               >
                 Reject
               </StyledButton>
-              <StyledButton size="small" onClick={handleAutoAllocate}>
-                Auto Allocate
+              <StyledButton
+                visible={shouldDisplayAutoAllocateButton}
+                type="primary"
+                size="small"
+                onClick={handleAutoAllocate}
+                loading={loading}
+              >
+                Allocate
               </StyledButton>
-            </ButtonContainer>
+            </Space>
           </Flex>
         }
         dataSource={filteredLists}
         renderItem={(item) => (
           <List.Item
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
             actions={[
               <LinkButton
                 size="small"
-                to={`${route.ALLOCATION}/${(item as Allocation).projectId}`}
-                key={(item as Allocation).projectId}
+                to={`${route.ALLOCATION}/${(item as AllocationGrouped).projectId}`}
+                key={(item as AllocationGrouped).projectId}
               >
                 Edit
               </LinkButton>,
             ]}
           >
-            <AllocationListItem item={item as Allocation} />
+            <AllocationListItem item={item as AllocationGrouped} />
           </List.Item>
         )}
       />

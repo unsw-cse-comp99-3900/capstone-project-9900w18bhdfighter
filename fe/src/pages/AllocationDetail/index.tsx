@@ -1,16 +1,30 @@
-import React, { ReactNode, useEffect, useState } from 'react'
-import { Button, Descriptions, List, Modal, Form, message } from 'antd'
-import styled from 'styled-components'
-import { getThemeToken } from '../../utils/styles'
-import GroupSearchBar from '../../components/GroupSearchBar'
-import { mapGroupDTOToGroup, getAutoCompleteGroups } from '../../api/groupAPI'
-import { Group } from '../../types/group'
-import { useParams } from 'react-router-dom'
 import {
-  getAllocations,
+  Button,
+  Descriptions,
+  Flex,
+  Form,
+  List,
+  message,
+  Modal,
+  Typography,
+} from 'antd'
+import React, { ReactNode, useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import styled from 'styled-components'
+import {
   addOneAllocation,
   delOneAllocation,
+  getAllocations,
 } from '../../api/allocAPI'
+import { getAutoCompleteGroups, mapGroupDTOToGroup } from '../../api/groupAPI'
+import { getProjectById, mapProjectDTOToProject } from '../../api/projectAPI'
+import GroupSearchBar from '../../components/GroupSearchBar'
+import route from '../../constant/route'
+import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
+import { Group } from '../../types/group'
+import { Project } from '../../types/proj'
+import { errHandler } from '../../utils/parse'
+import { getThemeToken } from '../../utils/styles'
 
 const Wrapper = styled.div`
   width: 100%;
@@ -70,12 +84,18 @@ const AllocationDetail: React.FC = () => {
   const [autoCompGroupList, setAutoCompGroupList] = useState<Group[]>([])
   const [selectedGroup, setSelectedGroup] = useState<GroupValue | null>(null)
   const [allocationList, setAllocationList] = useState<Allocation[]>([]) // Use Allocation type
+  const { msg } = useGlobalComponentsContext()
   const { id } = useParams<{ id: string }>()
+  const [projectD, setProjectD] = useState<Project | null>(null)
 
-  // 调试 useParams 返回的内容
-  console.log('useParams:', useParams<{ id: string }>())
-  console.log('id:', id)
-
+  const getProjectDetail = async (pId: number | string) => {
+    try {
+      const response = await getProjectById(pId)
+      setProjectD(mapProjectDTOToProject(response.data))
+    } catch (err) {
+      console.error('Error fetching project:')
+    }
+  }
   const showModal = () => {
     setIsModalVisible(true)
   }
@@ -92,10 +112,12 @@ const AllocationDetail: React.FC = () => {
         )
         setAllocationList(allocations)
       } catch (error) {
-        console.error('Error fetching allocations:', error)
+        errHandler(
+          error,
+          (str) => msg.err(str),
+          (str) => msg.err(str)
+        )
       }
-    } else {
-      console.error('projectId is undefined')
     }
   }
 
@@ -140,7 +162,7 @@ const AllocationDetail: React.FC = () => {
   const showConfirmModal = (allocationId: number, groupName: string) => {
     Modal.confirm({
       title: 'Are you sure you want to remove this allocation?',
-      content: `You are about to remove ${groupName}. This action cannot be undone.`,
+      content: `You are about to remove ${groupName}.`,
       onOk: async () => {
         console.log(`Removing item: ${allocationId}`)
         try {
@@ -172,15 +194,27 @@ const AllocationDetail: React.FC = () => {
   }
 
   useEffect(() => {
-    console.log('Current projectId:', id)
+    if (!id) {
+      return
+    }
+
     getAllocationList()
+    getProjectDetail(parseInt(id))
   }, [id])
 
   return (
     <Wrapper>
       <HeaderWrapper>
         <Descriptions
-          title={`Allocation Detail for Project`}
+          title={
+            <Flex vertical>
+              Allocation Detail - {projectD?.name}
+              <Typography.Text type="secondary"></Typography.Text>
+              <Typography.Text type="secondary">
+                ({allocationList.length}/{projectD?.maxNumOfGroup})
+              </Typography.Text>
+            </Flex>
+          }
           bordered={false}
           style={{ marginBottom: 0 }}
         />
@@ -196,13 +230,16 @@ const AllocationDetail: React.FC = () => {
         renderItem={(item) => (
           <List.Item>
             <ListItemWrapper>
-              {item.group.groupName}
+              <Link to={`${route.GROUPS}/${item.group.groupId}`}>
+                {item.group.groupName}
+              </Link>
               <Button
                 type="link"
                 onClick={() =>
                   showConfirmModal(item.allocationId, item.group.groupName)
                 }
                 style={{ marginLeft: 'auto' }}
+                danger
               >
                 Remove
               </Button>
