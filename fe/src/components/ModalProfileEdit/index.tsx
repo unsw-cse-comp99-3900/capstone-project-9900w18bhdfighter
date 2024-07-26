@@ -1,11 +1,11 @@
-import { Button, Form, Input, Modal, Select } from 'antd'
 import type { FormInstance, ModalProps } from 'antd'
+import { Button, Form, Input, Modal, Select } from 'antd'
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { UserInfo, UserRole } from '../../types/user'
 
-import AreaContextProvider from '../../context/AreaContext'
 import { role as _role } from '../../constant/role'
+import AreaContextProvider from '../../context/AreaContext'
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 
 type Props = {
@@ -49,7 +49,7 @@ const _ModalProfileEdit = ({
       description: description,
       interestAreas: interestAreas.map((area) => area.id),
       role: role,
-      courseCode: courseCode?.id || undefined,
+      courseCode: courseCode?.id,
     })
     console.log(interestAreas)
   }, [userInfo, form])

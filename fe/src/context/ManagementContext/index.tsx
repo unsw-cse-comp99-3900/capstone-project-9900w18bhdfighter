@@ -6,16 +6,16 @@ import {
   useState,
 } from 'react'
 import api from '../../api/config'
-import { useGlobalComponentsContext } from '../GlobalComponentsContext'
-import { UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
-import { errHandler } from '../../utils/parse'
-import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
 import {
   createTimeRule,
   deleteTimeRule,
   updateTimeRule,
 } from '../../api/timeRuleAPI'
+import { getUserById, mapUserProfileDTOToUserInfo } from '../../api/userAPI'
 import { TimeRule, TimeRuleReqDTO } from '../../types/timeRule'
+import { UserInfo, UserProfileDTO, UserUpdate } from '../../types/user'
+import { errHandler } from '../../utils/parse'
+import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 import { useGlobalConstantContext } from '../GlobalConstantContext'
 
 interface ManagementContextType {
@@ -75,6 +75,7 @@ const ManagementContextProvider = ({ children }: { children: ReactNode }) => {
   const getAccountList = async () => {
     try {
       const res = await api.get('api/users')
+      console.log(res.data)
 
       const _accountList: UserInfo[] = res.data.data.map(
         (account: UserProfileDTO) => ({
@@ -88,6 +89,10 @@ const ManagementContextProvider = ({ children }: { children: ReactNode }) => {
             id: area.AreaID,
             name: area.AreaName,
           })),
+          courseCode: {
+            id: account.CourseCode?.CourseCodeID,
+            name: account.CourseCode?.CourseName,
+          },
         })
       )
       setAccountList(_accountList)
