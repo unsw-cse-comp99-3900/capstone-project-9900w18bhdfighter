@@ -1,5 +1,5 @@
 import { Button, Flex, Form, Input, InputNumber, Modal, Select } from 'antd'
-import React, { CSSProperties, useMemo, useState } from 'react'
+import React, { CSSProperties, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { ProjectReqDTO } from '../../types/proj'
 import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
@@ -11,6 +11,7 @@ import {
 } from '../../api/userAPI'
 import { role } from '../../constant/role'
 import ResponsiveForm from '../ResponsiveForm/ResponsiveForm'
+import { useAuthContext } from '../../context/AuthContext'
 
 interface Props extends React.ComponentProps<typeof Modal> {
   isModalOpen: boolean
@@ -84,7 +85,7 @@ const ModalProjectForm = ({
   const [autoCompUserWithoutSelf, setAutoCompUserWithoutSelf] = useState<
     UserProfileSlim[]
   >([])
-
+  const { usrInfo, isInRoleRange } = useAuthContext()
   const areaOptions = useMemo<Option[]>(
     () =>
       AREA_LIST?.map((area) => ({ label: area.name, value: area.id })) || [],
@@ -104,6 +105,15 @@ const ModalProjectForm = ({
     }
   }
 
+  useEffect(() => {
+    if (!usrInfo) return
+    if (isInRoleRange([role.CLIENT])) {
+      form.setFieldsValue({
+        ...initialData,
+        email: usrInfo?.email,
+      })
+    }
+  }, [initialData, usrInfo])
   return (
     <_Modal
       title={title}
@@ -167,6 +177,9 @@ const ModalProjectForm = ({
           )}
         </Form.List>
         <Form.Item
+          style={{
+            display: isInRoleRange([role.CLIENT]) ? 'none' : 'block',
+          }}
           rules={[{ required: true, message: 'Missing Email' }]}
           label="Project Owner's Email"
           name="email"
