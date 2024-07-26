@@ -25,7 +25,8 @@ const GroupsListItem: React.FC<Props> = ({ item }) => {
                 fontSize: '0.85rem',
               }}
             >
-              ({item.groupMembers.length}/{item.maxMemberNum})
+              ({item.groupMembers.length}/{item.maxMemberNum}) [
+              {item.course.courseName}]
             </Typography.Text>
           </CustomTitle>
         </Flex>

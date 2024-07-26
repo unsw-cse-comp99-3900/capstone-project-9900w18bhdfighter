@@ -69,19 +69,6 @@ const _Teams = () => {
     fetchGroups()
   }, [currentUserId])
 
-  // const handleOk = async (groupCreateDto: GroupReqDTO) => {
-  //   console.log('handleOk started with:', groupCreateDto)
-  //   setIsModalOpen(false)
-  //   await fetchGroups()
-  //   const response = await getAllGroups()
-  //   const allGroups = response.data.map(mapGroupDTOToGroup)
-  //   const userGroups = allGroups.filter((group: Group) =>
-  //     group.groupMembers.some(
-  //       (member: UserProfileSlim) => member.id === currentUserId
-  //     )
-  //   )
-  //   setGroups(userGroups)
-  // }
   const handleOk = async (groupCreateDto: GroupReqDTO) => {
     console.log('handleOk started with:', groupCreateDto)
     setIsModalOpen(false)

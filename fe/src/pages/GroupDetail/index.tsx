@@ -524,24 +524,27 @@ const _GroupDetail = () => {
           },
         }}
         onCancel={() => handleSkillEvaluationModal(false)}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => handleSkillEvaluationModal(false)}
-          >
-            Cancel
-          </Button>,
-          <Button
-            style={{
-              display: isDueGroupFormation ? 'none' : 'block',
-            }}
-            key="submit"
-            type="primary"
-            onClick={handleSubmitEvaluation}
-          >
-            Submit
-          </Button>,
-        ]}
+        footer={
+          <Flex justify="end" gap={5}>
+            <Button
+              style={{
+                display: isDueGroupFormation ? 'none' : 'block',
+              }}
+              key="submit"
+              type="primary"
+              onClick={handleSubmitEvaluation}
+            >
+              Submit
+            </Button>
+            ,
+            <Button
+              key="cancel"
+              onClick={() => handleSkillEvaluationModal(false)}
+            >
+              Cancel
+            </Button>
+          </Flex>
+        }
       >
         {skillEvaluationData ? (
           <SkillEvaluationContainer>

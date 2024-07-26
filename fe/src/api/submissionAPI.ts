@@ -62,6 +62,36 @@ const submitSubmission = async (
     },
   })
 }
+const updateSubmission = async (
+  id: number | string,
+  submissionReqDTO: Partial<SubmissionReqDTO>
+): Promise<Submission> => {
+  const formData = new FormData()
+  const group = submissionReqDTO.Group as number
+  const project = submissionReqDTO.Project as number
+  formData.append('Group', group.toString())
+  formData.append('Project', project.toString())
+
+  if (Object.keys(submissionReqDTO).includes('SubmissionDemoVideo')) {
+    formData.append(
+      'SubmissionDemoVideo',
+      submissionReqDTO.SubmissionDemoVideo || ''
+    )
+  }
+  if (Object.keys(submissionReqDTO).includes('SubmissionReport')) {
+    formData.append('SubmissionReport', submissionReqDTO.SubmissionReport || '')
+  }
+  if (submissionReqDTO.GithubLink) {
+    formData.append('GithubLink', submissionReqDTO.GithubLink)
+  }
+  formData.append('SubmitBy', (submissionReqDTO.SubmitBy as number).toString())
+
+  return api.put(`api/submissions/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}
 
 const getSubmissionByGroup = async (groupId: number) => {
   try {
@@ -79,4 +109,5 @@ export {
   getSubmissionByGroup,
   mapSubmissionDTOToSubmission,
   submitSubmission,
+  updateSubmission,
 }

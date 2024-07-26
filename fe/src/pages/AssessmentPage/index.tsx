@@ -173,7 +173,7 @@ const AssessmentDetail: React.FC = () => {
         <Descriptions.Item label="Demo Video" span={3}>
           {sub?.submissionDemoVideo ? (
             <Link href={staticWrapped(sub.submissionDemoVideo)}>
-              {sub.fileNameReport}
+              {sub.fileNameDemo}
             </Link>
           ) : (
             <NotProvided />

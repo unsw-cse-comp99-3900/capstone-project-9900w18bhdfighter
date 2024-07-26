@@ -4,14 +4,20 @@ import { Button, Form, Input, Typography, Upload, message } from 'antd'
 
 import styled from 'styled-components'
 
-import { submitSubmission } from '../../../../api/submissionAPI'
+import {
+  submitSubmission,
+  // submitSubmission,
+  updateSubmission,
+} from '../../../../api/submissionAPI'
 
 import { useEffect } from 'react'
 import { useAuthContext } from '../../../../context/AuthContext'
+import { useGlobalComponentsContext } from '../../../../context/GlobalComponentsContext'
 import { useGlobalConstantContext } from '../../../../context/GlobalConstantContext'
 import SubmissionTabProvider, {
   useSubmissionTabContext,
 } from '../../../../context/SubmissionTabContext'
+
 import { SubmissionReqDTO } from '../../../../types/submission'
 import { timeFormat } from '../../../../utils/parse'
 import { getThemeColor, getThemeToken } from '../../../../utils/styles'
@@ -45,6 +51,7 @@ const _SubmissionTab = () => {
     getMySubmission,
   } = useSubmissionTabContext()
   const { PROJECT_DUE } = useGlobalConstantContext()
+  const { msg } = useGlobalComponentsContext()
   console.log(submission)
   const { usrInfo } = useAuthContext()
   const [form] = Form.useForm()
@@ -78,11 +85,15 @@ const _SubmissionTab = () => {
   ) => {
     if (type === 'video' && file.type !== 'video/mp4') {
       message.error('You can only upload MP4 file!')
-      return false
+
+      return Upload.LIST_IGNORE
     }
     if (type === 'report' && file.type !== 'application/pdf') {
       message.error('You can only upload PDF file!')
-      return false
+      form.setFieldsValue({
+        SubmissionReport: null,
+      })
+      return Upload.LIST_IGNORE
     }
 
     return true
@@ -95,38 +106,59 @@ const _SubmissionTab = () => {
     return handleBeforeUpload(file, fileList, 'report')
   }
   const handleSubmit = async (values: any) => {
-    console.log('values:', values)
-
     if (!participatedProject) {
+      msg.err('You are not participating in any project')
       return
     }
     if (!participatedGroup) {
+      msg.err('You are not in any group')
       return
     }
     if (!usrInfo) {
+      msg.err('You are not logged in')
       return
     }
 
     const sdv = values.SubmissionDemoVideo || []
     const rp = values.SubmissionReport || []
-    const demoVideo =
-      sdv.length > 0 ? values.SubmissionDemoVideo[0]?.originFileObj : null
-    const report =
-      rp.length > 0 ? values.SubmissionReport[0]?.originFileObj : null
 
-    const submissionReqDTO: SubmissionReqDTO = {
+    const demoVideo = sdv.length > 0 ? values.SubmissionDemoVideo[0] : null
+    const report = rp.length > 0 ? values.SubmissionReport[0] : null
+    const dto: Partial<SubmissionReqDTO> = {}
+    if (demoVideo) {
+      if (demoVideo.originFileObj) {
+        dto.SubmissionDemoVideo = demoVideo.originFileObj
+      }
+    } else {
+      dto.SubmissionDemoVideo = null
+    }
+    if (report) {
+      if (report.originFileObj) {
+        dto.SubmissionReport = report.originFileObj
+      }
+    } else {
+      dto.SubmissionReport = null
+    }
+
+    const submissionReqDTO = {
       Group: participatedGroup.groupId,
       Project: participatedProject.id,
-      SubmissionDemoVideo: demoVideo,
-      SubmissionReport: report,
+      ...dto,
       GithubLink: values.GithubLink || null,
       SubmitBy: usrInfo.id,
     }
-
-    console.log('submissionReqDTO:', submissionReqDTO)
+    console.log(submissionReqDTO)
 
     try {
-      await submitSubmission(submissionReqDTO)
+      if (submission) {
+        await updateSubmission(submission.submissionID, submissionReqDTO)
+      } else {
+        await submitSubmission({
+          ...submissionReqDTO,
+          SubmissionDemoVideo: dto.SubmissionDemoVideo || null,
+          SubmissionReport: dto.SubmissionReport || null,
+        })
+      }
 
       message.success('Submission successfully uploaded.')
       getMySubmission()
@@ -138,17 +170,35 @@ const _SubmissionTab = () => {
 
   return (
     <Wrapper>
-      <Typography.Text>
-        Deliver you work in group{' '}
-        <Strong>{participatedGroup?.groupName}</Strong> for project{' '}
-        <Strong>{participatedProject?.name}</Strong>
-      </Typography.Text>{' '}
+      {!participatedProject && (
+        <Typography.Text
+          style={{
+            fontSize: '0.8rem',
+          }}
+          type="danger"
+        >
+          Note: You can not submit any work because you are not participating in
+          any project
+        </Typography.Text>
+      )}
+      {participatedProject && (
+        <Typography.Text>
+          Deliver you work in group{' '}
+          <Strong>{participatedGroup?.groupName}</Strong> for project{' '}
+          <Strong>{participatedProject?.name}</Strong>
+        </Typography.Text>
+      )}
       {PROJECT_DUE && (
         <Typography.Text>
           Due by <Strong>{timeFormat(PROJECT_DUE)}</Strong>
         </Typography.Text>
       )}
-      <_Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <_Form
+        disabled={!participatedProject}
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+      >
         <Form.Item
           name="SubmissionDemoVideo"
           label="Demo Video"

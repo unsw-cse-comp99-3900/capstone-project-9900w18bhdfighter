@@ -5,6 +5,56 @@ from django.contrib.auth.hashers import make_password
 from django.db import migrations, models
 from django.utils import timezone
 
+random_first_names = [
+    "James",
+    "John",
+    "Robert",
+    "Michael",
+    "William",
+    "David",
+    "Richard",
+    "Joseph",
+    "Thomas",
+]
+
+random_last_names = [
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Jones",
+    "Brown",
+    "Davis",
+    "Miller",
+    "Wilson",
+]
+
+random_adjectives = [
+    "Happy",
+    "Sad",
+    "Angry",
+    "Excited",
+    "Tired",
+    "Sleepy",
+    "Hungry",
+    "Thirsty",
+    "Bored",
+    "Annoyed",
+]
+random_group_nouns = [
+    "Cats",
+    "Dogs",
+    "Birds",
+    "Fish",
+    "Lions",
+    "Tigers",
+    "Bears",
+    "Elephants",
+    "Monkeys",
+    "Pandas",
+]
+
+random.seed(42)
+
 
 def add_roles(apps, schema_editor):
     User = apps.get_model("myapp", "User")
@@ -105,14 +155,16 @@ def create_test_users(apps, schema_editor):
     for i in range(100):
         email = f"stu{i}@stu.com"
         password = make_password("stu")
+        first_name = random.choice(random_first_names)
+        last_name = random.choice(random_last_names) + str(i)
         user_ls.append(
             User(
-                FirstName=f"stu{i}",
-                LastName=f"stu{i}",
+                FirstName=first_name,
+                LastName=last_name,
                 EmailAddress=email,
                 Passwd=password,
                 UserRole=1,
-                UserInformation=f"Information for stu{i}",
+                UserInformation=f"Information for {first_name} {last_name}",
                 CourseCode=course_ls[i % 2],
             )
         )
@@ -171,22 +223,22 @@ def add_groups(apps, schema_editor):
     course = CourseCode.objects.get(CourseName="COMP9900")
 
     group1 = Group.objects.create(
-        GroupName="Group 1",
-        GroupDescription="Description for Group 1",
+        GroupName="Cord Created Group",
+        GroupDescription="This is a group created by cord",
         CreatedBy=cord,
         MaxMemberNumber=6,
         CourseCode=course,
     )
     group2 = Group.objects.create(
-        GroupName="Group 2",
-        GroupDescription="Description for Group 2",
+        GroupName="Admin Created Group",
+        GroupDescription="This is a group created by admin",
         CreatedBy=admin,
         MaxMemberNumber=6,
         CourseCode=course,
     )
     group3 = Group.objects.create(
-        GroupName="Group 3",
-        GroupDescription="Description for Group 3",
+        GroupName="Tutor Created Group",
+        GroupDescription="This is a group created by tut",
         CreatedBy=tut,
         MaxMemberNumber=6,
         CourseCode=course,
@@ -201,12 +253,15 @@ def add_groups(apps, schema_editor):
     users3900 = User.objects.filter(UserRole=1, CourseCode__CourseName="COMP3900")
     list = [users9900, users3900]
     for i in range(50):
+        group_adj = random.choice(random_adjectives)
+        group_noun = random.choice(random_group_nouns)
+        group_name = f"{group_adj} {group_noun} {i+4}"
         user = list[i % 2][i]
         if not user:
             break
         group = Group.objects.create(
-            GroupName=f"Group {i+4}",
-            GroupDescription=f"Description for Group {i+4}",
+            GroupName=group_name,
+            GroupDescription=f"Description for {group_name}",
             CreatedBy=user,
             MaxMemberNumber=random.randint(5, 7),
             CourseCode=user.CourseCode,
@@ -216,7 +271,6 @@ def add_groups(apps, schema_editor):
 
 
 def assign_users_to_groups(apps, schema_editor):
-    random.seed(42)
 
     User = apps.get_model("myapp", "User")
     Group = apps.get_model("myapp", "Group")
@@ -271,7 +325,7 @@ def add_group_preferences(apps, schema_editor):
 
 
 def assign_group_to_projects(apps, schema_editor):
-    random.seed(42)
+
     Project = apps.get_model("myapp", "Project")
     Group = apps.get_model("myapp", "Group")
     GroupProjectsLink = apps.get_model("myapp", "GroupProjectsLink")
@@ -296,6 +350,7 @@ def add_time_rule(apps, schema_editor):
     timerule = [
         "Test All Due",
         "Test All Active",
+        "Test Only Group Formation Due",
     ]
     TimeRule = apps.get_model("myapp", "TimeRule")
     for t in timerule:
@@ -311,6 +366,15 @@ def add_time_rule(apps, schema_editor):
 
         if t == "Test All Due":
             projectDeadline = timezone.now() - timezone.timedelta(days=300)
+            groupFreezeTime = timezone.now() - timezone.timedelta(days=300)
+            TimeRule.objects.create(
+                RuleName=t,
+                ProjectDeadline=projectDeadline,
+                GroupFreezeTime=groupFreezeTime,
+                IsActive=False,
+            )
+        if t == "Test Only Group Formation Due":
+            projectDeadline = timezone.now() + timezone.timedelta(days=300)
             groupFreezeTime = timezone.now() - timezone.timedelta(days=300)
             TimeRule.objects.create(
                 RuleName=t,
@@ -353,6 +417,210 @@ def add_group_score(apps, schema_editor):
     #         )
 
 
+def add_skills(apps, schema_editor):
+
+    Area = apps.get_model("myapp", "Area")
+    areas = Area.objects.all()
+
+    Skill = apps.get_model("myapp", "Skill")
+
+    for area in areas:
+
+        if area.AreaName == "Programming Languages":
+            skills = [
+                "Java",
+                "Python",
+                "C",
+                "C++",
+                "C#",
+                "JavaScript",
+                "Ruby",
+                "PHP",
+                "Swift",
+                "Kotlin",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Machine Learning & AI":
+            skills = [
+                "TensorFlow",
+                "PyTorch",
+                "Scikit-learn",
+                "Keras",
+                "Theano",
+                "Caffe",
+                "Torch",
+                "MLlib",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Web Development":
+            skills = [
+                "HTML",
+                "CSS",
+                "JavaScript",
+                "React",
+                "Vue",
+                "Angular",
+                "jQuery",
+                "Bootstrap",
+                "Sass",
+                "Less",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Frameworks & Libraries":
+            skills = [
+                "Django",
+                "Flask",
+                "Spring",
+                "Express",
+                "Ruby on Rails",
+                "Laravel",
+                "ASP.NET",
+                "Hibernate",
+                "MyBatis",
+                "JPA",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Database Management":
+            skills = [
+                "MySQL",
+                "PostgreSQL",
+                "SQLite",
+                "Oracle",
+                "SQL Server",
+                "MongoDB",
+                "Redis",
+                "Cassandra",
+                "HBase",
+                "Neo4j",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Mobile App Development":
+            skills = [
+                "Android",
+                "iOS",
+                "React Native",
+                "Flutter",
+                "Xamarin",
+                "PhoneGap",
+                "Ionic",
+                "Cordova",
+                "Appcelerator",
+                "Sencha Touch",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Data Processing & Visualization":
+            skills = [
+                "Pandas",
+                "Numpy",
+                "Matplotlib",
+                "Seaborn",
+                "Bokeh",
+                "Plotly",
+                "D3.js",
+                "Tableau",
+                "Power BI",
+                "QlikView",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Security & Privacy":
+            skills = [
+                "Cryptography",
+                "Firewall",
+                "VPN",
+                "IDS",
+                "IPS",
+                "PKI",
+                "SSL",
+                "TLS",
+                "OAuth",
+                "OpenID",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "DevOps & CI/CD":
+            skills = [
+                "Jenkins",
+                "Travis CI",
+                "Circle CI",
+                "GitLab CI",
+                "GitHub Actions",
+                "Docker",
+                "Kubernetes",
+                "Ansible",
+                "Puppet",
+                "Chef",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "UI/UX Design":
+            skills = [
+                "Sketch",
+                "Figma",
+                "Adobe XD",
+                "InVision",
+                "Axure RP",
+                "Balsamiq",
+                "Zeplin",
+                "Marvel",
+                "Principle",
+                "Framer",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Cloud Platforms":
+            skills = [
+                "AWS",
+                "Azure",
+                "Google Cloud",
+                "Alibaba Cloud",
+                "IBM Cloud",
+                "Oracle Cloud",
+                "Salesforce",
+                "SAP",
+                "VMware",
+                "Red Hat",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+        if area.AreaName == "Miscellaneous":
+            skills = [
+                "Git",
+                "Linux",
+                "Windows",
+                "MacOS",
+                "Shell",
+                "Vim",
+                "Emacs",
+                "VS Code",
+                "Sublime Text",
+                "Atom",
+            ]
+            for skill in skills:
+                Skill.objects.create(SkillName=skill, Area=area)
+
+
+def set_skills_to_projects(apps, schema_editor):
+    Project = apps.get_model("myapp", "Project")
+    Skill = apps.get_model("myapp", "Skill")
+    ProjectSkillsLink = apps.get_model("myapp", "SkillProject")
+    random.seed(42)
+    projects = Project.objects.all()
+    skills = Skill.objects.all()
+    for project in projects:
+        for i in range(random.randint(3, 6)):
+            skill = random.choice(skills)
+            ProjectSkillsLink.objects.create(Project=project, Skill=skill)
+            skills = skills.exclude(SkillID=skill.SkillID)
+    print("Skills assigned to projects")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -372,4 +640,6 @@ class Migration(migrations.Migration):
         migrations.RunPython(assign_group_to_projects),
         migrations.RunPython(assign_group_to_projects),
         migrations.RunPython(add_group_score),
+        migrations.RunPython(add_skills),
+        migrations.RunPython(set_skills_to_projects),
     ]

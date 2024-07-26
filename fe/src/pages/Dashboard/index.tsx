@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [activeKey, setActiveKey] = useState('projectList')
   const { isInRoleRange } = useAuthContext()
   const { isDueGroupFormation } = useGlobalConstantContext()
+
   const showSubmission = useMemo(() => {
     if (isInRoleRange([role.STUDENT])) {
       if (isDueGroupFormation) {

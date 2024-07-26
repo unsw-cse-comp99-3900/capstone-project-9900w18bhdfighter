@@ -25,7 +25,7 @@ from myapp.src.views.project import (
     project_delete,
     project_update,
 )
-from myapp.src.views.report import download_report, generate_report, view_report
+from myapp.src.views.report import generate_report
 from myapp.src.views.submition import SubmissionViewSet
 from myapp.src.views.time_rule import TimeRuleAPIView
 from myapp.src.views.user import UserAPIView
@@ -139,8 +139,6 @@ urlpatterns = [
         name="get_skills_evaluation_by_group",
     ),
     path("api/generate_report/", generate_report, name="generate_report"),
-    path("api/download_report/", download_report, name="download_report"),
-    path("api/view_report/", view_report, name="view_report"),
 ]
 
 

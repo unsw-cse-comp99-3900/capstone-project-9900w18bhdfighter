@@ -18,7 +18,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # 如果存在相同的group和project的submission，报错
-
+        print(validated_data.get("SubmissionDemoVideo"))
         if Submission.objects.filter(
             Group=validated_data["Group"], Project=validated_data["Project"]
         ).exists():
@@ -38,10 +38,28 @@ class SubmissionSerializer(serializers.ModelSerializer):
                 "GithubLink", submission.GithubLink
             )
             submission.save()
-            print("Submission updated")
+
             return submission
 
         return Submission.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        # 如果SubmissionDemoVideo存在，删除原来的文件
+        if "SubmissionDemoVideo" in validated_data:
+            if instance.SubmissionDemoVideo:
+                instance.SubmissionDemoVideo.delete(save=False)
+
+            instance.SubmissionDemoVideo = validated_data.get("SubmissionDemoVideo")
+
+        if "SubmissionReport" in validated_data:
+            if instance.SubmissionReport:
+                instance.SubmissionReport.delete(save=False)
+
+            instance.SubmissionReport = validated_data.get("SubmissionReport")
+        instance.GithubLink = validated_data.get("GithubLink", instance.GithubLink)
+
+        instance.save()
+        return instance
 
 
 class SubmissionUpdateSerializer(serializers.ModelSerializer):

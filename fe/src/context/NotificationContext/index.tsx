@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { Notification, NotificationStatus } from '../../types/notification'
 import {
   changeNotificationStatus,
   getMyNotifications,
   mapNotificationDTOToNotification,
 } from '../../api/notificationAPI'
-import { useGlobalComponentsContext } from '../GlobalComponentsContext'
+import { Notification, NotificationStatus } from '../../types/notification'
 import { errHandler } from '../../utils/parse'
+import { useGlobalComponentsContext } from '../GlobalComponentsContext'
 
 interface NotificationContextType {
   notifications: Notification[] | null
@@ -92,7 +92,7 @@ const NotificationContextProvider = ({
     fetchNotification()
     const interval = setInterval(() => {
       fetchNotification()
-    }, 60 * 1000)
+    }, 5 * 1000)
     return () => clearInterval(interval)
   }, [])
   const ctx = {
