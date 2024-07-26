@@ -4,6 +4,7 @@ from myapp.src.views.area import AreaAPIView
 from myapp.src.views.auth import student_login, student_signup
 from myapp.src.views.contact import ContactAPIView
 from myapp.src.views.course import CourseAPIView
+from myapp.src.views.group_asses import GroupAssessmentViewSet
 from myapp.src.views.grp_proj import GroupProjectsLinkAPIView
 from myapp.src.views.message import GroupMessageAPIView, MessageAPIView
 from myapp.src.views.notification import (
@@ -52,6 +53,9 @@ url.register(r"api/time-rules", TimeRuleAPIView)
 url.register(r"api/courses", CourseAPIView)
 url.register(r"api/allocations", AllocationAPIView)
 url.register(r"api/submissions", SubmissionViewSet)
+url.register(
+    r"api/group-assessments", GroupAssessmentViewSet, basename="group-assessments"
+)
 urlpatterns = [
     path("api/login", student_login, name="student_login"),
     path("api/project_creation/", project_creation, name="project_creation"),

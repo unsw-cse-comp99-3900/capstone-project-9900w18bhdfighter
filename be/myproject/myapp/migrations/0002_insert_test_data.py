@@ -284,7 +284,10 @@ def assign_group_to_projects(apps, schema_editor):
         if groups.count() == 0:
             break
         group = random.choice(groups)
-        GroupProjectsLink.objects.create(GroupID=group, ProjectID=project)
+        if not GroupProjectsLink.objects.filter(
+            GroupID=group, ProjectID=project
+        ).exists():
+            GroupProjectsLink.objects.create(GroupID=group, ProjectID=project)
         groups = groups.exclude(GroupID=group.GroupID)
     print("Groups assigned to projects")
 
@@ -329,25 +332,25 @@ def add_group_score(apps, schema_editor):
     admin = User.objects.get(EmailAddress="admin@admin.com")
     tut = User.objects.get(EmailAddress="tut@tut.com")
     users = [cord, admin, tut]
-    for g_obj in Group.objects.all():
-        for user in users:
-            score = float(random.randint(0, 100))
-            if score == 0:
-                feedback = "C"
-            elif score <= 30:
-                feedback = "D"
-            elif score <= 60:
-                feedback = "B"
-            elif score <= 99:
-                feedback = "A"
-            else:
-                feedback = "S"
-            GroupScore.objects.create(
-                markers_id=user.UserID,
-                group_id=g_obj.GroupID,
-                score=score,
-                feedback=feedback,
-            )
+    # for g_obj in Group.objects.all():
+    #     for user in users:
+    #         score = float(random.randint(0, 100))
+    #         if score == 0:
+    #             feedback = "C"
+    #         elif score <= 30:
+    #             feedback = "D"
+    #         elif score <= 60:
+    #             feedback = "B"
+    #         elif score <= 99:
+    #             feedback = "A"
+    #         else:
+    #             feedback = "S"
+    #         GroupScore.objects.create(
+    #             markers_id=user.UserID,
+    #             group_id=g_obj.GroupID,
+    #             score=score,
+    #             feedback=feedback,
+    #         )
 
 
 class Migration(migrations.Migration):

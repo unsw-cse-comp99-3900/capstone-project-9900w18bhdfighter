@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from django.conf import settings
-from myapp.src.models.models import GroupScore
+from myapp.src.models.models import Group, GroupProjectsLink, GroupScore
 
 
 def generate_pdf_from_html(html_content, output_path):
@@ -35,44 +35,33 @@ def generate_pdf_from_html(html_content, output_path):
     return output_path
 
 
-def generate_group_report(group):
-    group_members = group.groupuserslink_set.all()
-    assigned_project = (
-        group.grouppreference_set.first().Preference
-        if group.grouppreference_set.exists()
-        else None
-    )
-    group_score = GroupScore.objects.filter(group=group).first()
-    score = group_score.score if group_score else "N/A"
-    feedback = group_score.feedback if group_score else "N/A"
-    marker = group_score.markers if group_score else "N/A"
+def generate_group_report_data():
+    groups = Group.objects.all()
+    group_data = []
 
-    html_content = f"""
-    <html>
-    <head><title>Report for Group {group.GroupName}</title></head>
-    <body>
-    <h1>Report for Group {group.GroupName}</h1>
-    <p>Group ID: {group.GroupID}</p>
-    <p>Group Name: {group.GroupName}</p>
-    <p>Group Members:</p>
-    <ul>
-    """
+    for group in groups:
+        group_members = group.groupuserslink_set.all()
+        assigned_project = GroupProjectsLink.objects.filter(GroupID=group).first()
+        if assigned_project:
+            assigned_project = assigned_project.ProjectID.ProjectName
+        else:
+            assigned_project = "N/A"
 
-    for member in group_members:
-        html_content += f"<li>{member.UserID.FirstName} {member.UserID.LastName}</li>"
+        group_score = GroupScore.objects.filter(group=group).first()
+        score = group_score.score if group_score else "N/A"
+        feedback = group_score.feedback if group_score else "N/A"
+        marker = group_score.markers if group_score else None
 
-    html_content += f"""
-    </ul>
-    <p>Assigned Project: {assigned_project.ProjectName if assigned_project else 'None'}</p>
-    <p>Score: {score}</p>
-    <p>Feedback: {feedback}</p>
-    <p>Marker: {marker.FirstName if marker != 'N/A' else 'N/A'} {marker.LastName if marker != 'N/A' else 'N/A'}</p>
-    </body>
-    </html>
-    """
+        group_data.append(
+            {
+                "GroupID": group.GroupID,
+                "GroupName": group.GroupName,
+                "group_members": group_members,
+                "assigned_project": assigned_project,
+                "score": score,
+                "feedback": feedback,
+                "marker": marker,
+            }
+        )
 
-    output_path = os.path.join(
-        settings.MEDIA_ROOT, "reports", f"report_group_{group.GroupID}.pdf"
-    )
-
-    return generate_pdf_from_html(html_content, output_path)
+    return group_data

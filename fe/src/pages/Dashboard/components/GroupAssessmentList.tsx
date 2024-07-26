@@ -1,18 +1,20 @@
-import { Flex, List, Popover } from 'antd'
-import { useEffect, useState } from 'react'
+import { Button, Flex, List, Popover } from 'antd'
+import { useEffect, useRef, useState } from 'react'
 import { FaSearch } from 'react-icons/fa'
 import styled from 'styled-components'
 import LinkButton from '../../../components/LinkButton'
 // import GroupsListItem from './GroupListItem'
-import { getAllGroups, mapGroupDTOToGroup } from '../../../api/groupAPI'
+
 import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
 import { useGlobalConstantContext } from '../../../context/GlobalConstantContext'
-import { Group } from '../../../types/group'
 import { getThemeToken } from '../../../utils/styles'
 import GroupsAssessmentListItem from './GroupAssessmentItem'
-import GroupFilter from './GroupFilter'
+
+import { getAllGroupAsses, getPDFReport } from '../../../api/assesAPI'
+import { GroupAss } from '../../../types/groupAsses'
+import GroupAssesFilter from './GroupAssesFilter'
 
 type Props = {
   className?: string
@@ -27,28 +29,54 @@ const _GroupsAssessmentList = styled(List)`
 `
 
 const GroupsAssessmentList = ({ className = '' }: Props) => {
-  const [list, setList] = useState<Group[]>([])
-  const [filteredLists, setFilteredLists] = useState<Group[]>([])
+  const [list, setList] = useState<GroupAss[]>([])
+  const [filteredLists, setFilteredLists] = useState<GroupAss[]>([])
+  const originalList = useRef<GroupAss[]>([])
   const { msg } = useGlobalComponentsContext()
   const { isDueProject } = useGlobalConstantContext()
-
+  const [loading, setLoading] = useState(false)
   const toFetch = async () => {
     try {
-      const res = await getAllGroups()
-      const groups = res.data.map(mapGroupDTOToGroup)
+      const res = await getAllGroupAsses()
+      const groups = res
       console.log('Due:', isDueProject)
       setList(groups)
       setFilteredLists(groups)
+      originalList.current = groups
     } catch (e) {
       console.log(e)
 
       msg.err('Network error')
     }
   }
+
+  const generateReport = async () => {
+    try {
+      setLoading(true)
+      const res = await getPDFReport()
+      const url = window.URL.createObjectURL(
+        new Blob([res.data], { type: 'application/pdf' })
+      )
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'all_groups_report.pdf')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.open(url, '_blank')
+      msg.success('Report generated successfully')
+    } catch (e) {
+      console.log(e)
+      msg.err('Network error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSearchChange = (val: string) => {
     setFilteredLists(
       list.filter((item) => {
-        return (item as Group).groupName
+        return (item as GroupAss).groupName
           .toLowerCase()
           .includes(val.toLowerCase())
       })
@@ -66,7 +94,7 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
         header={
           <Flex justify="space-between" align="center">
             <Flex align="center" gap={10}>
-              Groups Assessment List{' '}
+              Assessment{' '}
               <Popover
                 trigger={['click']}
                 placement="top"
@@ -80,8 +108,20 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
                 <FaSearch style={{ cursor: 'pointer' }} />
               </Popover>
             </Flex>
-
-            <GroupFilter list={list} setFilteredLists={setFilteredLists} />
+            <Button
+              loading={loading}
+              onClick={generateReport}
+              size="small"
+              type="link"
+            >
+              Export
+            </Button>
+            <Flex vertical>
+              <GroupAssesFilter
+                groupAsslist={originalList.current}
+                setList={setFilteredLists}
+              />
+            </Flex>
           </Flex>
         }
         dataSource={filteredLists}
@@ -89,18 +129,16 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
           <List.Item
             actions={[
               // only due project/group can mark
-              !isDueProject && (
-                <LinkButton
-                  size="small"
-                  to={`${route.ASSESSMENT}/${(item as Group).groupId}`}
-                  key={(item as Group).groupId}
-                >
-                  Mark
-                </LinkButton>
-              ),
+              <LinkButton
+                size="small"
+                to={`${route.ASSESSMENT}/${(item as GroupAss).groupId}`}
+                key={(item as GroupAss).groupId}
+              >
+                Mark
+              </LinkButton>,
             ].filter(Boolean)}
           >
-            <GroupsAssessmentListItem item={item as Group} />
+            <GroupsAssessmentListItem item={item as GroupAss} />
           </List.Item>
         )}
       />

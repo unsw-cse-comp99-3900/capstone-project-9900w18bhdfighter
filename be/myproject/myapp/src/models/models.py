@@ -282,17 +282,6 @@ class GroupMessage(models.Model):
         return f"{self.Sender} - {self.Content}"
 
 
-class GroupScore(models.Model):
-    Id = models.AutoField(primary_key=True)
-    score = models.FloatField(default=0)
-    feedback = models.TextField(default="")
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    markers = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.Id} - {self.score}"
-
-
 class Contact(models.Model):
     ContactID = models.AutoField(primary_key=True)
     ContactUser = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -327,3 +316,14 @@ class Submission(models.Model):
 
     def __str__(self):
         return f"{self.Group} - {self.Project}"
+
+
+class GroupScore(models.Model):
+    Id = models.AutoField(primary_key=True)
+    score = models.FloatField(default=0)
+    feedback = models.TextField(default="")
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    markers = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.Id} - {self.score}"

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>All Groups Report</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .group-report {
+        margin-bottom: 60px;
+        border: 1px solid black;
+        padding: 10px;
+      }
+      .group-report h2 {
+        margin-top: 0;
+      }
+      .group-report table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .group-report table,
+      .group-report th,
+      .group-report td {
+        border: 1px solid black;
+      }
+      .group-report th,
+      .group-report td {
+        padding: 8px;
+        text-align: left;
+      }
+      .group-report th {
+        background-color: #f2f2f2;
+      }
+      .group-report ul {
+        padding: 0;
+        margin: 0;
+        list-style-type: none;
+      }
+      .group-report li {
+        margin: 4px 0;
+      }
+      .group-member {
+      }
+    </style>
+  </head>
+  <body>
+    <h1>All Groups Report</h1>
+    {% for group in groups %}
+    <div class="group-report">
+      <h2>Report for Group {{ group.GroupName }}</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>Group ID</th>
+            <td>{{ group.GroupID }}</td>
+          </tr>
+          <tr>
+            <th>Group Name</th>
+            <td>{{ group.GroupName }}</td>
+          </tr>
+          <tr>
+            <th>Assigned Project</th>
+            <td>{{ group.assigned_project }}</td>
+          </tr>
+          <tr>
+            <th>Group Members</th>
+            <td>
+              {% if group.group_members %}
+              <ul>
+                {% for member in group.group_members %}
+                <li class="group-member"><strong> {{ member.UserID.FirstName }} {{ member.UserID.LastName }}</strong> - {{ member.UserID.EmailAddress }} </li>
+                {% endfor %}
+              </ul>
+              {% else %} N/A {% endif %}
+            </td>
+          </tr>
+
+          <tr>
+            <th>Score</th>
+            <td>{{ group.score }}</td>
+          </tr>
+          <tr>
+            <th>Feedback</th>
+            <td>{{ group.feedback }}</td>
+          </tr>
+          <tr>
+            <th>Marked By</th>
+            <td>
+              {% if group.marker %}
+              <strong>{{ group.marker.FirstName}} {{group.marker.LastName}}</strong> - {{group.marker.EmailAddress}} {% else %} N/A {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </body>
+</html>

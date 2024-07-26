@@ -41,3 +41,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         # 返回项目的所有小组的id
         groups = obj.Groups.all()
         return [group.GroupID for group in groups]
+
+
+class ProjectSlimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ["ProjectID", "ProjectName"]

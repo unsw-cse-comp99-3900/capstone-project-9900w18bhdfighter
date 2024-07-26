@@ -1,4 +1,5 @@
-from myapp.src.models.models import Group, Project, Submission
+from myapp.src.models.models import Group, Submission
+from myapp.src.serializers.proj import ProjectSlimSerializer
 from rest_framework import serializers
 
 
@@ -72,12 +73,6 @@ class GroupSlimSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ["GroupID", "GroupName"]
-
-
-class ProjectSlimSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Project
-        fields = ["ProjectID", "ProjectName"]
 
 
 class SubmissionFetchSerializer(serializers.ModelSerializer):

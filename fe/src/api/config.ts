@@ -1,7 +1,16 @@
 import axios from 'axios'
 
-const baseURL = process.env.REACT_APP_API_URL as string
-console.log('API URL:', baseURL)
+export const baseURL = process.env.REACT_APP_API_URL as string
+export const staticWrapped = (path: string) => {
+  let _path = path.trim()
+  if (_path.startsWith('/')) {
+    _path = _path.substring(1)
+  }
+  if (_path.endsWith('/')) {
+    _path = _path.substring(0, _path.length - 1)
+  }
+  return `${baseURL}/${_path}`
+}
 
 const api = axios.create({
   baseURL: baseURL,

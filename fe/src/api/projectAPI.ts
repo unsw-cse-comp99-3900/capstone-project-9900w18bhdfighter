@@ -1,11 +1,12 @@
 import {
   Project,
+  ProjectProfileSlim,
   ProjectReqDTO,
   ProjectRespDTO,
+  ProjectSlimSlim,
+  ProjectSlimSlimDTO,
   Skill,
   SkillRspDTO,
-  ProjectProfileSlim,
-  // ProjectProfileSlimDTO,
 } from '../types/proj'
 import { Area } from '../types/user'
 import api from './config'
@@ -37,7 +38,6 @@ const getProjectsByOwnerAndCreator = async (owner: string, creator: string) => {
 const getProjectById = async (id: number | string) => {
   return api.get<ProjectRespDTO>(`api/projects/${id}/`)
 }
-
 const getProjectByParticipant = async (participantId: string | number) => {
   return api.get<ProjectRespDTO[]>(`api/projects/users/${participantId}/`)
 }
@@ -97,18 +97,26 @@ const mapProjectSlimProfileDTOToProjectProfileSlim = (
     owner: projectRespDTO.ProjectOwner,
   }
 }
-
+const mapProjectSSlimDTOtoProjectSSlim: (
+  _dto: ProjectSlimSlimDTO
+) => ProjectSlimSlim = (dto) => {
+  return {
+    projectId: dto.ProjectID,
+    projectName: dto.ProjectName,
+  }
+}
 export {
-  getAllProjects,
+  mapProjectSSlimDTOtoProjectSSlim,
   createProject,
-  updateProject,
+  getAllProjects,
+  getAutoCompleteProjectsByName,
+  getProjectById,
+  getProjectByParticipant,
   getProjectsByCreator,
-  killOneProject,
   getProjectsByOwner,
   getProjectsByOwnerAndCreator,
-  getProjectById,
+  killOneProject,
   mapProjectDTOToProject,
-  getProjectByParticipant,
-  getAutoCompleteProjectsByName,
-  mapProjectSlimProfileDTOToProjectProfileSlim, // Exporting the new mapper function
+  mapProjectSlimProfileDTOToProjectProfileSlim,
+  updateProject,
 }

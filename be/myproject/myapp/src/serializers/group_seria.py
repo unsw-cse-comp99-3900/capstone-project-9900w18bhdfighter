@@ -2,10 +2,11 @@ from myapp.src.models.models import (
     CourseCode,
     Group,
     GroupPreference,
+    GroupProjectsLink,
     GroupSkillEvaluation,
 )
 from myapp.src.serializers.course import CourseSerializer
-from myapp.src.serializers.proj import ProjectSerializer
+from myapp.src.serializers.proj import ProjectSerializer, ProjectSlimSerializer
 from myapp.src.serializers.user import UserSlimSerializer
 from rest_framework import serializers
 
@@ -100,6 +101,7 @@ class GroupFetchSerializer(serializers.ModelSerializer):
     GroupMembers = UserSlimSerializer(many=True, read_only=True)
     Preferences = serializers.SerializerMethodField()
     CourseCode = CourseSerializer()
+    Project = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
@@ -112,8 +114,16 @@ class GroupFetchSerializer(serializers.ModelSerializer):
             "CreatedBy",
             "Preferences",
             "CourseCode",
+            "Project",
         ]
 
     def get_Preferences(self, obj):
         preferences = GroupPreference.objects.filter(Group=obj)
         return GroupPreferenceSerializer(preferences, many=True).data
+
+    def get_Project(self, obj):
+        # 返回小组的项目
+        project = GroupProjectsLink.objects.filter(GroupID=obj)
+        if project:
+            return ProjectSlimSerializer(project[0].ProjectID).data
+        return None

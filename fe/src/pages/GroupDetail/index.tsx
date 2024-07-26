@@ -366,6 +366,17 @@ const _GroupDetail = () => {
         <Descriptions.Item span={3} label="Course">
           {group?.course.courseName}
         </Descriptions.Item>
+        <Descriptions.Item span={3} label="Project Assigned">
+          {group?.project ? (
+            <Link to={`${route.PROJECTS}/${group.project.projectId}`}>
+              {group.project.projectName}
+            </Link>
+          ) : (
+            <Typography.Text type="secondary">
+              No project assigned
+            </Typography.Text>
+          )}
+        </Descriptions.Item>
         <Descriptions.Item span={3} label="Description">
           {group?.groupDescription}
         </Descriptions.Item>

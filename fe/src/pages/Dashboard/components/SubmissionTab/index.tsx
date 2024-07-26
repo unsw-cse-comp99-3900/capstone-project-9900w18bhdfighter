@@ -180,7 +180,7 @@ const _SubmissionTab = () => {
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit">
-            Submit
+            {submission ? 'Update Submission' : 'Submit Submission'}
           </Button>
         </Form.Item>
       </_Form>

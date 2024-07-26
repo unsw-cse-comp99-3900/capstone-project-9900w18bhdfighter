@@ -2,12 +2,14 @@ import { Button, Flex, List, Popover, Space, Spin } from 'antd'
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 // import AllocationListItem from './AllocationListItem'
+import { FaSearch } from 'react-icons/fa'
 import {
   approveAllocation,
   createAllocation,
   getAllocations,
   rejectAllocation,
 } from '../../../api/allocAPI'
+import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
 import LinkButton from '../../../components/LinkButton'
 import route from '../../../constant/route'
 import { useGlobalComponentsContext } from '../../../context/GlobalComponentsContext'
@@ -15,8 +17,6 @@ import { AllocationRspDTO } from '../../../types/allocation'
 import { errHandler } from '../../../utils/parse'
 import { getThemeToken } from '../../../utils/styles'
 import AllocationListItem from './AllocationListItem'
-import DebounceSimpleSearcher from '../../../components/DebounceSimpleSearcher'
-import { FaSearch } from 'react-icons/fa'
 type Props = {
   className?: string
 }

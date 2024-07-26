@@ -1,15 +1,18 @@
 import {
   Group,
-  GroupRspDTO,
   GroupJoinDTO,
   GroupLeaveDTO,
   GroupReqDTO,
+  GroupRspDTO,
   GroupSlim,
 } from '../types/group'
 import { SkillEvalReqDTO, SkillEvalRspDTO } from '../types/skillEval'
 import api from './config'
 import { mapCourseDTOToCourse } from './courseAPI'
-import { mapProjectDTOToProject } from './projectAPI'
+import {
+  mapProjectDTOToProject,
+  mapProjectSSlimDTOtoProjectSSlim,
+} from './projectAPI'
 import { mapUserSlimProfileDTOUserProfileSlim } from './userAPI'
 
 // post request
@@ -124,6 +127,9 @@ const mapGroupDTOToGroup: (_groupRspDTO: GroupRspDTO) => Group = (
     preferences: groupPreference,
     groupId: groupRspDTO.GroupID,
     course: mapCourseDTOToCourse(groupRspDTO.CourseCode),
+    project: groupRspDTO.Project
+      ? mapProjectSSlimDTOtoProjectSSlim(groupRspDTO.Project)
+      : null,
   }
 }
 const mapSkillEvalDTOToSkillEval = (skillEval: SkillEvalRspDTO) => {
@@ -157,8 +163,8 @@ export {
   leaveGroup,
   mapGroupDTOToGroup,
   mapGroupPreferenceDTOToGroupPreference,
+  mapGroupRspDTOToGroupSlim,
   mapSkillEvalDTOToSkillEval,
   removeGroupFromProject,
   updateGroupMeta,
-  mapGroupRspDTOToGroupSlim,
 }
