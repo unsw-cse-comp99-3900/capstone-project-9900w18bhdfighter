@@ -328,7 +328,7 @@ const _GroupDetail = () => {
               : ''}
           </Typography.Text>
         </Flex>
-        {userRole !== 'Student' && (
+        {isInRoleRange([role.ADMIN, role.TUTOR, role.CORD]) && (
           <EditWrapper gap={10}>
             <Button
               style={{
@@ -407,7 +407,7 @@ const _GroupDetail = () => {
                   alignItems: 'center',
                 }}
                 actions={[
-                  userRole !== 'Student' && (
+                  isInRoleRange([role.ADMIN, role.CORD, role.TUTOR]) && (
                     <StyledButton
                       key="1"
                       size="small"

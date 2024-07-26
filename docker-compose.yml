@@ -6,6 +6,7 @@ services:
       context: ./fe
       args:
         REACT_APP_API_URL: http://localhost
+        REACT_APP_WS_URL: ws://localhost
     ports:
       - "80:80"
     volumes:

@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 export const baseURL = process.env.REACT_APP_API_URL as string
+export const baseWsURL = process.env.REACT_APP_WS_URL as string
 export const staticWrapped = (path: string) => {
   let _path = path.trim()
   if (_path.startsWith('/')) {
@@ -11,7 +12,16 @@ export const staticWrapped = (path: string) => {
   }
   return `${baseURL}/${_path}`
 }
-
+export const WSocket = (path: string) => {
+  let _path = path.trim()
+  if (_path.startsWith('/')) {
+    _path = _path.substring(1)
+  }
+  if (_path.endsWith('/')) {
+    _path = _path.substring(0, _path.length - 1)
+  }
+  return new WebSocket(`${baseWsURL}/${_path}`)
+}
 const api = axios.create({
   baseURL: baseURL,
   timeout: 10000,

@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { WSocket } from '../../../api/config'
+import { mapGroupMsgRspDTOToMsg } from '../../../api/msgAPI'
 import {
   Contact,
   GroupContact,
@@ -7,9 +9,8 @@ import {
   MsgRspDTO,
   WSMsgRspDTO,
 } from '../../../types/msg'
-import { MsgRespDTOMapper } from '../mapper'
 import { MsgHandler } from '../../GlobalComponentsContext'
-import { mapGroupMsgRspDTOToMsg } from '../../../api/msgAPI'
+import { MsgRespDTOMapper } from '../mapper'
 
 interface Props {
   id: number | undefined
@@ -34,7 +35,9 @@ const useChatSocket = ({
 
   useEffect(() => {
     if (!id) return
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/user/${id}`)
+    const socket = WSocket(`ws/chat/user/${id}`)
+    console.log('socket', socket)
+
     socketRef.current = socket
 
     socket.onopen = () => {
