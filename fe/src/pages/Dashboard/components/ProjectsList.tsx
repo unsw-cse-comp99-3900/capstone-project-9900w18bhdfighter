@@ -16,6 +16,7 @@ import Filter from './Filter'
 
 type Props = {
   className?: string
+  reRender: React.MutableRefObject<number>
 }
 const Wrapper = styled.div`
   box-shadow: ${getThemeToken('boxShadow')};
@@ -26,11 +27,13 @@ const _ProjectsList = styled(List)`
   overflow-y: auto;
 `
 
-const ProjectsList = ({ className = '' }: Props) => {
+const ProjectsList = ({ className = '', reRender }: Props) => {
   const [list, setList] = useState<Project[]>([])
   const [filteredLists, setFilteredLists] = useState<Project[]>([])
   const { msg } = useGlobalComponentsContext()
   useEffect(() => {
+    console.log('reRender', reRender.current)
+
     const toFetch = async () => {
       try {
         const res = await getAllProjects()
@@ -41,7 +44,7 @@ const ProjectsList = ({ className = '' }: Props) => {
       }
     }
     toFetch()
-  }, [])
+  }, [reRender.current])
   const handleSearchChange = (val: string) => {
     setFilteredLists(
       list.filter((item) => {

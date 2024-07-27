@@ -1,18 +1,18 @@
 import { Flex, Tabs } from 'antd'
 import type { TabsProps } from 'antd/es/tabs'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
 import { role } from '../../constant/role'
 import { useAuthContext } from '../../context/AuthContext'
+import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 import { getThemeColor, getThemeToken } from '../../utils/styles'
 import AllocationList from './components/AllocationList'
 import GroupsAssessmentList from './components/GroupAssessmentList'
 import GroupsList from './components/GroupsList'
 import ProjectsList from './components/ProjectsList'
 import SubmissionTab from './components/SubmissionTab'
-import { useGlobalConstantContext } from '../../context/GlobalConstantContext'
 const Wrapper = styled(Flex)`
   width: 100%;
   height: 100%;
@@ -31,11 +31,12 @@ const _ProjectsList = styled(ProjectsList)``
 const _GroupsList = styled(GroupsList)``
 const _GroupsAssessmentList = styled(GroupsAssessmentList)``
 const _AllocationList = styled(AllocationList)``
+
 const Dashboard = () => {
   const [activeKey, setActiveKey] = useState('projectList')
   const { isInRoleRange } = useAuthContext()
   const { isDueGroupFormation } = useGlobalConstantContext()
-
+  const reRender = useRef(0)
   const showSubmission = useMemo(() => {
     if (isInRoleRange([role.STUDENT])) {
       if (isDueGroupFormation) {
@@ -55,7 +56,7 @@ const Dashboard = () => {
     {
       key: 'projectList',
       label: 'Projects',
-      children: <_ProjectsList />,
+      children: <_ProjectsList reRender={reRender} />,
     },
     {
       key: 'groupList',
@@ -67,7 +68,7 @@ const Dashboard = () => {
           {
             key: 'allocation',
             label: 'Allocation',
-            children: <_AllocationList />,
+            children: <_AllocationList reRender={reRender} />,
           },
         ]
       : []),

@@ -15,4 +15,4 @@ RUN chmod +x /wait-for-it.sh
 
 
 
-CMD ["/wait-for-it.sh", "db:3306", "--", "bash", "-c", "cd myproject && python manage.py makemigrations && python manage.py migrate && daphne -b 0.0.0.0 -p 8000 myproject.asgi:application"]
+CMD ["/wait-for-it.sh", "db:3306", "--", "bash", "-c", "cd myproject && python manage.py makemigrations && python reset_db.py && daphne -b 0.0.0.0 -p 8000 myproject.asgi:application"]

@@ -37,18 +37,6 @@ const getAutoCompleteProjects = (nameSubstring: string) => {
   })
 }
 
-// const getAutoCompleteProjects = async (nameSubstring: string) => {
-//   const response = await api.get<{
-//     data: ProjectProfileSlimDTO[]
-//   }>('api/projects/autocomplete-name', {
-//     params: {
-//       name_substring: nameSubstring,
-//     },
-//   })
-//   console.log(response.data) // Add this line to log the response
-//   return response
-// }
-
 export {
   getMyContactList,
   getAutoCompleteContacts,

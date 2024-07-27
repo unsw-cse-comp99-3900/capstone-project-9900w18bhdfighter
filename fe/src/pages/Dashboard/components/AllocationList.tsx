@@ -19,6 +19,7 @@ import { getThemeToken } from '../../../utils/styles'
 import AllocationListItem from './AllocationListItem'
 type Props = {
   className?: string
+  reRender: React.MutableRefObject<number>
 }
 
 const Wrapper = styled.div`
@@ -85,7 +86,7 @@ const transformData = (data: AllocationRspDTO[]) => {
 
   return transformedData
 }
-const AllocationList = ({ className = '' }: Props) => {
+const AllocationList = ({ className = '', reRender }: Props) => {
   const [allocListGroupedByProj, setAllocListGroupedByProj] = useState<
     AllocationGrouped[]
   >([])
@@ -138,6 +139,7 @@ const AllocationList = ({ className = '' }: Props) => {
       msg.success('Approve all Allocations!')
 
       await toFetch()
+      reRender.current += 1
     } catch (error) {
       console.error('Error during auto allocate:', error)
       errHandler(

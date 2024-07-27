@@ -24,7 +24,7 @@ const getAutoCompleteByParams = async (
     params: {
       email_substring: emailSubstring,
       role: role,
-      nameSubstring: nameSubstring,
+      name_substring: nameSubstring,
       not_in_group: notInGroup,
     },
   })
@@ -63,8 +63,8 @@ const mapUserProfileDTOToUserInfo: (
 }
 
 export {
-  getUserById,
-  mapUserSlimProfileDTOUserProfileSlim,
   getAutoCompleteByParams,
+  getUserById,
   mapUserProfileDTOToUserInfo,
+  mapUserSlimProfileDTOUserProfileSlim,
 }

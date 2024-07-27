@@ -51,6 +51,9 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
+      // handle 401 error返回登录页
+      localStorage.removeItem('token')
+      window.location.href = '/login'
     }
 
     return Promise.reject(error)

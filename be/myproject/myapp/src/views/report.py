@@ -1,12 +1,13 @@
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from myapp.src.utils.permission import ForPartialRole
 from myapp.src.utils.report_utils import generate_group_report_data
 from rest_framework.decorators import api_view, permission_classes
 from xhtml2pdf import pisa
 
 
 @api_view(["GET"])
-@permission_classes([])
+@permission_classes([ForPartialRole([3, 4, 5])])
 def generate_report(request):
     groups = generate_group_report_data()
     context = {"groups": groups}
