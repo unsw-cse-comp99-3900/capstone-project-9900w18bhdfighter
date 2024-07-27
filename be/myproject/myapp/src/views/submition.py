@@ -1,8 +1,12 @@
-from myapp.src.models.models import Group, GroupProjectsLink, Submission
+from myapp.src.models.models import Group, GroupProjectsLink, GroupScore, Submission
 from myapp.src.serializers.submission import (
     SubmissionFetchSerializer,
     SubmissionSerializer,
     SubmissionUpdateSerializer,
+)
+from myapp.src.utils.permission import (
+    AfterGroupFormationDeadline,
+    BeforeProjectDeadline,
 )
 from rest_framework import mixins, status
 from rest_framework.decorators import action
@@ -23,7 +27,7 @@ class SubmissionViewSet(
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update"]:
-            return []
+            return [AfterGroupFormationDeadline(), BeforeProjectDeadline()]
         else:
             return []
 
@@ -42,6 +46,17 @@ class SubmissionViewSet(
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
+
+        ##如果groupscore已经被评分，就不能再修改
+        instance = self.get_object()
+
+        group_score = GroupScore.objects.filter(group=instance.Group)
+        if group_score:
+            return Response(
+                {"error": "This group has been scored, cannot update submission"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)

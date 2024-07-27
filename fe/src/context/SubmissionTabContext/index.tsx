@@ -10,6 +10,8 @@ import { Project } from '../../types/proj'
 import { Submission } from '../../types/submission'
 import { errHandler } from '../../utils/parse'
 import { useAuthContext } from '../AuthContext'
+import { getGroupAssesByGroup } from '../../api/assesAPI'
+import { GroupAss } from '../../types/groupAsses'
 
 interface SubmissionTabContextType {
   selectedSubmissionId: number
@@ -19,6 +21,7 @@ interface SubmissionTabContextType {
   submission: Submission | null
   participatedGroup: Group | null
   getMySubmission: () => Promise<void>
+  assessment: GroupAss | null
 }
 
 const SubmissionTabContext = createContext<SubmissionTabContextType>(
@@ -34,6 +37,7 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
   const [participatedProject, setParticipatedProject] =
     useState<Project | null>(null)
   const [participatedGroup, setParticipatedGroup] = useState<Group | null>(null)
+  const [assessment, setAssessment] = useState<GroupAss | null>(null)
   const getMyProject = async () => {
     if (!usrInfo) return
     try {
@@ -74,7 +78,19 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
       )
     }
   }
-
+  const getMyAssessment = async () => {
+    if (!participatedGroup) return
+    try {
+      const res = await getGroupAssesByGroup(participatedGroup.groupId)
+      setAssessment(res)
+    } catch (e) {
+      errHandler(
+        e,
+        (str) => console.log(str),
+        (str) => console.log(str)
+      )
+    }
+  }
   useEffect(() => {
     getMyProject()
     getMyGroup()
@@ -82,6 +98,7 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     getMySubmission()
+    getMyAssessment()
   }, [participatedGroup])
 
   const ctx = {
@@ -92,6 +109,7 @@ const SubmissionTabProvider = ({ children }: { children: React.ReactNode }) => {
     submission,
     participatedGroup,
     getMySubmission,
+    assessment,
   }
   return (
     <SubmissionTabContext.Provider value={ctx}>

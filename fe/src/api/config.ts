@@ -53,7 +53,18 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // handle 401 error返回登录页
       localStorage.removeItem('token')
+      error.response.data = {
+        error: 'Please login to continue',
+      }
       window.location.href = '/login'
+    }
+    if (error.response && error.response.status === 403) {
+      // handle 403 error
+      if (!error.response.data.error) {
+        error.response.data = {
+          error: 'You do not have permission to perform this action',
+        }
+      }
     }
 
     return Promise.reject(error)

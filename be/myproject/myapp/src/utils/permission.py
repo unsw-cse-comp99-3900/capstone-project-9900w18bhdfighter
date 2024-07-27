@@ -226,3 +226,39 @@ class AfterGroupFormationDeadline(BasePermission):
                 )
             return True
         return False
+
+
+class BeforeProjectDeadline(BasePermission):
+    def has_permission(self, request, view):
+        from django.utils.timezone import now
+        from myapp.src.models.models import User
+
+        try:
+            token = request.headers.get("Authorization").split()[1]
+        except Exception:
+            return False
+
+        result = decode_jwt(token)
+        if result["status"] == "success":
+            user_data = result["data"]
+            try:
+                user = User.objects.get(pk=user_data["user_id"])
+            except User.DoesNotExist:
+                return False
+
+            request.user = user
+            if user.UserRole in [5]:  # Admin role
+                return True
+
+            # 找到time rule 里面active的rule
+            rule = TimeRule.objects.filter(IsActive=True).first()
+            # 如果没有active的rule那么deadline就是无穷大
+            if not rule:
+                return True
+
+            if rule.ProjectDeadline < now():
+                raise PermissionDenied(
+                    "You can only perform this action before the project deadline."
+                )
+            return True
+        return False

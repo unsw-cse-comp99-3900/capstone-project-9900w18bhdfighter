@@ -6,8 +6,13 @@ from rest_framework.decorators import api_view, permission_classes
 from xhtml2pdf import pisa
 
 
+class PartialRole(ForPartialRole):
+    def __init__(self):
+        super().__init__(allowed_roles=[3, 4])
+
+
 @api_view(["GET"])
-@permission_classes([ForPartialRole([3, 4, 5])])
+@permission_classes([PartialRole])
 def generate_report(request):
     groups = generate_group_report_data()
     context = {"groups": groups}

@@ -14,6 +14,7 @@ import GroupsAssessmentListItem from './GroupAssessmentItem'
 
 import { getAllGroupAsses, getPDFReport } from '../../../api/assesAPI'
 import { GroupAss } from '../../../types/groupAsses'
+import { errHandler } from '../../../utils/parse'
 import GroupAssesFilter from './GroupAssesFilter'
 
 type Props = {
@@ -46,7 +47,11 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
     } catch (e) {
       console.log(e)
 
-      msg.err('Network error')
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
 
@@ -67,7 +72,11 @@ const GroupsAssessmentList = ({ className = '' }: Props) => {
       msg.success('Report generated successfully')
     } catch (e) {
       console.log(e)
-      msg.err('Network error')
+      errHandler(
+        e,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     } finally {
       setLoading(false)
     }

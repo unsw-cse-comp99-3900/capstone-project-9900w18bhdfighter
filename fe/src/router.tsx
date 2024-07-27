@@ -1,24 +1,24 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import route from './constant/route'
+import { useAuthContext } from './context/AuthContext'
+import { useGlobalComponentsContext } from './context/GlobalComponentsContext'
+import AdminManagement from './pages/AdminManagement'
+import AllocationDetail from './pages/AllocationDetail'
+import AssessmentDetail from './pages/AssessmentPage'
 import Login from './pages/Auth/Login'
 import SignUp from './pages/Auth/SignUp'
-import NotFoundPage from './pages/NotFoundPage'
-import LandingPage from './pages/LandingPage'
-import { useGlobalComponentsContext } from './context/GlobalComponentsContext'
-import { useAuthContext } from './context/AuthContext'
 import Dashboard from './pages/Dashboard'
-import Profile from './pages/Profile'
-import route from './constant/route'
-import Projects from './pages/Projects'
-import Teams from './pages/Teams'
-import AdminManagement from './pages/AdminManagement'
-import ProjectDetail from './pages/ProjectDetail'
+import GroupDetail from './pages/GroupDetail'
+import LandingPage from './pages/LandingPage'
 import MessagePage from './pages/MessagePage'
 import MessageLanding from './pages/MessagePage/components/MessageLanding'
 import { MessageMain } from './pages/MessagePage/components/MessageMain'
-import GroupDetail from './pages/GroupDetail'
-import AllocationDetail from './pages/AllocationDetail'
-import AssessmentDetail from './pages/AssessmentPage'
+import NotFoundPage from './pages/NotFoundPage'
+import Profile from './pages/Profile'
+import ProjectDetail from './pages/ProjectDetail'
+import Projects from './pages/Projects'
+import Teams from './pages/Teams'
 // if user is not logged in, redirect to login page
 const RouterGuard = ({ children }: { children: JSX.Element }) => {
   const { msg } = useGlobalComponentsContext()
@@ -26,7 +26,7 @@ const RouterGuard = ({ children }: { children: JSX.Element }) => {
 
   if (!haveLoggedIn()) {
     msg.err('You have not logged in yet. Please login first.')
-    return <Login />
+    return <Navigate to={route.LOGIN} replace={true} />
   }
   return children
 }

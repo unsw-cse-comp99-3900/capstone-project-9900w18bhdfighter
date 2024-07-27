@@ -18,8 +18,10 @@ import SubmissionTabProvider, {
   useSubmissionTabContext,
 } from '../../../../context/SubmissionTabContext'
 
+import { Link } from 'react-router-dom'
+import route from '../../../../constant/route'
 import { SubmissionReqDTO } from '../../../../types/submission'
-import { timeFormat } from '../../../../utils/parse'
+import { errHandler, timeFormat } from '../../../../utils/parse'
 import { getThemeColor, getThemeToken } from '../../../../utils/styles'
 
 const Wrapper = styled.div`
@@ -34,7 +36,7 @@ const Wrapper = styled.div`
 `
 const _Form = styled(Form)`
   width: 100%;
-  height: 100%;
+  position: relative;
   margin-top: 1rem;
   padding: ${getThemeToken('paddingMD', 'px')};
   border: 1px solid ${getThemeColor('grayscalePalette', 5)};
@@ -48,11 +50,14 @@ const _SubmissionTab = () => {
     participatedProject,
     submission,
     participatedGroup,
+    assessment,
     getMySubmission,
   } = useSubmissionTabContext()
-  const { PROJECT_DUE } = useGlobalConstantContext()
+  const { PROJECT_DUE, isDueProject, isDueGroupFormation } =
+    useGlobalConstantContext()
   const { msg } = useGlobalComponentsContext()
-  console.log(submission)
+  const isAfterGdAndBeforePd = isDueGroupFormation && !isDueProject
+  const isMarked = Boolean(assessment?.groupScore?.id)
   const { usrInfo } = useAuthContext()
   const [form] = Form.useForm()
   useEffect(() => {
@@ -163,8 +168,11 @@ const _SubmissionTab = () => {
       message.success('Submission successfully uploaded.')
       getMySubmission()
     } catch (error) {
-      message.error('Failed to upload submission.')
-      console.error('Error submitting submission:', error)
+      errHandler(
+        error,
+        (str) => msg.err(str),
+        (str) => msg.err(str)
+      )
     }
   }
 
@@ -188,13 +196,42 @@ const _SubmissionTab = () => {
           <Strong>{participatedProject?.name}</Strong>
         </Typography.Text>
       )}
-      {PROJECT_DUE && (
+      {!isDueProject ? (
         <Typography.Text>
-          Due by <Strong>{timeFormat(PROJECT_DUE)}</Strong>
+          Due by <Strong>{timeFormat(PROJECT_DUE as string)}</Strong>
+        </Typography.Text>
+      ) : (
+        <Typography.Text
+          style={{
+            fontSize: '0.8rem',
+          }}
+          type="danger"
+        >
+          Note: The project deadline has passed.
+        </Typography.Text>
+      )}
+
+      {isMarked && (
+        <Typography.Text
+          style={{
+            fontSize: '0.8rem',
+            marginTop: '1rem',
+          }}
+          type="success"
+        >
+          Note: Your submission has been marked.{' '}
+          <Link
+            style={{
+              textDecoration: 'underline',
+            }}
+            to={`${route.ASSESSMENT}/${participatedGroup?.groupId}`}
+          >
+            View Detail
+          </Link>
         </Typography.Text>
       )}
       <_Form
-        disabled={!participatedProject}
+        disabled={!participatedProject || !isAfterGdAndBeforePd || isMarked}
         form={form}
         layout="vertical"
         onFinish={handleSubmit}

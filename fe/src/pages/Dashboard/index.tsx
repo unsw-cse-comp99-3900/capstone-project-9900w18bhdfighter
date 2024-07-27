@@ -47,8 +47,13 @@ const Dashboard = () => {
   }, [isDueGroupFormation, isInRoleRange])
   useEffect(() => {
     const savedActiveKey = sessionStorage.getItem('activeTabKey')
+
     if (savedActiveKey) {
-      setActiveKey(savedActiveKey)
+      if (savedActiveKey === 'submission' && !showSubmission) {
+        setActiveKey('projectList')
+      } else {
+        setActiveKey(savedActiveKey)
+      }
     }
   }, [])
 

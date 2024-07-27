@@ -12,7 +12,7 @@ import {
 import { useForm } from 'antd/es/form/Form'
 import Link from 'antd/es/typography/Link'
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link as _Link, useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import {
   createOrUpdateGroupAsses,
@@ -20,6 +20,8 @@ import {
 } from '../../api/assesAPI'
 import { staticWrapped } from '../../api/config'
 import ResponsiveForm from '../../components/ResponsiveForm/ResponsiveForm'
+import { role } from '../../constant/role'
+import route from '../../constant/route'
 import { useAuthContext } from '../../context/AuthContext'
 import { useGlobalComponentsContext } from '../../context/GlobalComponentsContext'
 import { GroupAss } from '../../types/groupAsses'
@@ -52,7 +54,7 @@ const AssessmentDetail: React.FC = () => {
   const [groupAsses, setGroupAsses] = useState<GroupAss | null>(null)
   const { msg } = useGlobalComponentsContext()
   const { id } = useParams()
-  const { usrInfo } = useAuthContext()
+  const { usrInfo, isInRoleRange } = useAuthContext()
   const [isOpened, setIsOpened] = useState(false)
   const toFetch = async () => {
     if (!id) return
@@ -155,6 +157,7 @@ const AssessmentDetail: React.FC = () => {
       <Flex
         style={{
           width: '100%',
+          display: isInRoleRange([role.STUDENT]) ? 'none' : 'flex',
         }}
         justify="end"
       >
@@ -204,10 +207,16 @@ const AssessmentDetail: React.FC = () => {
           )}
         </Descriptions.Item>
         <Descriptions.Item label="Marked By" span={2}>
-          {groupAsses.groupScore?.markedBy?.firstName?.concat(
-            ' ',
-            groupAsses.groupScore?.markedBy?.lastName
-          ) || <Unmark />}
+          {groupAsses.groupScore?.markedBy ? (
+            <_Link to={`${route.PROFILE}/${groupAsses.groupScore.markedBy.id}`}>
+              {groupAsses.groupScore.markedBy.firstName?.concat(
+                ' ',
+                groupAsses.groupScore.markedBy.lastName
+              )}
+            </_Link>
+          ) : (
+            <Unmark />
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Feedback" span={3}>
           {groupAsses.groupScore?.feedback || <Unmark />}
