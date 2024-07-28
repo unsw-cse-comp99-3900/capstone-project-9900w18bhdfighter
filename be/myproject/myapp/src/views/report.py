@@ -8,7 +8,7 @@ from xhtml2pdf import pisa
 
 class PartialRole(ForPartialRole):
     def __init__(self):
-        super().__init__(allowed_roles=[3, 4])
+        super().__init__(allowed_roles=[3, 4, 5])
 
 
 @api_view(["GET"])
