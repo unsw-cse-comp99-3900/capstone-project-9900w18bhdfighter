@@ -59,6 +59,18 @@
             <td>{{ group.GroupName }}</td>
           </tr>
           <tr>
+            <th>Group Preference</th>
+            <td>
+              {% if group.group_pref %}
+              <ul>
+                {% for preference in group.group_pref %}
+                <li>{{ preference.ProjectName }}</li>
+                {% endfor %}
+              </ul>
+              {% else %} N/A {% endif %}
+            </td>
+          </tr>
+          <tr>
             <th>Assigned Project</th>
             <td>{{ group.assigned_project }}</td>
           </tr>

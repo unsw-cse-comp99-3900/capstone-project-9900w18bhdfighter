@@ -8,6 +8,7 @@ def generate_group_report_data():
     for group in groups:
         group_members = group.groupuserslink_set.all()
         assigned_project = GroupProjectsLink.objects.filter(GroupID=group).first()
+        group_pref = group.Preferences.all()
         if assigned_project:
             assigned_project = assigned_project.ProjectID.ProjectName
         else:
@@ -27,6 +28,7 @@ def generate_group_report_data():
                 "score": score,
                 "feedback": feedback,
                 "marker": marker,
+                "group_pref": group_pref,
             }
         )
 
