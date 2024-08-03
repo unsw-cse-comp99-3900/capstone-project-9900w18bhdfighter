@@ -1,4 +1,4 @@
-# Project Setup
+# Project Setup(dev)
 
 ## At the root of the project(same for both frontend and backend)
 1. Run `npm install`
@@ -23,4 +23,12 @@
 
 ## Test
 1. `cd` into the be `be\myproject`
-2. run `python manage.py test myapp`
+2. run `python manage.py test myapp/src/tests/`
+
+# Project Setup(prod)
+
+## launch the app through docker
+1. Run `docker-compose up --build` at the root of the project
+   - this will start the frontend, backend, mysql and phpmyadmin in docker containers.
+   - **Note:** make sure your ports  8000 and 3306 are not being used by another service
+2. Open your browser and go to `http://localhost/` to view the app
